@@ -217,3 +217,46 @@ Error-envelope and endpoint references supplement the n8n request sources:
 Bitbucket pagination needs the Host-header accessor correction shipped with these
 fixtures. Older hosts returned an empty Host, producing an invalid absolute next
 URL. Use a host built from this change or a later release for pagination fidelity.
+
+## Dropbox, Box and Cloudflare subsets
+
+| Script | Routes | Fixture limits |
+| --- | --- | --- |
+| dropbox.lms | POST users/get_current_account, files/list_folder, files/list_folder/continue, files/create_folder_v2, files/upload, files/download (all under /2) | Two fixed list pages; upload/download stores text by path; no binary fidelity, metadata completeness, copy/move/delete or sharing |
+| box.lms | GET /2.0/users/me, GET /2.0/search, POST /2.0/folders, GET /2.0/folders/{id}, GET /2.0/files/{id} | Search is one fixed folder followed by an empty page for n8n's limit=100/offset=100 loop; filters and arbitrary page sizes are not modeled; no uploads or BoxTrigger webhooks |
+| cloudflare.lms | GET /client/v4/user/tokens/verify, GET /client/v4/zones; list/upload/read/delete under /client/v4/zones/{zone}/origin_tls_client_auth | Two fixed certificate pages; uploaded certificates support read/delete; no PEM validation, real private-key handling, zone permissions or DNS operations |
+
+These three presets accept only a `token` configuration override, defaulting to
+`fixture-token`. Use `X-Lmmock-Fault: 500` for their deterministic fault response.
+Dropbox and Box reject missing/wrong credentials with 401; Cloudflare uses the
+403 authentication envelope with code 10000. Cloudflare's token-verification
+endpoint-specific invalid-token codes are not modeled. Its other numeric error
+codes and all error messages are simplified fixture values. Dropbox missing
+files/cursors use endpoint-specific 409 envelopes; malformed required arguments
+use 400. Box uses the `type/status/code/message/request_id` error envelope.
+Cloudflare never returns or stores the supplied private key.
+
+Dropbox's identity endpoint accepts an omitted or literal null body. Upload and
+download support both the `Dropbox-API-Arg` header and the `arg` query parameter
+used by this n8n snapshot. The API and content hosts share the local mock origin.
+Box's OAuth credential has no explicit credential-test request in this snapshot;
+`users/me` is the identity probe. Cloudflare's node operates on origin-pull
+certificates, not DNS. List results are fixed snapshots, not views of writes.
+Malformed JSON parsing, full response metadata, OAuth issuance and real vendor
+permission models remain outside these subsets.
+
+Source inspection: n8n commit `dd5f870ecc38344951fb3956f1a7ba7852612c70`, under
+`packages/nodes-base/`:
+
+- `credentials/DropboxApi.credentials.ts`, `DropboxOAuth2Api.credentials.ts`,
+  `nodes/Dropbox/GenericFunctions.ts`, `Dropbox.node.ts`.
+- `credentials/BoxOAuth2Api.credentials.ts`, `nodes/Box/GenericFunctions.ts`,
+  `Box.node.ts`.
+- `credentials/CloudflareApi.credentials.ts`, `nodes/Cloudflare/GenericFunctions.ts`,
+  `Cloudflare.node.ts`, `ZoneCertificateDescription.ts`.
+
+Error references: [Dropbox error guide](https://docs.dropboxapi.com/dropbox-api/docs/error-handling),
+[Box common errors](https://developer.box.com/guides/api-calls/permissions-and-errors/common-errors),
+[Cloudflare authentication errors](https://developers.cloudflare.com/terraform/troubleshooting/authentication-error-dns-records/).
+Suites exercise the native mock checker and lmconn HTTP CLI, not n8n itself or
+live vendor accounts.
