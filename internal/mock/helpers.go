@@ -8,14 +8,21 @@ import (
 	"encoding/json"
 	"fmt"
 	lmcode "github.com/lmctl-ai/lmcode-go"
+	"io"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 )
 
-// Options holds trusted test configuration; source scripts decide its meaning.
-type Options struct{ ConfigFile string }
+// Options holds trusted script configuration and optional HTTP fallback settings.
+type Options struct {
+	ConfigFile       string
+	Upstream         string
+	UpstreamTimeout  time.Duration
+	UpstreamReadOnly bool
+	AuditWriter      io.Writer
+}
 
 func helpers(reg *lmcode.Registry, options Options) {
 	add := func(name string, params []string, ret string, fn lmcode.Function) {

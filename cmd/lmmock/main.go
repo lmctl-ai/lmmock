@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/lmctl-ai/lmmock/internal/mock"
 )
@@ -59,6 +60,10 @@ func run(args []string) int {
 	listen := f.String("listen", "127.0.0.1:0", "loopback IP:port; 0 chooses a free port")
 	config := f.String("config", "", "trusted JSON configuration file, read by config()")
 	ready := f.String("ready-file", "", "write readiness JSON and remove it on exit")
+	upstream := f.String("upstream", "", "forward unmatched routes to this fixed http(s) base URL")
+	upstreamTimeout := f.Duration("upstream-timeout", 2*time.Minute, "total upstream request timeout")
+	upstreamReadOnly := f.Bool("upstream-read-only", false, "forward only GET/HEAD; reject other unmatched methods")
+	auditLog := f.String("audit-log", "", "append mocked/forwarded request metadata as JSONL")
 	if err := f.Parse(args[1:]); err != nil {
 		return 2
 	}
@@ -92,7 +97,18 @@ func run(args []string) int {
 	if err != nil {
 		return fail(err)
 	}
-	engine, err := mock.NewWithOptions(code, mock.Options{ConfigFile: *config})
+	var audit io.Writer
+	if *auditLog != "" {
+		file, err := os.OpenFile(*auditLog, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+		if err != nil {
+			return fail(err)
+		}
+		defer file.Close()
+		audit = file
+		fmt.Fprintln(os.Stderr, "lmmock audit log:", *auditLog)
+	}
+	engine, err := mock.NewWithOptions(code, mock.Options{ConfigFile: *config, Upstream: *upstream,
+		UpstreamTimeout: *upstreamTimeout, UpstreamReadOnly: *upstreamReadOnly, AuditWriter: audit})
 	if err != nil {
 		return fail(err)
 	}
@@ -189,6 +205,8 @@ func usage() {
   lmmock serve --script mock.lms [--listen 127.0.0.1:0] [--ready-file ready.json]
   lmmock exec --script mock.lms -- COMMAND [ARG...]
   lmmock exec --dsl mock.dslb -- COMMAND [ARG...]
+  serve/exec: [--upstream http(s)://host/base/] [--upstream-timeout 2m]
+              [--upstream-read-only] [--audit-log requests.jsonl]
   lmmock check --suite assertions.json [--url URL]
   lmmock proto --list
   lmmock proto <name> [--listen 127.0.0.1:0] [--config cfg.json] [--ready-file ready.json]
