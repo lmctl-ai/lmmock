@@ -16,5 +16,5 @@ version = env("SAMPLE_VERSION") || "0.1.0";
 step(["go", "build", "-trimpath", "-ldflags=-s -w -X main.version=" + version, "-o", "build/lmmock" + ext, "./cmd/lmmock"]);
 step(["node", "tests/integration.mjs", "build/lmmock" + ext]);
 
-step(["build/lmmock" + ext, "exec", "--dsl", "build/llm.dslb", "--", path_join(Directory, "build/lmmock" + ext), "check", "--suite", "examples/llm-client.json"]);
+step(["build/lmmock" + ext, "exec", "--dsl", "build/llm.dslb", "--config", "examples/llm-config.json", "--", path_join(Directory, "build/lmmock" + ext), "check", "--suite", "examples/llm-client.json"]);
 step(["node", "tests/protocols.mjs", "build/lmmock" + ext]);

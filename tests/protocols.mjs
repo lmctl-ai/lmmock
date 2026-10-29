@@ -36,6 +36,21 @@ if(process.argv[3]==='client') {
   const post=(body,opts={})=>fetch(origin+'/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),...opts});
   const body={model:'test',messages:[{role:'user',content:'ping'}]};
   for(const [mode,status] of [['unauthorized',401],['rate-limit',429],['server-error',503]]){set({mode});assert.equal((await post(body)).status,status);}
+  set({mode:'retry'});
+  const retry=await post(body);assert.equal(retry.status,429);assert.equal(retry.headers.get('retry-after'),'1');
+  assert.equal((await post(body)).status,200);
+  set({mode:'unknown-model'});const missing=await post(body);assert.equal(missing.status,404);assert.equal((await missing.json()).error.code,'model_not_found');
+  set({mode:'',apiKey:'fixture-key'});
+  for(const route of ['/chat/completions','/api/v1/chat/completions','/v1/chat/completions']) {
+   const request={model:'override',max_tokens:12,messages:[{role:'system',content:'be brief'},{role:'user',content:'stdin 世界'}]};
+   const response=await fetch(origin+route,{method:'POST',headers:{Authorization:'Bearer fixture-key','Content-Type':'application/json'},body:JSON.stringify(request)});
+   assert.equal(response.status,200);const reply=await response.json();assert.equal(reply.model,'override');assert.deepEqual(reply.usage,{prompt_tokens:2,completion_tokens:2,total_tokens:4});
+   const seen=await (await fetch(origin+'/__inspect')).json();assert.equal(seen.url,route);assert.equal(seen.headers.authorization,'Bearer fixture-key');assert.deepEqual(JSON.parse(seen.body),request);
+   const overloaded=await fetch(origin+route,{method:'POST',headers:{Authorization:'Bearer fixture-key','Content-Type':'application/json'},body:JSON.stringify({...request,model:'overloaded'})});
+   assert.equal(overloaded.status,429);assert.equal(overloaded.headers.get('retry-after'),'1');
+  }
+  set({mode:'ok',responseModel:'fixture-model'});assert.equal((await (await post(body,{headers:{Authorization:'Bearer fixture-key'}})).json()).model,'fixture-model');
+  delete config.apiKey;delete config.responseModel;
   set({mode:'bad-json'});await assert.rejects(async()=> (await post(body)).json());
   set({mode:'timeout'});await assert.rejects(()=>post(body,{signal:AbortSignal.timeout(30)}));
   set({mode:'disconnect'});await assert.rejects(()=>post(body));

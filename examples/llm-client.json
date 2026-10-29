@@ -1,20 +1,492 @@
 {
   "steps": [
     {
-      "name": "agent requests a tool", "method": "POST", "path": "/v1/chat/completions",
-      "body": {"model":"mock-agent","messages":[{"role":"user","content":"Look up Paris"}],"tools":[{"type":"function","function":{"name":"lookup","parameters":{"type":"object"}}}]},
-      "json": {"choices.0.finish_reason":"tool_calls","choices.0.message.tool_calls.0.function.name":"lookup"},
-      "capture": {"call_id":"choices.0.message.tool_calls.0.id","arguments":"choices.0.message.tool_calls.0.function.arguments"}
+      "name": "agent requests a tool",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "body": {
+        "model": "mock-agent",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Look up Paris"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "lookup",
+              "parameters": {
+                "type": "object"
+              }
+            }
+          }
+        ]
+      },
+      "json": {
+        "choices.0.finish_reason": "tool_calls",
+        "choices.0.message.tool_calls.0.function.name": "lookup"
+      },
+      "capture": {
+        "call_id": "choices.0.message.tool_calls.0.id",
+        "arguments": "choices.0.message.tool_calls.0.function.arguments"
+      },
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      }
     },
     {
-      "name": "agent submits tool result", "method": "POST", "path": "/v1/chat/completions",
-      "body": {"model":"mock-agent","messages":[{"role":"user","content":"Look up Paris"},{"role":"assistant","content":null,"tool_calls":[{"id":"${call_id}","type":"function","function":{"name":"lookup","arguments":"${arguments}"}}]},{"role":"tool","tool_call_id":"${call_id}","content":"Paris is sunny"}]},
-      "json": {"choices.0.finish_reason":"stop","choices.0.message.content":"Tool result: Paris is sunny"}
+      "name": "agent submits tool result",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "body": {
+        "model": "mock-agent",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Look up Paris"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "${call_id}",
+                "type": "function",
+                "function": {
+                  "name": "lookup",
+                  "arguments": "${arguments}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "${call_id}",
+            "content": "Paris is sunny"
+          }
+        ]
+      },
+      "json": {
+        "choices.0.finish_reason": "stop",
+        "choices.0.message.content": "Tool result: Paris is sunny"
+      },
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      }
     },
     {
-      "name": "streaming content", "method": "POST", "path": "/v1/chat/completions",
-      "body": {"model":"mock-agent","messages":[{"role":"user","content":"ping"}],"stream":true},
-      "contains": "data: [DONE]"
+      "name": "streaming content",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "body": {
+        "model": "mock-agent",
+        "messages": [
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ],
+        "stream": true
+      },
+      "contains": "data: [DONE]",
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      }
+    },
+    {
+      "name": "deepseek chat and integer usage",
+      "method": "POST",
+      "path": "/chat/completions",
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      },
+      "body": {
+        "model": "deepseek-flash",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "json": {
+        "model": "deepseek-flash",
+        "choices.0.message.content": "pong",
+        "usage.prompt_tokens": 2,
+        "usage.completion_tokens": 2,
+        "usage.total_tokens": 4
+      }
+    },
+    {
+      "name": "deepseek missing key",
+      "method": "POST",
+      "path": "/chat/completions",
+      "body": {
+        "model": "deepseek-flash",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 401,
+      "json": {
+        "error.type": "authentication_error"
+      }
+    },
+    {
+      "name": "deepseek invalid key",
+      "method": "POST",
+      "path": "/chat/completions",
+      "body": {
+        "model": "deepseek-flash",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 401,
+      "json": {
+        "error.type": "authentication_error"
+      },
+      "headers": {
+        "Authorization": "Bearer wrong-key"
+      }
+    },
+    {
+      "name": "deepseek overloaded",
+      "method": "POST",
+      "path": "/chat/completions",
+      "body": {
+        "model": "overloaded",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 429,
+      "json": {
+        "error.type": "rate_limit_error"
+      },
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      }
+    },
+    {
+      "name": "deepseek unknown model",
+      "method": "POST",
+      "path": "/chat/completions",
+      "body": {
+        "model": "unknown-model",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 404,
+      "json": {
+        "error.type": "invalid_request_error",
+        "error.code": "model_not_found"
+      },
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      }
+    },
+    {
+      "name": "openrouter chat and integer usage",
+      "method": "POST",
+      "path": "/api/v1/chat/completions",
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      },
+      "body": {
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "json": {
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "choices.0.message.content": "pong",
+        "usage.prompt_tokens": 2,
+        "usage.completion_tokens": 2,
+        "usage.total_tokens": 4
+      }
+    },
+    {
+      "name": "openrouter missing key",
+      "method": "POST",
+      "path": "/api/v1/chat/completions",
+      "body": {
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 401,
+      "json": {
+        "error.type": "authentication_error"
+      }
+    },
+    {
+      "name": "openrouter invalid key",
+      "method": "POST",
+      "path": "/api/v1/chat/completions",
+      "body": {
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 401,
+      "json": {
+        "error.type": "authentication_error"
+      },
+      "headers": {
+        "Authorization": "Bearer wrong-key"
+      }
+    },
+    {
+      "name": "openrouter overloaded",
+      "method": "POST",
+      "path": "/api/v1/chat/completions",
+      "body": {
+        "model": "overloaded",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 429,
+      "json": {
+        "error.type": "rate_limit_error"
+      },
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      }
+    },
+    {
+      "name": "openrouter unknown model",
+      "method": "POST",
+      "path": "/api/v1/chat/completions",
+      "body": {
+        "model": "unknown-model",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 404,
+      "json": {
+        "error.type": "invalid_request_error",
+        "error.code": "model_not_found"
+      },
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      }
+    },
+    {
+      "name": "ollama-cloud chat and integer usage",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      },
+      "body": {
+        "model": "gpt-oss:20b-cloud",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "json": {
+        "model": "gpt-oss:20b-cloud",
+        "choices.0.message.content": "pong",
+        "usage.prompt_tokens": 2,
+        "usage.completion_tokens": 2,
+        "usage.total_tokens": 4
+      }
+    },
+    {
+      "name": "ollama-cloud missing key",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "body": {
+        "model": "gpt-oss:20b-cloud",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 401,
+      "json": {
+        "error.type": "authentication_error"
+      }
+    },
+    {
+      "name": "ollama-cloud invalid key",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "body": {
+        "model": "gpt-oss:20b-cloud",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 401,
+      "json": {
+        "error.type": "authentication_error"
+      },
+      "headers": {
+        "Authorization": "Bearer wrong-key"
+      }
+    },
+    {
+      "name": "ollama-cloud overloaded",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "body": {
+        "model": "overloaded",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 429,
+      "json": {
+        "error.type": "rate_limit_error"
+      },
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      }
+    },
+    {
+      "name": "ollama-cloud unknown model",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "body": {
+        "model": "unknown-model",
+        "max_tokens": 12,
+        "messages": [
+          {
+            "role": "system",
+            "content": "be brief"
+          },
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 404,
+      "json": {
+        "error.type": "invalid_request_error",
+        "error.code": "model_not_found"
+      },
+      "headers": {
+        "Authorization": "Bearer fixture-key"
+      }
     }
   ]
 }

@@ -215,7 +215,7 @@ synthetic test credentials. It is not a request log.
 
 ## LLM and agent workflow tests
 
-[examples/llm.lms](examples/llm.lms) serves `POST /v1/chat/completions`. It returns
+[examples/llm.lms](examples/llm.lms) serves the shared OpenAI-compatible route family below. It returns
 OpenAI-compatible text, usage, tool calls and SSE-formatted responses. When tools
 are supplied it requests `lookup` (or the first supplied function) with Paris as
 the city. Submit a `role: tool` message to receive the final answer. This is a
@@ -223,14 +223,48 @@ deterministic protocol fixture, not a language model. SSE events are buffered in
 one response; this tests event parsing, not incremental network timing.
 
 Configuration `mode` selects `ok`, `echo`, `unauthorized`, `rate-limit`,
-`server-error`, `bad-json`, `timeout`, or `disconnect`. Optional `apiKey` requires
-a matching bearer header. See [llm-client.json](examples/llm-client.json) for a
+`server-error`, `bad-json`, `timeout`, `disconnect`, `retry`, or `unknown-model`.
+`retry` returns 429 once per server instance, then succeeds; 429 replies include
+`Retry-After: 1` (lmclient currently waits a fixed three seconds). Optional
+`apiKey` requires an exact matching bearer header; missing or invalid keys get
+401. `examples/llm-config.json` uses the synthetic key `fixture-key`.
+
+| lmclient check / provider | Canned POST route | Shape |
+| --- | --- | --- |
+| `llm chat deepseek`, API probe | `/chat/completions` | OpenAI-compatible, bearer auth |
+| `llm chat openrouter`, API probe | `/api/v1/chat/completions` | Same shape and auth |
+| `llm chat ollama-cloud`, API probe | `/v1/chat/completions` | Same shape and auth |
+| Existing offline DeepSeek override, tool round trip, SSE parser | `/v1/chat/completions` | Same handler; optional tools / stream |
+
+Set `LMCLIENT_LLM_DEEPSEEK_BASE_URL=$LMMOCK_URL`,
+`LMCLIENT_LLM_OPENROUTER_BASE_URL=$LMMOCK_URL/api/v1`, and
+`LMCLIENT_LLM_OLLAMA_CLOUD_BASE_URL=$LMMOCK_URL/v1` for offline API calls.
+Each accepts `model`, `max_tokens`, and system/user `messages`, returning `pong`,
+the requested model, and integer usage (`2` prompt, `2` completion, `4` total).
+Reserved models `overloaded` and `unknown-model` return 429 and a canned 404
+`error.code: model_not_found`, respectively. The references do not specify a
+provider-specific unknown-model payload; this fixture uses the common OpenAI
+error envelope rather than claiming exact vendor error parity.
+
+For compatibility with lmconn redaction tests, explicit modes `ok`, `echo`, and
+`timeout` retain `served-model`; `responseModel` overrides the response model
+(e.g. `fixture-model` for migration of lmclient's Python fixture). `echo` returns
+the bearer value so clients can check redaction. Use no mode to echo the requested
+model. The native suite checks all three paths, auth failures, errors, tools and
+buffered SSE; protocol tests also check retry recovery, headers and request fields.
+
+Both current provider registries implement `claude`, `codex`, `agy`, and `kimi`
+as subprocesses, not HTTP APIs. There is no Anthropic `/messages` or Kimi HTTP
+adapter to mock, and lmclient does not request streaming. CLI fixtures and
+client-side missing-key/argument validation stay in lmclient's suite. Migrating
+that Python suite's server lifecycle and assertions is separate work. See [llm-client.json](examples/llm-client.json) for a
 complete tool-call round trip.
 
 lmmock includes its own native assertion client:
 
 ```sh
-lmmock exec --script examples/llm.lms -- lmmock check --suite examples/llm-client.json
+lmmock exec --script examples/llm.lms --config examples/llm-config.json -- lmmock check --suite examples/llm-client.json
+# For a server started with the same llm-config.json:
 lmmock check --url http://127.0.0.1:8080 --suite examples/llm-client.json
 ```
 
