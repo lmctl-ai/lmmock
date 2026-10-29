@@ -134,6 +134,8 @@ package doc comment.
 - `smtp`: SMTP sink with AUTH PLAIN/LOGIN; config `users` and optional `spool` JSONL file. [Schema and limits](internal/proto/smtp/smtp.go).
 - `imap`: seeded INBOX or live SMTP spool; LOGIN, LIST/STATUS/SELECT, FETCH/SEARCH and UID variants. Config `users`, `spool`, `messages`; no TLS. [Schema and limits](internal/proto/imap/imap.go).
 
+- `amqp`: memory-only AMQP 0-9-1 queues, publisher confirms and auto-ack `basic.get`; config `{"users":{"u":"p"}}` (default accepts any PLAIN credentials). See [AMQP mock notes](docs/protocol-amqp.md).
+
 ## Standalone lifecycle
 
 ```sh

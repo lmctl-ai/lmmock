@@ -7,6 +7,7 @@ package main
 //
 //	_ "github.com/lmctl-ai/lmmock/internal/proto/redis"
 import (
+	_ "github.com/lmctl-ai/lmmock/internal/proto/amqp"
 	_ "github.com/lmctl-ai/lmmock/internal/proto/imap"
 	_ "github.com/lmctl-ai/lmmock/internal/proto/kafka"
 	_ "github.com/lmctl-ai/lmmock/internal/proto/mongodb"

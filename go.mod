@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/lmctl-ai/lmcode-go v0.6.37
 	github.com/mochi-mqtt/server/v2 v2.7.9
+	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/tidwall/redcon v1.6.4
 	github.com/twmb/franz-go v1.22.1
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20261022190701-123ec885bc97
