@@ -4,6 +4,12 @@ Snapshot: 2026-10-29. This is a **mock implementation backlog**, not a claim tha
 lmconn cannot make HTTP requests to these services. Generic HTTP, OAuth2 and
 OpenAI-compatible transport do not reproduce a vendor’s endpoints and behavior.
 
+PagerDuty and Linear now have selected HTTP contract fixtures (see
+[coverage and limitations](docs/http-presets.md)); their rows below remain in
+this historical snapshot because full node/trigger coverage is still open.
+Datadog now has a credential/HTTP-request fixture but is absent from the node-only
+inventory. Counts below describe the original snapshot, not current coverage.
+
 ## Inventory and counting
 
 - Source: local n8n checkout at commit 9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b.

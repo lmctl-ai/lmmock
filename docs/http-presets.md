@@ -58,3 +58,52 @@ packages/nodes-base at commit 9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b:
 
 The CI suites use lmconn and the native lmmock client. They do not execute n8n
 itself or call live vendor APIs.
+
+## PagerDuty, Datadog and Linear selected contracts
+
+| Script | Authentication / config | Routes or GraphQL operations |
+| --- | --- | --- |
+| pagerduty.lms | `Authorization: Token token=fixture-token`; override `token` | GET `/users/me`, GET `/services`, GET/POST `/incidents`, GET `/incidents/{id}` |
+| datadog.lms | `DD-API-KEY: fixture-key`, `DD-APPLICATION-KEY: fixture-app-key`; override `apiKey` / `appKey` | GET `/api/v1/validate`, GET/POST `/api/v1/monitor`, GET `/api/v1/monitor/{id}` |
+| linear.lms | raw `Authorization: fixture-key` or OAuth `Bearer fixture-token`; override `apiKey` / `token` | POST `/graphql`: issues, teams, issueCreate, issue |
+
+All three support authenticated `X-Lmmock-Fault: 429` and `500`. Datadog's
+validate endpoint needs only the API key; monitor routes need both keys and
+return 403 `errors` arrays on auth failure. PagerDuty returns 401 with error code
+2006. Linear returns GraphQL `errors` arrays (including HTTP 200 for a missing
+issue); OAuth and API-key credentials are separate. Credential overrides are
+the only config knobs. Every suite exercises missing and wrong credentials.
+
+PagerDuty creates require a From header, incident title/type and service reference.
+The incident snapshot has 100 records at offset 0 and one at offset 100, matching
+n8n's fixed limit=100 pagination; other page sizes/filters are not implemented.
+Datadog monitor pages are fixed at one item per page (0, 1, then empty), exercised
+with page_size=1. Linear issues return one item plus pageInfo and an endCursor;
+passing that cursor terminates the next page. Created items are retrievable by
+captured ID but are not merged into snapshots. Datadog monitor queries are stored,
+not evaluated. Linear matches selected query strings and variables; it is not a
+GraphQL parser and does not implement aliases, fragments, selection projection,
+inline mutation arguments, or arbitrary whitespace variations. Suites use the
+actual n8n query templates. No OAuth issuance, webhooks, update/delete or complete
+vendor permission model is included.
+
+Source inspection: n8n commit `dd5f870ecc38344951fb3956f1a7ba7852612c70`,
+under `packages/nodes-base/`:
+
+- PagerDuty: `credentials/PagerDutyApi.credentials.ts`,
+  `nodes/PagerDuty/GenericFunctions.ts`, `nodes/PagerDuty/PagerDuty.node.ts`.
+  This credential has no test method; `/users/me` is the chosen identity check.
+- Datadog: `credentials/DatadogApi.credentials.ts`. This checkout has no Datadog
+  node: it exposes a generic HTTP-request credential. `/api/v1/validate` is its
+  credential test; the monitor subset is an additional HTTP-request contract,
+  not a claim that a dedicated n8n node exercises those routes.
+- Linear: `credentials/LinearApi.credentials.ts`, `LinearOAuth2Api.credentials.ts`,
+  `nodes/Linear/GenericFunctions.ts`, `Queries.ts`, and
+  `test/GenericFunctions.test.ts`. The credential test uses getIssues(first:1),
+  not viewer. API keys are sent without a Bearer prefix.
+
+Supplementary vendor references: [PagerDuty errors](https://docs.pagerduty.com/developer/errors),
+[Datadog monitors](https://docs.datadoghq.com/api/latest/monitors/),
+[Datadog authentication](https://docs.datadoghq.com/api/latest/authentication/),
+and [Linear rate limiting](https://linear.app/developers/rate-limiting).
+Error envelopes and statuses follow these contracts; messages are simplified.
