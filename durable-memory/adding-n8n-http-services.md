@@ -169,3 +169,9 @@ Asana and Trello. Together with Slack, Discord, Telegram, Jira and Stripe,
 protocol/adversarial tests. lmconn had 214 passing tests on all three OS families
 after the expansion. Counts and release pins are a snapshot, not fixed targets.
 See [supported routes and limits](../docs/http-presets.md).
+
+
+Wave 9 adds PagerDuty, Datadog and Linear selected contracts; see the coverage
+section in docs/http-presets.md for routes and source provenance. Note that
+Datadog is credential-only in the inspected n8n checkout, and Linear API keys
+use raw Authorization while OAuth uses Bearer. Do not infer auth from a hint.
