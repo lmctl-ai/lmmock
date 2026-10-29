@@ -8,8 +8,8 @@ PagerDuty and Linear now have selected HTTP contract fixtures (see
 [coverage and limitations](docs/http-presets.md)); their rows below remain in
 this historical snapshot because full node/trigger coverage is still open.
 Datadog now has a credential/HTTP-request fixture but is absent from the node-only
-inventory. Counts reflect the table classification, including Wave 9 moves of
-Twilio, SendGrid, Mailchimp, Bitbucket, CircleCI and PayPal to partial scripts.
+inventory. Counts reflect the tables, including Wave 9 reclassifications;
+PagerDuty and Linear retain their historical classification pending reconciliation.
 
 ## Inventory and counting
 
@@ -20,7 +20,7 @@ Twilio, SendGrid, Mailchimp, Bitbucket, CircleCI and PayPal to partial scripts.
 - Inventory comes from each package.json n8n.nodes array, not a recursive count of test files or an older installed n8n package.
 - Scope excludes community packages and credentials with no registered node. Source links below identify every registration in the two manifests.
 
-Base-family classification: **216 without a dedicated mock**, **18 with partial service scripts**,
+Base-family classification: **213 without a dedicated mock**, **21 with partial service scripts**,
 **9 with protocol-level subsets**, **1 OpenAI family with partial transport**, and
 **64 utility/plumbing families**. No category claims complete n8n operation coverage.
 
@@ -49,7 +49,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | Beeminder | [Beeminder](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Beeminder/Beeminder.node.ts) |
 | Bitly | [Bitly](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bitly/Bitly.node.ts) |
 | Bitwarden | [Bitwarden](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bitwarden/Bitwarden.node.ts) |
-| Box | [Box](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Box/Box.node.ts), [BoxTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Box/BoxTrigger.node.ts) |
 | Brandfetch | [Brandfetch](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Brandfetch/Brandfetch.node.ts) |
 | Brevo | [Brevo](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Brevo/Brevo.node.ts), [BrevoTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Brevo/BrevoTrigger.node.ts) |
 | Bubble | [Bubble](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bubble/Bubble.node.ts) |
@@ -60,7 +59,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | Clearbit | [Clearbit](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Clearbit/Clearbit.node.ts) |
 | ClickUp | [ClickUp](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/ClickUp/ClickUp.node.ts), [ClickUpTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/ClickUp/ClickUpTrigger.node.ts) |
 | Clockify | [Clockify](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Clockify/Clockify.node.ts), [ClockifyTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Clockify/ClockifyTrigger.node.ts) |
-| Cloudflare | [Cloudflare](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Cloudflare/Cloudflare.node.ts) |
 | Cockpit | [Cockpit](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Cockpit/Cockpit.node.ts) |
 | Coda | [Coda](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Coda/Coda.node.ts) |
 | CoinGecko | [CoinGecko](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/CoinGecko/CoinGecko.node.ts) |
@@ -79,7 +77,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | Discourse | [Discourse](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Discourse/Discourse.node.ts) |
 | Disqus | [Disqus](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Disqus/Disqus.node.ts) |
 | Drift | [Drift](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Drift/Drift.node.ts) |
-| Dropbox | [Dropbox](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Dropbox/Dropbox.node.ts) |
 | Dropcontact | [Dropcontact](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Dropcontact/Dropcontact.node.ts) |
 | Egoi | [Egoi](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Egoi/Egoi.node.ts) |
 | Elastic | [Elasticsearch](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Elastic/Elasticsearch/Elasticsearch.node.ts), [ElasticSecurity](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Elastic/ElasticSecurity/ElasticSecurity.node.ts) |
@@ -252,6 +249,10 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 
 ## Services with partial scripts: remaining operations are uncovered
 
+Dropbox, Box and Cloudflare now have selected contracts; see
+[route limits and source snapshot](docs/http-presets.md#dropbox-box-and-cloudflare-subsets).
+BoxTrigger webhook delivery remains uncovered.
+
 These families have selected REST operations in examples/. They are excluded
 from the no-mock table, but their full node operation sets are **not covered**.
 All unimplemented operations, live provider behavior, and trigger subscription/
@@ -263,7 +264,6 @@ vendor datastore. See [HTTP preset limits](docs/http-presets.md).
 | Mailchimp | [examples/mailchimp.lms](examples/mailchimp.lms) | [Mailchimp](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailchimp/Mailchimp.node.ts), [MailchimpTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailchimp/MailchimpTrigger.node.ts) |
 | SendGrid | [examples/sendgrid.lms](examples/sendgrid.lms) | [SendGrid](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/SendGrid/SendGrid.node.ts) |
 | Twilio | [examples/twilio.lms](examples/twilio.lms) | [Twilio](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twilio/Twilio.node.ts), [TwilioTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twilio/TwilioTrigger.node.ts) |
-
 | Bitbucket | [examples/bitbucket.lms](examples/bitbucket.lms) | [BitbucketTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bitbucket/BitbucketTrigger.node.ts) |
 | CircleCi | [examples/circleci.lms](examples/circleci.lms) | [CircleCi](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/CircleCi/CircleCi.node.ts) |
 | PayPal | [examples/paypal.lms](examples/paypal.lms) | [PayPal](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/PayPal/PayPal.node.ts), [PayPalTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/PayPal/PayPalTrigger.node.ts) |
@@ -279,6 +279,9 @@ vendor datastore. See [HTTP preset limits](docs/http-presets.md).
 | Stripe | [examples/stripe.lms](examples/stripe.lms) | [Stripe](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Stripe/Stripe.node.ts), [StripeTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Stripe/StripeTrigger.node.ts) |
 | Telegram | [examples/telegram.lms](examples/telegram.lms) | [Telegram](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Telegram/Telegram.node.ts), [TelegramTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Telegram/TelegramTrigger.node.ts) |
 | Trello | [examples/trello.lms](examples/trello.lms) | [Trello](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Trello/Trello.node.ts), [TrelloTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Trello/TrelloTrigger.node.ts) |
+| Box | [examples/box.lms](examples/box.lms) | [Box](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Box/Box.node.ts), [BoxTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Box/BoxTrigger.node.ts) |
+| Cloudflare | [examples/cloudflare.lms](examples/cloudflare.lms) | [Cloudflare](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Cloudflare/Cloudflare.node.ts) |
+| Dropbox | [examples/dropbox.lms](examples/dropbox.lms) | [Dropbox](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Dropbox/Dropbox.node.ts) |
 
 Specifically, these trigger nodes still need end-to-end subscription/polling/
 delivery contracts; the service script alone does not establish trigger coverage:

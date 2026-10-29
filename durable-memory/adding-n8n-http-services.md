@@ -182,3 +182,9 @@ limits. CircleCI's base includes `/api`; PayPal's token request is form encoded,
 not JSON. Bitbucket's Basic credential test lives in the trigger node rather
 than the credential class. CircleCI/PayPal credential classes have no test in
 the inspected checkout; their documented identity probes supplement operations.
+
+Wave 9 adds Dropbox (13 checks), Box (11), and Cloudflare (12). Their source
+notes, error-shape exceptions, paging limits and deferred operations are in
+[HTTP presets](../docs/http-presets.md#dropbox-box-and-cloudflare-subsets).
+Config remains credential-only. Dropbox accepts header and query arguments;
+Box has no explicit n8n OAuth credential test, so users/me is its probe.
