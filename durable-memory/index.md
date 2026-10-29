@@ -18,3 +18,5 @@ Go HTTP mock host backed by lmcode-go v0.6.37. Public repo lmctl-ai/lmmock, MIT.
 - [lmconn coverage review](../docs/lmconn-coverage.md): actual five command areas, new vendor/GitHub integration tests, and remaining auth/protocol gaps. Protocol CLI now rejects non-loopback addresses before readiness; Actions race-tests all internal packages.
 
 - [Expanded HTTP presets](../docs/http-presets.md): Notion, Airtable, HubSpot, GitLab, Asana and Trello use annotated Handler methods; source scripts plus shared native/lmconn suites cover auth, cursor pagination, create/read state and faults. Lists are fixed snapshots.
+
+- [Uncovered n8n connectors](../n8n-connectors-uncovered.md): manifest-based backlog for both official base and AI node packages, with pinned source links, partial service/protocol coverage and utilities separated. Refresh this list when adding presets.
