@@ -32,6 +32,25 @@ if(process.argv[3]==='client') {
   for(const [mode,status] of [['server-error',500],['rate-limit',429]]){set({misbehave:mode});assert.equal((await token({grant_type:'refresh_token',refresh_token:rotated.refresh_token})).status,status);}
   set({misbehave:'bad-json'});await assert.rejects(async()=> (await token({grant_type:'refresh_token',refresh_token:rotated.refresh_token})).json());
   const log=fs.readFileSync(config.logFile,'utf8');for(const secret of ['fixture-secret',verifier,issued.access_token,issued.refresh_token,rotated.access_token])assert.ok(!log.includes(secret),'audit must not expose secret');
+ } else if(process.argv[4]==='github') {
+  set({apiKey:'fixture-github-token',strictHeaders:true});
+  const headers={'Accept':'application/vnd.github+json','User-Agent':'lmclient','X-GitHub-Api-Version':'2022-11-28'};
+  const get=(p,extra={})=>fetch(origin+p,{headers:{...headers,...extra}});
+  assert.equal((await fetch(origin+'/user')).status,400);
+  assert.equal((await get('/user')).status,401);
+  assert.equal((await get('/user',{Authorization:'Bearer wrong'})).status,401);
+  assert.deepEqual(await (await get('/user',{Authorization:'Bearer fixture-github-token'})).json(),{login:'octo',name:'Octo Cat',id:583231,public_repos:8});
+  const repos=await (await get('/orgs/acme/repos?per_page=30&sort=full_name')).json();
+  assert.deepEqual(repos.map(r=>r.name),['a','b']); assert.equal(repos[1].description,null);
+  const page=await get('/orgs/paged/repos?per_page=3&sort=full_name');
+  assert.deepEqual((await page.json()).map(r=>r.name),['r1','r2']);
+  const next=new URL(page.headers.get('link').match(/<([^>]+)>/)[1],origin);
+  assert.deepEqual((await (await get(next.pathname+next.search)).json()).map(r=>r.name),['r3','r4']);
+  assert.equal((await get('/orgs/mike/repos')).status,404);
+  assert.equal((await (await get('/users/mike/repos')).json())[0].name,'personal');
+  for(const [owner,status] of [['forbidden',403],['broken',500],['nobody',404]]) assert.equal((await get('/orgs/'+owner+'/repos')).status,status);
+  assert.deepEqual(await (await get('/orgs/weird/repos')).json(),{not:'a list'});
+  const denied=await get('/orgs/acme/repos',{Authorization:'Bearer do-not-echo'});assert.equal(denied.status,401);assert.ok(!(await denied.text()).includes('do-not-echo'));
  } else {
   const post=(body,opts={})=>fetch(origin+'/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),...opts});
   const body={model:'test',messages:[{role:'user',content:'ping'}]};
@@ -59,7 +78,7 @@ if(process.argv[3]==='client') {
  console.log('PASS '+process.argv[4]+' protocol and adversarial cases');
 } else {
  const binary=path.resolve(process.argv[2]);const dir=fs.mkdtempSync(path.join(os.tmpdir(),'lmmock protocols '));
- try {for(const scenario of ['oauth','llm']) {
+ try {for(const scenario of ['oauth','llm','github']) {
   const config=path.join(dir,scenario+'.json');const logFile=path.join(dir,'audit.jsonl');fs.writeFileSync(logFile,'');
   fs.writeFileSync(config,JSON.stringify({clients:{test:{clientSecret:'fixture-secret',redirectUris:['http://127.0.0.1:1/callback'],authStyle:'header'}},requirePkce:true,rotateRefreshTokens:true,logFile}));
   const r=spawnSync(binary,['exec','--dsl',`build/${scenario}.dslb`,'--config',config,'--',process.execPath,import.meta.filename,binary,'client',scenario],{env:{...process.env,MOCK_CONFIG:config},encoding:'utf8',timeout:30000});assert.equal(r.status,0,r.stdout+r.stderr);process.stdout.write(r.stdout);
