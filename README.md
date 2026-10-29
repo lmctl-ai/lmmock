@@ -138,6 +138,57 @@ package doc comment.
 
 ## Standalone lifecycle
 
+### Selective upstream fallback
+
+Keep explicit `route()` mocks and forward only paths with no registered route to one fixed
+upstream with the `serve`/`exec` options below. No DSL or schema change is needed,
+so existing precompiled scripts remain compatible:
+
+```sh
+lmmock serve --script mock.lms --upstream http://127.0.0.1:8080/repository/public/ \
+  --upstream-timeout 2m --upstream-read-only --audit-log requests.jsonl
+```
+
+Normal route matching wins, including GET handling HEAD; other methods on a mocked
+path retain the mux's 405 and Allow header. A handler's own 404 never falls through.
+Avoid a catch-all `route("GET", "/", ...)` when you want GET
+passthrough. With no `--upstream`, existing 404/405 behavior is unchanged. The
+upstream URL must be HTTP(S), without user credentials, query or fragment. Its path
+prefix is prepended to the original escaped request path; the original query,
+method, end-to-end headers and body are preserved. Host changes to the upstream
+authority. Dot segments (`.` or `..`, including URL-encoded forms) are rejected
+with 400 before forwarding; empty path segments are preserved. A forwarded
+asterisk request target is also rejected with 400. Connection, Keep-Alive, Proxy-*, TE, Trailer, Transfer-Encoding, Upgrade,
+and headers named by Connection are removed in both directions. HTTP framing may
+change; response status, end-to-end headers, Location and body bytes do not.
+
+Passthrough streams request/response bodies outside the VM, including large
+artifacts; scripted responses still buffer. Go's normal TLS certificate validation
+applies outbound; the inbound listener remains loopback HTTP. The client does not
+follow redirects, decompress bodies, use environment proxies, inject credentials,
+or add forwarding headers. The upstream transport uses HTTP/1.1 only, including
+over TLS. Caller-supplied Authorization/Cookie headers are normally preserved.
+Optional `--upstream-read-only` strips Authorization, Proxy-Authorization and Cookie
+and rejects unmatched methods other than GET/HEAD with 405; explicit mocks are unaffected.
+
+Defaults are a two-minute total request deadline, five-second connect/TLS limits,
+and a fifteen-second response-header limit (bounded by the total deadline).
+The total deadline is not an idle timeout: raise it for large artifacts on slow links.
+Inbound forwarded uploads must still complete within the server's ten-second
+request-read timeout; read-only forwarding does not support uploads.
+Unreachable upstreams return 502; timeouts before response headers return 504,
+with a clear error body. A timeout/error after response headers aborts the response
+connection: its already-committed status cannot be replaced. This is a fixed
+fallback, not a CONNECT tunnel, retry engine or general proxy framework.
+
+`--audit-log` appends JSONL records with `kind` (`mocked`, `forwarded`, `unmatched`),
+method, original URI/Host/headers, response status/body-byte count, elapsed time,
+and upstream/error where applicable. Authorization, Proxy-Authorization and Cookie
+values are redacted; bodies are never logged. A partial response records its
+committed status and error, not a completed transfer. Audit writes are serialized
+within the server and are best effort. Client disconnects are audited as
+`client closed request`. The CLI prints the audit-log path to stderr at startup.
+
 ```sh
 lmmock serve --script examples/api.lms --ready-file ready.json
 ```

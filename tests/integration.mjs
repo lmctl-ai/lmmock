@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
+import http from 'node:http';
 const binary=path.resolve(process.argv[2]);
 if(process.argv[3]==='client') {
  const base=process.env.LMMOCK_URL;
@@ -27,6 +28,10 @@ if(process.argv[3]==='client') {
  } else if(mode==='stateful') {
   assert.equal((await get('/webhook',{method:'POST',body:'event-1'})).status,202);assert.equal(await (await get('/last-event')).text(),'event-1');
   const counts=await Promise.all(Array.from({length:20},async()=>Number(await (await get('/count')).text())));assert.deepEqual(counts.sort((a,b)=>a-b),Array.from({length:20},(_,i)=>i+1));
+ } else if(mode==='proxy') {
+  assert.equal((await get('/health')).status,200);
+  let r=await get('/fallback?q=a%2Bb');assert.equal(r.status,418);assert.equal(r.headers.get('x-upstream'),'yes');assert.equal(await r.text(),'upstream\x00body');
+  assert.equal((await get('/fallback',{method:'PUT',body:'denied'})).status,405);
  } else if(mode==='fail') {process.exit(7);} else throw Error(mode);
  console.log('PASS client '+mode);process.exit(0);
 }
@@ -37,6 +42,22 @@ try {
  assert.match(run(['--version']).stdout,/^lmmock /);
  assert.deepEqual(JSON.parse(run(['schema']).stdout),JSON.parse(fs.readFileSync('examples/schema.json')));
  assert.notEqual(run(['serve','--dsl','build/api.dslb','--listen','0.0.0.0:0']).status,0);
+ assert.notEqual(run(['serve','--dsl','build/api.dslb','--upstream','http://user:pass@localhost']).status,0);
+ // Async child keeps this in-process upstream responsive on all platforms.
+ const seen=[];
+ const upstream=http.createServer((req,res)=>{seen.push(req.url);res.writeHead(418,{'X-Upstream':'yes'});res.end('upstream\x00body');});
+ await new Promise(resolve=>upstream.listen(0,'127.0.0.1',resolve));
+ try {
+  const audit=path.join(scratch,'proxy-audit.jsonl');
+  const child=spawn(binary,['exec','--dsl','build/api.dslb','--upstream',`http://127.0.0.1:${upstream.address().port}/base/`,'--upstream-read-only','--upstream-timeout','5s','--audit-log',audit,'--',process.execPath,import.meta.filename,binary,'client','proxy'],{env:{...process.env,CLIENT_URL_FILE:path.join(scratch,'proxy-url')},stdio:['ignore','pipe','pipe']});
+  let output='';child.stdout.on('data',b=>{output+=b});child.stderr.on('data',b=>{output+=b});
+  const timer=setTimeout(()=>child.kill('SIGKILL'),15000);
+  try {assert.equal(await new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',resolve)}),0,output);} finally {clearTimeout(timer);}
+  assert.deepEqual(seen,['/base/fallback?q=a%2Bb']);
+  const events=fs.readFileSync(audit,'utf8').trim().split('\n').map(JSON.parse);
+  assert.deepEqual(events.map(e=>[e.kind,e.status]),[['mocked',200],['forwarded',418],['forwarded',405]]);
+  console.log('PASS selective proxy CLI, mock precedence, audit and read-only fallback');
+ } finally {await new Promise(resolve=>upstream.close(resolve));}
  for(const mode of ['api','faults','stateful','fail']) {
   const urlFile=path.join(scratch,'url');const ready=path.join(scratch,'ready.json');
   const source=mode==='fail'?'api':mode;

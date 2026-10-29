@@ -30,11 +30,13 @@ type store struct {
 	counts map[string]int64
 }
 type Engine struct {
-	options Options
-	code    []byte
-	routes  []route
-	state   *store
-	mux     *http.ServeMux
+	options   Options
+	code      []byte
+	routes    []route
+	state     *store
+	mux       *http.ServeMux
+	forwarder *forwarder
+	auditMu   sync.Mutex
 }
 type exchange struct {
 	request *http.Request
@@ -52,6 +54,13 @@ func New(code []byte) (*Engine, error) { return NewWithOptions(code, Options{}) 
 
 func NewWithOptions(code []byte, options Options) (*Engine, error) {
 	e := &Engine{options: options, code: append([]byte(nil), code...), state: &store{values: map[string]string{}, counts: map[string]int64{}}, mux: http.NewServeMux()}
+	var err error
+	if options.Upstream != "" {
+		e.forwarder, err = newForwarder(options)
+		if err != nil {
+			return nil, err
+		}
+	}
 	reg := registry(e.options, e.state, func(method, path, annotation string) error {
 		if !strings.Contains(" GET POST PUT PATCH DELETE HEAD OPTIONS ", " "+method+" ") || !strings.HasPrefix(path, "/") || strings.ContainsAny(path, " \t\r\n?#") {
 			return fmt.Errorf("invalid route %q %q", method, path)
@@ -106,9 +115,47 @@ func (e *Engine) register(r route) (err error) {
 	e.mux.HandleFunc(r.method+" "+r.path, func(w http.ResponseWriter, q *http.Request) { e.handle(r, w, q) })
 	return nil
 }
-func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) { e.mux.ServeHTTP(w, r) }
+func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	_, pattern := e.mux.Handler(r)
+	kind, upstream, failure := "mocked", "", ""
+	if e.options.AuditWriter != nil {
+		response := &auditResponse{ResponseWriter: w}
+		w = response
+		defer func() { e.audit(r, response, kind, upstream, failure, start) }()
+	}
+	if pattern == "" && e.forwarder != nil {
+		// An empty pattern can mean a method mismatch: retain the mux's 405/Allow.
+		probe := r.Clone(r.Context())
+		for _, method := range []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"} {
+			probe.Method = method
+			if _, matched := e.mux.Handler(probe); matched != "" {
+				pattern = matched
+				break
+			}
+		}
+	}
+	if pattern == "" && e.forwarder != nil {
+		kind = "forwarded"
+		var abort bool
+		upstream, failure, abort = e.forwarder.serve(w, r)
+		if abort {
+			panic(http.ErrAbortHandler)
+		}
+		return
+	}
+	if pattern == "" {
+		kind = "unmatched"
+	}
+	e.mux.ServeHTTP(w, r)
+}
 func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
+	limitWriter := w
+	if audited, ok := w.(*auditResponse); ok {
+		// MaxBytesReader needs the native writer's private requestTooLarge hook.
+		limitWriter = audited.ResponseWriter
+	}
+	body, err := io.ReadAll(http.MaxBytesReader(limitWriter, r.Body, 1<<20))
 	if err != nil {
 		http.Error(w, "request body exceeds 1 MiB or cannot be read", http.StatusRequestEntityTooLarge)
 		return
@@ -263,7 +310,7 @@ func Start(e *Engine, address string) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Server{URL: "http://" + listener.Addr().String(), http: &http.Server{Handler: e, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second}, done: make(chan error, 1)}
+	s := &Server{URL: "http://" + listener.Addr().String(), http: &http.Server{Handler: e, DisableGeneralOptionsHandler: e.forwarder != nil, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second}, done: make(chan error, 1)}
 	go func() {
 		err := s.http.Serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
