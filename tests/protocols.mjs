@@ -51,6 +51,26 @@ if(process.argv[3]==='client') {
   for(const [owner,status] of [['forbidden',403],['broken',500],['nobody',404]]) assert.equal((await get('/orgs/'+owner+'/repos')).status,status);
   assert.deepEqual(await (await get('/orgs/weird/repos')).json(),{not:'a list'});
   const denied=await get('/orgs/acme/repos',{Authorization:'Bearer do-not-echo'});assert.equal(denied.status,401);assert.ok(!(await denied.text()).includes('do-not-echo'));
+ } else if(process.argv[4]==='bitbucket') {
+  set({username:'override-user',appPassword:'override-password'});
+  const headers={Authorization:'Basic '+Buffer.from('override-user:override-password').toString('base64')};
+  assert.equal((await fetch(origin+'/2.0/user')).status,401);
+  assert.equal((await fetch(origin+'/2.0/user',{headers})).status,200);
+  const first=await (await fetch(origin+'/2.0/repositories/fixture',{headers})).json();
+  assert.equal(new URL(first.next).origin,origin);
+  const last=await (await fetch(first.next,{headers})).json();
+  assert.equal(last.values[0].slug,'second');assert.equal(Object.hasOwn(last,'next'),false);
+ } else if(process.argv[4]==='circleci') {
+  set({token:'override-token'});
+  assert.equal((await fetch(origin+'/api/v2/me',{headers:{'Circle-Token':'fixture-token'}})).status,401);
+  assert.equal((await fetch(origin+'/api/v2/me',{headers:{'Circle-Token':'override-token'}})).status,200);
+ } else if(process.argv[4]==='paypal') {
+  set({clientId:'override-client',secret:'override-secret',token:'override-access'});
+  const headers={Authorization:'Bearer override-access'};
+  assert.equal((await fetch(origin+'/v1/identity/oauth2/userinfo',{headers})).status,401);
+  const issued=await fetch(origin+'/v1/oauth2/token',{method:'POST',headers:{Authorization:'Basic '+Buffer.from('override-client:override-secret').toString('base64'),'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials'});
+  assert.equal(issued.status,200);assert.equal((await issued.json()).access_token,'override-access');
+  assert.equal((await fetch(origin+'/v1/identity/oauth2/userinfo',{headers})).status,200);
  } else {
   const post=(body,opts={})=>fetch(origin+'/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),...opts});
   const body={model:'test',messages:[{role:'user',content:'ping'}]};
@@ -78,13 +98,13 @@ if(process.argv[3]==='client') {
  console.log('PASS '+process.argv[4]+' protocol and adversarial cases');
 } else {
  const binary=path.resolve(process.argv[2]);const dir=fs.mkdtempSync(path.join(os.tmpdir(),'lmmock protocols '));
- try {for(const scenario of ['oauth','llm','github']) {
+ try {for(const scenario of ['oauth','llm','github','bitbucket','circleci','paypal']) {
   const config=path.join(dir,scenario+'.json');const logFile=path.join(dir,'audit.jsonl');fs.writeFileSync(logFile,'');
   fs.writeFileSync(config,JSON.stringify({clients:{test:{clientSecret:'fixture-secret',redirectUris:['http://127.0.0.1:1/callback'],authStyle:'header'}},requirePkce:true,rotateRefreshTokens:true,logFile}));
   const r=spawnSync(binary,['exec','--dsl',`build/${scenario}.dslb`,'--config',config,'--',process.execPath,import.meta.filename,binary,'client',scenario],{env:{...process.env,MOCK_CONFIG:config},encoding:'utf8',timeout:30000});assert.equal(r.status,0,r.stdout+r.stderr);process.stdout.write(r.stdout);
  }
   // n8n connector presets: each fixture serves its own suite through `exec` + `check`.
-  for(const preset of ['slack','discord','telegram','jira','stripe','notion','airtable','hubspot','gitlab','asana','trello','pagerduty','datadog','linear','twilio','sendgrid','mailchimp']) {
+  for(const preset of ['slack','discord','telegram','jira','stripe','notion','airtable','hubspot','gitlab','asana','trello','pagerduty','datadog','linear','twilio','sendgrid','mailchimp','bitbucket','circleci','paypal']) {
    const r=spawnSync(binary,['exec','--dsl',`build/${preset}.dslb`,'--',binary,'check','--suite',`examples/${preset}-client.json`],{encoding:'utf8',timeout:60000});
    assert.equal(r.status,0,preset+': '+r.stdout+r.stderr);const result=JSON.parse(r.stdout.trim().split('\n').pop());assert.equal(result.ok,true,preset);
    console.log(`PASS ${preset} connector preset (${result.passed} checks)`);

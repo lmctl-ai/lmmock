@@ -230,7 +230,13 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 	text("path", nil, func(x *exchange, _ []lmcode.Value) string { return x.request.URL.Path })
 	text("query", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.URL.Query().Get(a[0].Str) })
 	text("param", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.PathValue(a[0].Str) })
-	text("header", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.Header.Get(a[0].Str) })
+	text("header", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
+		// net/http promotes Host out of Header when parsing an incoming request.
+		if strings.EqualFold(a[0].Str, "Host") {
+			return x.request.Host
+		}
+		return x.request.Header.Get(a[0].Str)
+	})
 	text("body", nil, func(x *exchange, _ []lmcode.Value) string { return x.body })
 	method("status", []string{"int"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
 		if a[0].Int < 200 || a[0].Int > 599 {
