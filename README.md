@@ -128,6 +128,8 @@ package doc comment.
 
 - `redis`: in-memory RESP2 strings, TTL, lists, DB selection, pub/sub and simulated READONLY; config `{"requirepass":"dummy","readonly":false}`.
 - `mqtt`: in-memory Mochi broker with QoS 0/1/2 and optional auth; config `{"users":{"u":"p"}}` (default allow-all). Readiness uses `mqtt://`; lmclient expects the same address with `tcp://`.
+- `smtp`: SMTP sink with AUTH PLAIN/LOGIN; config `users` and optional `spool` JSONL file. [Schema and limits](internal/proto/smtp/smtp.go).
+- `imap`: seeded INBOX or live SMTP spool; LOGIN, LIST/STATUS/SELECT, FETCH/SEARCH and UID variants. Config `users`, `spool`, `messages`; no TLS. [Schema and limits](internal/proto/imap/imap.go).
 
 ## Standalone lifecycle
 
