@@ -46,7 +46,7 @@ CLI on Linux, macOS and Windows.
 ## n8n source basis
 
 The credential and request shapes were inspected in the local n8n checkout under
-packages/nodes-base:
+packages/nodes-base at commit 9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b:
 
 - credentials/NotionApi.credentials.ts and nodes/Notion/v2/NotionV2.node.ts
 - credentials/AirtableTokenApi.credentials.ts and nodes/Airtable/v2/transport/index.ts,
