@@ -43,6 +43,15 @@ func protoCommand(ctx context.Context, args []string) int {
 	if err := f.Parse(args[1:]); err != nil {
 		return 2
 	}
+	if f.NArg() != 0 {
+		fmt.Fprintln(os.Stderr, "unexpected positional arguments")
+		return 2
+	}
+	host, _, err := net.SplitHostPort(*listen)
+	if err != nil || net.ParseIP(host) == nil || !net.ParseIP(host).IsLoopback() {
+		fmt.Fprintln(os.Stderr, "listen address must be a loopback IP (127.0.0.1 or ::1)")
+		return 2
+	}
 	var cfg json.RawMessage
 	if *config != "" {
 		data, err := os.ReadFile(*config)
