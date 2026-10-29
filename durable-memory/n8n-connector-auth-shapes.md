@@ -15,7 +15,7 @@ connectors.
   builds the URL and chooses JSON vs form bodies; the node file lists the
   endpoints by resource/operation.
 
-## Four auth shapes cover nearly everything
+## Common auth shapes
 
 | Shape | Services here | Fixture technique |
 |---|---|---|
@@ -23,6 +23,11 @@ connectors.
 | Vendor-prefixed header | Discord `Authorization: Bot <token>` | same, with the vendor prefix; a Bearer form must be rejected |
 | HTTP Basic | Jira Cloud `email:apiToken` | `basic_id` / `basic_secret` helpers, both compared with `secure_equal` |
 | Secret in the URL path | Telegram `/bot<TOKEN>/<method>`, Discord webhooks `/webhooks/{id}/{token}` | route wildcards; Go's ServeMux needs a whole segment per wildcard, so split `bot<TOKEN>` inside the handler |
+
+The later presets also cover a custom Private-Token header (GitLab) and
+key + token query parameters (Trello). Notion requires a Notion-Version
+header in addition to Bearer auth. See the [Handler and expansion guide](adding-n8n-http-services.md)
+for the complete implementation and validation workflow.
 
 ## Error shapes are part of the contract
 
