@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "name": "agent requests a tool", "method": "POST", "path": "/v1/chat/completions",
+      "body": {"model":"mock-agent","messages":[{"role":"user","content":"Look up Paris"}],"tools":[{"type":"function","function":{"name":"lookup","parameters":{"type":"object"}}}]},
+      "json": {"choices.0.finish_reason":"tool_calls","choices.0.message.tool_calls.0.function.name":"lookup"},
+      "capture": {"call_id":"choices.0.message.tool_calls.0.id","arguments":"choices.0.message.tool_calls.0.function.arguments"}
+    },
+    {
+      "name": "agent submits tool result", "method": "POST", "path": "/v1/chat/completions",
+      "body": {"model":"mock-agent","messages":[{"role":"user","content":"Look up Paris"},{"role":"assistant","content":null,"tool_calls":[{"id":"${call_id}","type":"function","function":{"name":"lookup","arguments":"${arguments}"}}]},{"role":"tool","tool_call_id":"${call_id}","content":"Paris is sunny"}]},
+      "json": {"choices.0.finish_reason":"stop","choices.0.message.content":"Tool result: Paris is sunny"}
+    },
+    {
+      "name": "streaming content", "method": "POST", "path": "/v1/chat/completions",
+      "body": {"model":"mock-agent","messages":[{"role":"user","content":"ping"}],"stream":true},
+      "contains": "data: [DONE]"
+    }
+  ]
+}

@@ -23,6 +23,9 @@ var version = "0.1.0"
 
 func main() { os.Exit(run(os.Args[1:])) }
 func run(args []string) int {
+	if len(args) > 0 && args[0] == "check" {
+		return checkCommand(args[1:])
+	}
 	if len(args) == 1 {
 		switch args[0] {
 		case "--version", "version":
@@ -49,6 +52,7 @@ func run(args []string) int {
 	script := f.String("script", "", "trusted .lms source (requires lmscript)")
 	dsl := f.String("dsl", "", "precompiled .dslb file")
 	listen := f.String("listen", "127.0.0.1:0", "loopback IP:port; 0 chooses a free port")
+	config := f.String("config", "", "trusted JSON configuration file, read by config()")
 	ready := f.String("ready-file", "", "write readiness JSON and remove it on exit")
 	if err := f.Parse(args[1:]); err != nil {
 		return 2
@@ -85,7 +89,7 @@ func run(args []string) int {
 	if err != nil {
 		return fail(err)
 	}
-	engine, err := mock.New(code)
+	engine, err := mock.NewWithOptions(code, mock.Options{ConfigFile: *config})
 	if err != nil {
 		return fail(err)
 	}
@@ -182,6 +186,7 @@ func usage() {
   lmmock serve --script mock.lms [--listen 127.0.0.1:0] [--ready-file ready.json]
   lmmock exec --script mock.lms -- COMMAND [ARG...]
   lmmock exec --dsl mock.dslb -- COMMAND [ARG...]
+  lmmock check --suite assertions.json [--url URL]
   lmmock --version
 exec sets LMMOCK_URL for the client and propagates its exit code.
 serve prints readiness JSON and stops on SIGINT/SIGTERM.

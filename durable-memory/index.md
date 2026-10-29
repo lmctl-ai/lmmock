@@ -9,3 +9,6 @@ Go HTTP mock host backed by lmcode-go v0.6.37. Public repo lmctl-ai/lmmock, MIT.
 - `test.lms` compiles all examples/negative fixtures, runs Go tests, builds with CGO disabled, and runs Node real-process/client integration checks. No Python test driver. `go test` requires those generated build fixtures.
 - Actions tests five native platforms and a Linux race check. Only successful main builds publish binaries, example archive, licenses and checksums.
 - Workspace operator files (`*.lmc`, p1.txt, p2.txt) are local and intentionally excluded from the public repository.
+
+- OAuth/LLM enhancement: helpers.go supplies general configuration, form/crypto and atomic take primitives. examples/oauth.lms implements strict grant policy; examples/llm.lms implements deterministic OpenAI chat/tool/SSE fixtures. scripts use a single-pass while/break for early exits because lmcode does not allow early returns.
+- `lmmock check --suite FILE [--url URL]` is a native HTTP assertion client with captures, dot-path JSON assertions and redacted summaries. tests/protocols.mjs tests protocol failures and replay races. Linux Actions checks released lmcurl v0.1.2 using an isolated v5 compiler (0.2.426); current compiler still builds lmmock v6 scripts.

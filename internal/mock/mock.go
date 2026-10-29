@@ -4,6 +4,7 @@ package mock
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -29,10 +30,11 @@ type store struct {
 	counts map[string]int64
 }
 type Engine struct {
-	code   []byte
-	routes []route
-	state  *store
-	mux    *http.ServeMux
+	options Options
+	code    []byte
+	routes  []route
+	state   *store
+	mux     *http.ServeMux
 }
 type exchange struct {
 	request *http.Request
@@ -46,9 +48,11 @@ type exchange struct {
 }
 
 // New verifies all entries and route bindings before opening any network listener.
-func New(code []byte) (*Engine, error) {
-	e := &Engine{code: append([]byte(nil), code...), state: &store{values: map[string]string{}, counts: map[string]int64{}}, mux: http.NewServeMux()}
-	reg := registry(e.state, func(method, path, annotation string) error {
+func New(code []byte) (*Engine, error) { return NewWithOptions(code, Options{}) }
+
+func NewWithOptions(code []byte, options Options) (*Engine, error) {
+	e := &Engine{options: options, code: append([]byte(nil), code...), state: &store{values: map[string]string{}, counts: map[string]int64{}}, mux: http.NewServeMux()}
+	reg := registry(e.options, e.state, func(method, path, annotation string) error {
 		if !strings.Contains(" GET POST PUT PATCH DELETE HEAD OPTIONS ", " "+method+" ") || !strings.HasPrefix(path, "/") || strings.ContainsAny(path, " \t\r\n?#") {
 			return fmt.Errorf("invalid route %q %q", method, path)
 		}
@@ -111,7 +115,7 @@ func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 	}
 	x := &exchange{request: r, body: string(body), status: 200, headers: make(http.Header), state: e.state}
 	// A fresh registry isolates VM arenas and execution locks between concurrent requests.
-	reg := registry(e.state, func(string, string, string) error { return errors.New("route() is only available during startup") })
+	reg := registry(e.options, e.state, func(string, string, string) error { return errors.New("route() is only available during startup") })
 	p, err := lmcode.Load(e.code, Schema, reg)
 	if err == nil {
 		_, err = p.Call(route.entry, lmcode.NewContext(), reg, []lmcode.Value{lmcode.Object("Exchange", x)})
@@ -144,8 +148,9 @@ func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(x.status)
 	_, _ = io.WriteString(w, x.output)
 }
-func registry(_ *store, add func(string, string, string) error) *lmcode.Registry {
+func registry(options Options, _ *store, add func(string, string, string) error) *lmcode.Registry {
 	reg := lmcode.NewRegistry()
+	helpers(reg, options)
 	must := func(err error) {
 		if err != nil {
 			panic(err)
@@ -164,6 +169,16 @@ func registry(_ *store, add func(string, string, string) error) *lmcode.Registry
 	text := func(name string, params []string, f func(*exchange, []lmcode.Value) string) {
 		method(name, params, "string", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) { return lmcode.String(f(x, a)), nil })
 	}
+	text("request_json", nil, func(x *exchange, _ []lmcode.Value) string {
+		h := map[string]string{}
+		for k, v := range x.request.Header {
+			if len(v) > 0 {
+				h[strings.ToLower(k)] = v[0]
+			}
+		}
+		b, _ := json.Marshal(map[string]any{"method": x.request.Method, "url": x.request.URL.RequestURI(), "headers": h, "body": x.body})
+		return string(b)
+	})
 	text("method", nil, func(x *exchange, _ []lmcode.Value) string { return x.request.Method })
 	text("path", nil, func(x *exchange, _ []lmcode.Value) string { return x.request.URL.Path })
 	text("query", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.URL.Query().Get(a[0].Str) })
@@ -201,6 +216,13 @@ func registry(_ *store, add func(string, string, string) error) *lmcode.Registry
 		return lmcode.None(), nil
 	})
 	method("disconnect", nil, "void", func(x *exchange, _ []lmcode.Value) (lmcode.Value, error) { x.drop = true; return lmcode.None(), nil })
+	text("take", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
+		x.state.Lock()
+		defer x.state.Unlock()
+		v := x.state.values[a[0].Str]
+		delete(x.state.values, a[0].Str)
+		return v
+	})
 	text("get", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
 		x.state.Lock()
 		defer x.state.Unlock()

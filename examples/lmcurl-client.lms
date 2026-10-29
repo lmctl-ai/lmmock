@@ -1,0 +1,16 @@
+# Run inside lmmock exec; uses the released lmcurl client independently.
+base = env("LMMOCK_URL");
+assert(base != "", "run through lmmock exec");
+p = _lmcode_ cli="lmcurl";
+let provider = llm.provider("mock", ${base} + "/v1", "mock-agent");
+let result = provider.chat("ping").send();
+assert_eq(result.status(), 200);
+assert_eq(result.text(), "pong");
+let streamed = provider.chat("ping").stream(true).send();
+assert_eq(streamed.status(), 200);
+assert_eq(streamed.text(), "pong");
+end _lmcode_
+savedsl(p, "build/lmcurl-client.dslb");
+r = system(["lmcurl", "--dsl", "build/lmcurl-client.dslb"]);
+assert(r.code == 0, r.stdout + r.stderr);
+println("PASS released lmcurl chat and SSE against lmmock");

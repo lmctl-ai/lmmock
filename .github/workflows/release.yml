@@ -50,6 +50,21 @@ jobs:
         env:
           CGO_ENABLED: '1'
         run: go test -race ./internal/mock
+      - name: Released lmcurl compatibility (v5 compiler isolated)
+        if: runner.os == 'Linux'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/lmcurl-client"
+          gh release download v0.1.2 --repo lmctl-ai/lmcurl --pattern 'lmcurl-${{ matrix.label }}' --pattern SHA256SUMS --dir "$RUNNER_TEMP/lmcurl-client"
+          cd "$RUNNER_TEMP/lmcurl-client"
+          rg 'lmcurl-${{ matrix.label }}$' SHA256SUMS | sha256sum -c -
+          cp 'lmcurl-${{ matrix.label }}' lmcurl
+          chmod +x lmcurl
+          export PATH="$RUNNER_TEMP/lmcurl-client:$PATH"
+          npm install --prefix "$RUNNER_TEMP/lmcurl-compiler" @lmctl-ai/lmctl@0.2.426
+          cd "$GITHUB_WORKSPACE"
+          build/lmmock exec --dsl build/llm.dslb -- node "$RUNNER_TEMP/lmcurl-compiler/node_modules/@lmctl-ai/lmctl/bin/lmscript" --no-preflight examples/lmcurl-client.lms
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: binary-${{ matrix.label }}
