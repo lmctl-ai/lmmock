@@ -1,0 +1,17 @@
+# Run from the repository root with lmctl test.lms or lmscript test.lms.
+fn step(command) {
+  result = system(command, {timeoutMs:600000});
+  print(result.stdout); print(result.stderr);
+  assert(result.code == 0, "failed: " + json_stringify(command));
+}
+mkdir("build");
+set_env("CGO_ENABLED", "0");
+step(["go", "mod", "verify"]);
+step(["bash", "scripts/compile-examples.sh"]);
+step(["node", "scripts/fixtures.mjs"]);
+step(["bash", "scripts/compile-fixtures.sh"]);
+step(["go", "test", "./..."]);
+ext = ""; if (env("RUNNER_OS") == "Windows") { ext = ".exe"; }
+version = env("SAMPLE_VERSION") || "0.1.0";
+step(["go", "build", "-trimpath", "-ldflags=-s -w -X main.version=" + version, "-o", "build/lmmock" + ext, "./cmd/lmmock"]);
+step(["node", "tests/integration.mjs", "build/lmmock" + ext]);

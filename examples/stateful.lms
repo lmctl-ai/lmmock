@@ -1,0 +1,13 @@
+# Webhook receiver, state readback, and atomic request counter.
+program = _lmcode_ schema="schema.json";
+@save
+fn save_event(x: Exchange) -> void implements Handler { x.set("last-event", x.body()); x.status(202); x.send("accepted"); }
+@read
+fn read_event(x: Exchange) -> void implements Handler { x.send(x.get("last-event")); }
+@count
+fn count_requests(x: Exchange) -> void implements Handler { x.send(str(x.increment("requests"))); }
+route("POST", "/webhook", "save");
+route("GET", "/last-event", "read");
+route("GET", "/count", "count");
+end _lmcode_
+savedsl(program, ARGV[0]);

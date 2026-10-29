@@ -1,0 +1,21 @@
+program = _lmcode_ schema="schema.json";
+@retry
+fn flaky(x: Exchange) -> void implements Handler {
+  if (x.increment("attempts") < 3) { x.status(503); x.set_header("Retry-After", "0"); x.send("try again"); }
+  else { x.send("recovered"); }
+}
+@slow
+fn slow_response(x: Exchange) -> void implements Handler { x.delay(500); x.send("late response"); }
+@drop
+fn broken_connection(x: Exchange) -> void implements Handler { x.disconnect(); }
+@bad_json
+fn malformed(x: Exchange) -> void implements Handler { x.json("{broken"); }
+@failure
+fn server_error(x: Exchange) -> void implements Handler { x.status(500); x.json("{\"error\":\"injected\"}"); }
+route("GET", "/retry", "retry");
+route("GET", "/slow", "slow");
+route("GET", "/disconnect", "drop");
+route("GET", "/malformed", "bad_json");
+route("GET", "/error", "failure");
+end _lmcode_
+savedsl(program, ARGV[0]);

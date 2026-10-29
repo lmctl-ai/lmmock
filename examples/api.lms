@@ -1,0 +1,20 @@
+# REST/auth/echo mock. Compile with: lmscript examples/api.lms build/api.dslb
+program = _lmcode_ schema="schema.json";
+@health
+fn healthcheck(x: Exchange) -> void implements Handler { x.json("{\"ok\":true}"); }
+@echo
+fn echo_body(x: Exchange) -> void implements Handler {
+  x.set_header("Content-Type", "application/octet-stream");
+  x.set_header("X-Method", x.method());
+  x.send(x.body());
+}
+@user
+fn user_lookup(x: Exchange) -> void implements Handler {
+  if (x.header("Authorization") != "Bearer test-token") { x.status(401); x.json("{\"error\":\"unauthorized\"}"); }
+  else { x.set_header("X-User", x.param("id")); x.send(x.query("name")); }
+}
+route("GET", "/health", "health");
+route("POST", "/echo", "echo");
+route("GET", "/users/{id}", "user");
+end _lmcode_
+savedsl(program, ARGV[0]);
