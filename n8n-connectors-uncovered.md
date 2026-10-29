@@ -8,7 +8,8 @@ PagerDuty and Linear now have selected HTTP contract fixtures (see
 [coverage and limitations](docs/http-presets.md)); their rows below remain in
 this historical snapshot because full node/trigger coverage is still open.
 Datadog now has a credential/HTTP-request fixture but is absent from the node-only
-inventory. Counts below describe the original snapshot, not current coverage.
+inventory. Counts retain the snapshot classifications except Twilio, SendGrid and Mailchimp,
+which have moved to the partial-service table in Wave 9.
 
 ## Inventory and counting
 
@@ -19,7 +20,7 @@ inventory. Counts below describe the original snapshot, not current coverage.
 - Inventory comes from each package.json n8n.nodes array, not a recursive count of test files or an older installed n8n package.
 - Scope excludes community packages and credentials with no registered node. Source links below identify every registration in the two manifests.
 
-Base-family classification: **222 without a dedicated mock**, **12 with partial service scripts**,
+Base-family classification: **219 without a dedicated mock**, **15 with partial service scripts**,
 **9 with protocol-level subsets**, **1 OpenAI family with partial transport**, and
 **64 utility/plumbing families**. No category claims complete n8n operation coverage.
 
@@ -132,7 +133,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | LoneScale | [LoneScaleTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/LoneScale/LoneScaleTrigger.node.ts), [LoneScale](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/LoneScale/LoneScale.node.ts) |
 | Magento | [Magento2](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Magento/Magento2.node.ts) |
 | Mailcheck | [Mailcheck](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailcheck/Mailcheck.node.ts) |
-| Mailchimp | [Mailchimp](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailchimp/Mailchimp.node.ts), [MailchimpTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailchimp/MailchimpTrigger.node.ts) |
 | MailerLite | [MailerLite](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/MailerLite/MailerLite.node.ts), [MailerLiteTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/MailerLite/MailerLiteTrigger.node.ts) |
 | Mailgun | [Mailgun](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailgun/Mailgun.node.ts) |
 | Mailjet | [Mailjet](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailjet/Mailjet.node.ts), [MailjetTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailjet/MailjetTrigger.node.ts) |
@@ -199,7 +199,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | SeaTable | [SeaTable](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/SeaTable/SeaTable.node.ts), [SeaTableTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/SeaTable/SeaTableTrigger.node.ts) |
 | SecurityScorecard | [SecurityScorecard](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/SecurityScorecard/SecurityScorecard.node.ts) |
 | Segment | [Segment](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Segment/Segment.node.ts) |
-| SendGrid | [SendGrid](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/SendGrid/SendGrid.node.ts) |
 | Sendy | [Sendy](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Sendy/Sendy.node.ts) |
 | SentryIo | [SentryIo](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/SentryIo/SentryIo.node.ts) |
 | ServiceNow | [ServiceNow](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/ServiceNow/ServiceNow.node.ts) |
@@ -227,7 +226,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | Toggl | [TogglTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Toggl/TogglTrigger.node.ts) |
 | TravisCi | [TravisCi](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/TravisCi/TravisCi.node.ts) |
 | Twake | [Twake](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twake/Twake.node.ts) |
-| Twilio | [Twilio](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twilio/Twilio.node.ts), [TwilioTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twilio/TwilioTrigger.node.ts) |
 | Twist | [Twist](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twist/Twist.node.ts) |
 | Twitter | [Twitter](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twitter/Twitter.node.ts) |
 | Typeform | [TypeformTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Typeform/TypeformTrigger.node.ts) |
@@ -265,6 +263,9 @@ vendor datastore. See [HTTP preset limits](docs/http-presets.md).
 
 | Family | Existing script | Registered nodes requiring operation-by-operation expansion |
 | --- | --- | --- |
+| Mailchimp | [examples/mailchimp.lms](examples/mailchimp.lms) | [Mailchimp](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailchimp/Mailchimp.node.ts), [MailchimpTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailchimp/MailchimpTrigger.node.ts) |
+| SendGrid | [examples/sendgrid.lms](examples/sendgrid.lms) | [SendGrid](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/SendGrid/SendGrid.node.ts) |
+| Twilio | [examples/twilio.lms](examples/twilio.lms) | [Twilio](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twilio/Twilio.node.ts), [TwilioTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twilio/TwilioTrigger.node.ts) |
 | Airtable | [examples/airtable.lms](examples/airtable.lms) | [Airtable](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Airtable/Airtable.node.ts), [AirtableTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Airtable/AirtableTrigger.node.ts) |
 | Asana | [examples/asana.lms](examples/asana.lms) | [Asana](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Asana/Asana.node.ts), [AsanaTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Asana/AsanaTrigger.node.ts) |
 | Discord | [examples/discord.lms](examples/discord.lms) | [Discord](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Discord/Discord.node.ts) |

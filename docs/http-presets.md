@@ -107,3 +107,45 @@ Supplementary vendor references: [PagerDuty errors](https://docs.pagerduty.com/d
 [Datadog authentication](https://docs.datadoghq.com/api/latest/authentication/),
 and [Linear rate limiting](https://linear.app/developers/rate-limiting).
 Error envelopes and statuses follow these contracts; messages are simplified.
+
+## Twilio, SendGrid and Mailchimp (Wave 9)
+
+These selected contracts were mined from n8n commit
+`dd5f870ecc38344951fb3956f1a7ba7852612c70`, under `packages/nodes-base`:
+
+| Preset | Source files inspected | Routes and limits |
+| --- | --- | --- |
+| twilio | `credentials/TwilioApi.credentials.ts`, `nodes/Twilio/GenericFunctions.ts`, `nodes/Twilio/Twilio.node.ts` | GET `/2010-04-01/Accounts/{sid}.json`; POST `Messages.json` and `Calls.json` under the account; GET each created resource by SID. Form encoding, Basic AccountSID:AuthToken. |
+| sendgrid | `credentials/SendGridApi.credentials.ts`, `nodes/SendGrid/GenericFunctions.ts`, `nodes/SendGrid/SendGrid.node.ts`, `nodes/SendGrid/test/SendGrid.node.test.ts`, `nodes/SendGrid/__schema__/v1.0.0/list/create.json` | GET `/v3/scopes`; POST `/v3/mail/send` returns empty 202; GET/POST `/v3/marketing/lists`; GET a list by ID. Bearer auth, JSON bodies. |
+| mailchimp | `credentials/MailchimpApi.credentials.ts`, `nodes/Mailchimp/GenericFunctions.ts`, `nodes/Mailchimp/Mailchimp.node.ts` | GET `/3.0/lists` (credential test); GET campaigns and a campaign by ID; POST campaign `actions/replicate` and `actions/send` (empty 204). n8n's `apikey` auth header, JSON bodies. |
+
+Twilio defaults to `ACfixture:fixture-token`; override with config fields
+`accountSid` and `authToken`. SendGrid defaults to `fixture-token`, Mailchimp to
+`fixture-token-us1`; each accepts a `token` config override. All are dummy values.
+These presets accept only credential config knobs. `X-Lmmock-Fault: 429` on an
+authenticated request selects the deterministic rate-limit response.
+
+Twilio SID values are synthetic, voice/media validation is minimal, and no
+messages or calls are delivered. API-key SID authentication, Twilio events,
+webhooks and status transitions are deferred. SendGrid uses a single-page list
+snapshot with empty `_metadata` (no `next`), as required to terminate n8n's loop.
+Created lists support read-back but do not join that snapshot. Mail accepts a
+minimal required-field check; templates, contact search and real delivery are
+not modeled.
+
+Mailchimp uses n8n's actual `apikey` header and `/lists` credential test, rather
+than Basic auth and `/ping`. Datacenter selection is replaced by loopback;
+OAuth and Basic auth are outside this selected n8n contract. List snapshots
+contain one item at offset zero and terminate with an empty page at positive
+offset, matching n8n's offset loop. Count/filter behavior is not general.
+`campaign-fixture` is the seed campaign; replicas support read-back and sending
+updates their local status only. No actual campaign delivery or trigger flows.
+
+Errors preserve vendor envelopes and statuses with simplified deterministic
+messages, based on [Twilio responses](https://www.twilio.com/docs/usage/twilios-response),
+[Twilio 20429](https://www.twilio.com/docs/api/errors/20429),
+[SendGrid errors](https://www.twilio.com/docs/sendgrid/api-reference/how-to-use-the-sendgrid-v3-api/errors),
+and [Mailchimp errors](https://mailchimp.com/developer/marketing/api-concepts/errors).
+Suites cover missing/wrong auth, faults, missing resources and read-after-create.
+They run both through the native checker and the real lmconn HTTP CLI; they do
+not execute n8n or contact the live vendors.
