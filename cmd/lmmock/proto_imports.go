@@ -6,4 +6,7 @@ package main
 // Wave-7 protocol packages register themselves here as they land, e.g.:
 //
 //	_ "github.com/lmctl-ai/lmmock/internal/proto/redis"
-import ()
+import (
+	_ "github.com/lmctl-ai/lmmock/internal/proto/mqtt"
+	_ "github.com/lmctl-ai/lmmock/internal/proto/redis"
+)
