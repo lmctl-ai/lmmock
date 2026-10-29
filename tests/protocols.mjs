@@ -104,10 +104,19 @@ if(process.argv[3]==='client') {
   const r=spawnSync(binary,['exec','--dsl',`build/${scenario}.dslb`,'--config',config,'--',process.execPath,import.meta.filename,binary,'client',scenario],{env:{...process.env,MOCK_CONFIG:config},encoding:'utf8',timeout:30000});assert.equal(r.status,0,r.stdout+r.stderr);process.stdout.write(r.stdout);
  }
   // n8n connector presets: each fixture serves its own suite through `exec` + `check`.
-  for(const preset of ['slack','discord','telegram','jira','stripe','notion','airtable','hubspot','gitlab','asana','trello','pagerduty','datadog','linear','twilio','sendgrid','mailchimp','bitbucket','circleci','paypal','dropbox','box','cloudflare']) {
+  for(const preset of ['slack','discord','telegram','jira','stripe','notion','airtable','hubspot','gitlab','asana','trello','pagerduty','datadog','linear','twilio','sendgrid','mailchimp','bitbucket','circleci','paypal','dropbox','box','cloudflare','shopify','wordpress','woocommerce']) {
    const r=spawnSync(binary,['exec','--dsl',`build/${preset}.dslb`,'--',binary,'check','--suite',`examples/${preset}-client.json`],{encoding:'utf8',timeout:60000});
    assert.equal(r.status,0,preset+': '+r.stdout+r.stderr);const result=JSON.parse(r.stdout.trim().split('\n').pop());assert.equal(result.ok,true,preset);
    console.log(`PASS ${preset} connector preset (${result.passed} checks)`);
+  }
+  for (const preset of ['shopify','wordpress','woocommerce']) {
+   const config=path.join(dir,preset+'.json');
+   fs.writeFileSync(config,JSON.stringify({token:'override-token',username:'override-user',password:'override-secret',consumerKey:'override-user',consumerSecret:'override-secret'}));
+   for (const mode of ['paging','override']) {
+    const args=['exec','--dsl',`build/${preset}.dslb`,...(mode==='override'?['--config',config]:[]),'--',process.execPath,'tests/commerce.mjs',preset,mode];
+    const r=spawnSync(binary,args,{encoding:'utf8',timeout:30000});
+    assert.equal(r.status,0,r.stdout+r.stderr);process.stdout.write(r.stdout);
+   }
   }
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 }
