@@ -109,6 +109,8 @@ JSON, collection, codec, and file functions are available as well.
 
 ## Protocol mock servers
 
+- `kafka`: one in-memory plaintext broker (kfake); optional `{"topics":{"events":1}}` seeds partitions, missing topics auto-create; supports lmclient ping/produce/consume, including idempotent producers. See [config and Java verification](docs/kafka.md).
+
 - `mongodb`: auth-less in-memory MongoDB wire mock; ping, insert/find/delete, numeric `$gt`, basic `$set` updates/count and database/collection listing. Config: `{"maxDocuments":10000}`; SCRAM deferred.
 - `postgres`: PostgreSQL v3 startup/auth, simple and prepared queries, canned SQL fixtures (`lmmock proto postgres`).
 
