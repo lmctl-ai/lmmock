@@ -58,7 +58,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/lmcurl-client"
           gh release download v0.1.2 --repo lmctl-ai/lmcurl --pattern 'lmcurl-${{ matrix.label }}' --pattern SHA256SUMS --dir "$RUNNER_TEMP/lmcurl-client"
           cd "$RUNNER_TEMP/lmcurl-client"
-          rg 'lmcurl-${{ matrix.label }}$' SHA256SUMS | sha256sum -c -
+          grep 'lmcurl-${{ matrix.label }}$' SHA256SUMS | sha256sum -c -
           cp 'lmcurl-${{ matrix.label }}' lmcurl
           chmod +x lmcurl
           export PATH="$RUNNER_TEMP/lmcurl-client:$PATH"
