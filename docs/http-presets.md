@@ -12,8 +12,11 @@ Edit the handlers to change the fixture behavior.
 | gitlab.lms | Private-Token header | personal_access_tokens/self, paged project 1 issues, create/read issues |
 | asana.lms | Bearer token | users/me, paged tasks with next_page, create/read tasks |
 | trello.lms | key and token query parameters | members/me, tokens/{token}/member, board-fixture cards, create/read cards, before pagination termination |
+| clickup.lms | raw personal token in Authorization (no Bearer) | team (credential test), team 9001 spaces, space 90010001 lists, list 901 tasks paged by ?page= until an empty page, create/read/delete tasks |
+| typeform.lms | `bearer` token (any scheme case) | forms paged by page/page_count, form fxtr001 definition, webhooks list/PUT/read/DELETE (204) on forms fxtr001..fxtr003 |
 
-Default token: fixture-token. Trello also requires key=fixture-key.
+Default token: fixture-token. Trello also requires key=fixture-key. ClickUp uses
+pk_fixture_clickup_token and Typeform tfp_fixture_typeform_token.
 Override these with --config pointing to {"token":"another-test-token","key":"another-test-key"}.
 All credentials in the examples are synthetic.
 
@@ -55,6 +58,14 @@ packages/nodes-base at commit 9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b:
 - credentials/GitlabApi.credentials.ts and nodes/Gitlab/GenericFunctions.ts
 - credentials/AsanaApi.credentials.ts and nodes/Asana/GenericFunctions.ts
 - credentials/TrelloApi.credentials.ts and nodes/Trello/GenericFunctions.ts
+- credentials/ClickUpApi.credentials.ts, nodes/ClickUp/GenericFunctions.ts (page loop until an
+  empty page), nodes/ClickUp/ClickUp.node.ts and nodes/ClickUp/__schema__/v1.0.0/task/*.json
+  (response field names); the {"err","ECODE"} error bodies come from ClickUp's public API
+  documentation, n8n does not inspect them (checkout dd5f870ecc38344951fb3956f1a7ba7852612c70)
+- credentials/TypeformApi.credentials.ts (lowercase "bearer" scheme, credential test GET /forms),
+  nodes/Typeform/GenericFunctions.ts (page/page_size loop until page_count <= page) and
+  nodes/Typeform/TypeformTrigger.node.ts (PUT/DELETE forms/{id}/webhooks/{tag}); the
+  {"code","description"} error bodies follow Typeform's public API documentation
 
 The CI suites use lmconn and the native lmmock client. They do not execute n8n
 itself or call live vendor APIs.
