@@ -221,6 +221,31 @@ headers and body for test assertions. The connector/LLM fixtures expose this
 through `/__inspect`; that endpoint contains request data and must only receive
 synthetic test credentials. It is not a request log.
 
+## n8n connector presets
+
+Canned fixtures for the HTTP services behind the most-used n8n connector nodes,
+so an lmclient or lmscript connector for them can be tested offline on every
+platform. Each fixture enforces the vendor's real auth shape, answers the core
+routes its n8n node exercises with deterministic data, returns the vendor's own
+error shape on missing or wrong credentials, and has a fault route for
+retry/backoff testing. Defaults can be overridden with `--config` (see each
+fixture's header comment); the dummy credentials are fixtures, never real keys.
+
+| Fixture | Mined from (n8n `packages/nodes-base`) | Auth | Core routes | Fault route |
+| --- | --- | --- | --- | --- |
+| `examples/slack.lms` | `nodes/Slack/V2`, `credentials/SlackApi` | `Authorization: Bearer xoxb-fixture-token`; failures are HTTP 200 `{"ok":false,"error":"not_authed"\|"invalid_auth"}` | `/api/auth.test`, `chat.postMessage`, `chat.update`, `conversations.list`, `users.list`, `users.info` | channel `C0RATELIMIT` -> 429 `ratelimited` + Retry-After |
+| `examples/discord.lms` | `nodes/Discord/v2/transport`, `credentials/DiscordBotApi`, `DiscordWebhookApi` | `Authorization: Bot fixture-bot-token`; 401 `{"message":"401: Unauthorized","code":0}`; webhooks by path token | `/api/v10/users/@me/guilds`, `guilds/{id}/channels`, `guilds/{id}/members`, `channels/{id}/messages` (GET/POST), `/api/webhooks/{id}/{token}` | channel `...429` -> 429 `retry_after`; `...500` -> 500 |
+| `examples/telegram.lms` | `nodes/Telegram/GenericFunctions.ts`, `credentials/TelegramApi` | token in the path `/bot123456:fixture-telegram-token/<method>`; 401 `{"ok":false,"error_code":401}` | `getMe`, `sendMessage` (JSON or form), `sendPhoto`, `sendDocument`, `getChat`, `getUpdates`, `sendChatAction` | `chat_id` 429 -> 429 with `parameters.retry_after`; 500 -> 500 |
+| `examples/jira.lms` | `nodes/Jira/GenericFunctions.ts` (`/rest/api/2`), `credentials/JiraSoftwareCloudApi` | HTTP Basic `fixture@example.test:fixture-api-token`; 401/404 `{"errorMessages":[...],"errors":{}}` | `/rest/api/2/myself`, `issue/{key}`, `POST issue` (201), `search`, `project` | issue `FIX-429` -> 429 + Retry-After; `FIX-500` -> 500 |
+| `examples/stripe.lms` | `nodes/Stripe/helpers.ts` (form bodies), `credentials/StripeApi` | `Authorization: Bearer sk_test_fixture`; 401 `{"error":{"type":"invalid_request_error"}}`, key never echoed | `/v1/balance`, `customers` (GET/POST form, `{id}`), `charges` (GET/POST form), `tokens` | `amount=429` -> 429 `rate_limit_error`; `amount=500` -> 500 `api_error` |
+
+Each preset ships an assertion suite, `examples/<service>-client.json`, run by
+`tests/protocols.mjs`:
+
+```sh
+lmmock exec --dsl build/slack.dslb -- lmmock check --suite examples/slack-client.json
+```
+
 ## LLM and agent workflow tests
 
 [examples/llm.lms](examples/llm.lms) serves the shared OpenAI-compatible route family below. It returns

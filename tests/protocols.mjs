@@ -82,5 +82,12 @@ if(process.argv[3]==='client') {
   const config=path.join(dir,scenario+'.json');const logFile=path.join(dir,'audit.jsonl');fs.writeFileSync(logFile,'');
   fs.writeFileSync(config,JSON.stringify({clients:{test:{clientSecret:'fixture-secret',redirectUris:['http://127.0.0.1:1/callback'],authStyle:'header'}},requirePkce:true,rotateRefreshTokens:true,logFile}));
   const r=spawnSync(binary,['exec','--dsl',`build/${scenario}.dslb`,'--config',config,'--',process.execPath,import.meta.filename,binary,'client',scenario],{env:{...process.env,MOCK_CONFIG:config},encoding:'utf8',timeout:30000});assert.equal(r.status,0,r.stdout+r.stderr);process.stdout.write(r.stdout);
- }}finally{fs.rmSync(dir,{recursive:true,force:true});}
+ }
+  // n8n connector presets: each fixture serves its own suite through `exec` + `check`.
+  for(const preset of ['slack','discord','telegram','jira','stripe']) {
+   const r=spawnSync(binary,['exec','--dsl',`build/${preset}.dslb`,'--',binary,'check','--suite',`examples/${preset}-client.json`],{encoding:'utf8',timeout:60000});
+   assert.equal(r.status,0,preset+': '+r.stdout+r.stderr);const result=JSON.parse(r.stdout.trim().split('\n').pop());assert.equal(result.ok,true,preset);
+   console.log(`PASS ${preset} connector preset (${result.passed} checks)`);
+  }
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
 }
