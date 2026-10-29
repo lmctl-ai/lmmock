@@ -175,3 +175,10 @@ Wave 9 adds PagerDuty, Datadog and Linear selected contracts; see the coverage
 section in docs/http-presets.md for routes and source provenance. Note that
 Datadog is credential-only in the inspected n8n checkout, and Linear API keys
 use raw Authorization while OAuth uses Bearer. Do not infer auth from a hint.
+
+Wave 9 additions: `bitbucket`, `circleci`, `paypal` are registered in both runners.
+See docs/http-presets.md for exact source revisions, credential overrides and
+limits. CircleCI's base includes `/api`; PayPal's token request is form encoded,
+not JSON. Bitbucket's Basic credential test lives in the trigger node rather
+than the credential class. CircleCI/PayPal credential classes have no test in
+the inspected checkout; their documented identity probes supplement operations.

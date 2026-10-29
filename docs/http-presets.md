@@ -149,3 +149,71 @@ and [Mailchimp errors](https://mailchimp.com/developer/marketing/api-concepts/er
 Suites cover missing/wrong auth, faults, missing resources and read-after-create.
 They run both through the native checker and the real lmconn HTTP CLI; they do
 not execute n8n or contact the live vendors.
+
+## Bitbucket, CircleCI and PayPal (Wave 9)
+
+These presets add selected contracts, not complete vendor coverage. Their native
+and real-lmconn suites check happy paths, creation/read-back, missing resources,
+invalid arguments, missing/wrong credentials and authenticated fault responses.
+Credential overrides are the only configuration knobs. All defaults are dummy values.
+
+| Preset | Routes | Configuration |
+| --- | --- | --- |
+| bitbucket | GET /2.0/user; GET /2.0/user/workspaces; GET /2.0/repositories/{workspace}; GET/POST /2.0/repositories/{workspace}/{repo}/hooks | username=fixture-user, appPassword=fixture-password; HTTP Basic |
+| circleci | GET /api/v2/me; GET/POST /api/v2/project/{vcs}/{slug}/pipeline; GET same path/{number} | token=fixture-token; Circle-Token header |
+| paypal | POST /v1/oauth2/token; GET /v1/identity/oauth2/userinfo; POST /v1/payments/payouts; GET same path/{id}; GET /v1/notifications/webhooks-event-types | clientId=fixture-client, secret=fixture-secret, token=fixture-access-token |
+
+Bitbucket models n8n's legacy Basic app-password path. `/2.0/user` is the actual
+node credential test. Workspace `fixture` and repository `demo` are fixed.
+Repository pages contain two canned snapshots, with a loopback `next` URL on the
+first page and no `next` on the last. Native adversarial checks follow the returned
+URL and assert termination; suites check both pages. Hook creation stores the
+latest hook for list/read-back; multiple hooks, deletion, real callback delivery,
+workspace hooks and access-token authentication remain deferred. Hook IDs are
+synthetic strings rather than vendor UUIDs. Error text is simplified within the
+Bitbucket `type:error` / `error.message` envelope. X-Lmmock-Fault: 429 triggers
+an authenticated rate-limit response with Retry-After: 1.
+
+CircleCI uses the `/api/v2` base from n8n (not `/v2` alone). Its project is
+`gh/fixture/demo`, with `fixture%2Fdemo` encoded as one path segment exactly as
+CircleCi.node.ts constructs it. List pagination returns `next_page_token` and
+terminates at null; suites reuse that token. Triggered pipelines are stored by
+number for read-back but not added to list snapshots. There is no job execution,
+workflow API, arbitrary filtering or permission model. Branch and tag together
+are rejected; tags are accepted but tag-specific execution semantics are not
+modeled. `/me` is an identity probe: this n8n credential class defines no test.
+X-Lmmock-Fault: 429 returns a message envelope and Retry-After: 1.
+
+PayPal requires Basic clientId:secret plus Content-Type application/x-www-form-urlencoded
+and `grant_type=client_credentials` in the form body. JSON grants and other grants
+are rejected. The issued token is captured and reused by both contract clients.
+Protected routes reject tokens before issuance. Tokens are deterministic and do
+not expire; scopes, refresh, multiple clients and real money movement are absent.
+Payout batches preserve submitted headers/items and return terminal empty links;
+there is no payout processing, item lifecycle or multi-page batch pagination.
+The userinfo route is a synthetic identity probe, not proof that a production
+client-credentials token has user-consent scopes; n8n itself does not call it.
+The credential class defines no test; the token exchange is its actual auth path.
+X-Lmmock-Fault: 500 returns an authenticated INTERNAL_SERVER_ERROR envelope.
+Webhook event enumeration is canned; subscription and signature verification
+remain deferred. No external URL is fetched by any of these scripts.
+
+Source basis: local n8n commit `dd5f870ecc38344951fb3956f1a7ba7852612c70`, paths
+under packages/nodes-base:
+
+- credentials/BitbucketApi.credentials.ts; nodes/Bitbucket/GenericFunctions.ts,
+  BitbucketTrigger.node.ts and test/GenericFunctions.test.ts.
+- credentials/CircleCiApi.credentials.ts; nodes/CircleCi/GenericFunctions.ts
+  and CircleCi.node.ts.
+- credentials/PayPalApi.credentials.ts; nodes/PayPal/GenericFunctions.ts,
+  PayPal.node.ts and PayPalTrigger.node.ts.
+
+Error-envelope and endpoint references supplement the n8n request sources:
+[Bitbucket REST errors](https://developer.atlassian.com/cloud/bitbucket/rest/intro/),
+[CircleCI v2](https://circleci.com/docs/api/v2/),
+[PayPal authentication](https://developer.paypal.com/api/rest/authentication),
+[PayPal payouts](https://developer.paypal.com/api/payments.payouts-batch/v1).
+
+Bitbucket pagination needs the Host-header accessor correction shipped with these
+fixtures. Older hosts returned an empty Host, producing an invalid absolute next
+URL. Use a host built from this change or a later release for pagination fidelity.

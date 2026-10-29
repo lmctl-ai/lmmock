@@ -8,8 +8,8 @@ PagerDuty and Linear now have selected HTTP contract fixtures (see
 [coverage and limitations](docs/http-presets.md)); their rows below remain in
 this historical snapshot because full node/trigger coverage is still open.
 Datadog now has a credential/HTTP-request fixture but is absent from the node-only
-inventory. Counts retain the snapshot classifications except Twilio, SendGrid and Mailchimp,
-which have moved to the partial-service table in Wave 9.
+inventory. Counts reflect the table classification, including Wave 9 moves of
+Twilio, SendGrid, Mailchimp, Bitbucket, CircleCI and PayPal to partial scripts.
 
 ## Inventory and counting
 
@@ -20,7 +20,7 @@ which have moved to the partial-service table in Wave 9.
 - Inventory comes from each package.json n8n.nodes array, not a recursive count of test files or an older installed n8n package.
 - Scope excludes community packages and credentials with no registered node. Source links below identify every registration in the two manifests.
 
-Base-family classification: **219 without a dedicated mock**, **15 with partial service scripts**,
+Base-family classification: **216 without a dedicated mock**, **18 with partial service scripts**,
 **9 with protocol-level subsets**, **1 OpenAI family with partial transport**, and
 **64 utility/plumbing families**. No category claims complete n8n operation coverage.
 
@@ -47,7 +47,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | Bannerbear | [Bannerbear](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bannerbear/Bannerbear.node.ts) |
 | Baserow | [Baserow](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Baserow/Baserow.node.ts) |
 | Beeminder | [Beeminder](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Beeminder/Beeminder.node.ts) |
-| Bitbucket | [BitbucketTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bitbucket/BitbucketTrigger.node.ts) |
 | Bitly | [Bitly](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bitly/Bitly.node.ts) |
 | Bitwarden | [Bitwarden](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bitwarden/Bitwarden.node.ts) |
 | Box | [Box](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Box/Box.node.ts), [BoxTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Box/BoxTrigger.node.ts) |
@@ -57,7 +56,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | Cal | [CalTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Cal/CalTrigger.node.ts) |
 | Calendly | [CalendlyTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Calendly/CalendlyTrigger.node.ts) |
 | Chargebee | [Chargebee](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Chargebee/Chargebee.node.ts), [ChargebeeTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Chargebee/ChargebeeTrigger.node.ts) |
-| CircleCi | [CircleCi](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/CircleCi/CircleCi.node.ts) |
 | Cisco | [CiscoWebex](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Cisco/Webex/CiscoWebex.node.ts), [CiscoWebexTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Cisco/Webex/CiscoWebexTrigger.node.ts) |
 | Clearbit | [Clearbit](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Clearbit/Clearbit.node.ts) |
 | ClickUp | [ClickUp](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/ClickUp/ClickUp.node.ts), [ClickUpTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/ClickUp/ClickUpTrigger.node.ts) |
@@ -171,7 +169,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | Oura | [Oura](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Oura/Oura.node.ts) |
 | Paddle | [Paddle](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Paddle/Paddle.node.ts) |
 | PagerDuty | [PagerDuty](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/PagerDuty/PagerDuty.node.ts) |
-| PayPal | [PayPal](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/PayPal/PayPal.node.ts), [PayPalTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/PayPal/PayPalTrigger.node.ts) |
 | Peekalink | [Peekalink](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Peekalink/Peekalink.node.ts) |
 | Perplexity | [Perplexity](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Perplexity/Perplexity.node.ts) |
 | Phantombuster | [Phantombuster](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Phantombuster/Phantombuster.node.ts) |
@@ -266,6 +263,10 @@ vendor datastore. See [HTTP preset limits](docs/http-presets.md).
 | Mailchimp | [examples/mailchimp.lms](examples/mailchimp.lms) | [Mailchimp](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailchimp/Mailchimp.node.ts), [MailchimpTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Mailchimp/MailchimpTrigger.node.ts) |
 | SendGrid | [examples/sendgrid.lms](examples/sendgrid.lms) | [SendGrid](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/SendGrid/SendGrid.node.ts) |
 | Twilio | [examples/twilio.lms](examples/twilio.lms) | [Twilio](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twilio/Twilio.node.ts), [TwilioTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Twilio/TwilioTrigger.node.ts) |
+
+| Bitbucket | [examples/bitbucket.lms](examples/bitbucket.lms) | [BitbucketTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bitbucket/BitbucketTrigger.node.ts) |
+| CircleCi | [examples/circleci.lms](examples/circleci.lms) | [CircleCi](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/CircleCi/CircleCi.node.ts) |
+| PayPal | [examples/paypal.lms](examples/paypal.lms) | [PayPal](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/PayPal/PayPal.node.ts), [PayPalTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/PayPal/PayPalTrigger.node.ts) |
 | Airtable | [examples/airtable.lms](examples/airtable.lms) | [Airtable](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Airtable/Airtable.node.ts), [AirtableTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Airtable/AirtableTrigger.node.ts) |
 | Asana | [examples/asana.lms](examples/asana.lms) | [Asana](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Asana/Asana.node.ts), [AsanaTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Asana/AsanaTrigger.node.ts) |
 | Discord | [examples/discord.lms](examples/discord.lms) | [Discord](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Discord/Discord.node.ts) |
