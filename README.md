@@ -243,6 +243,10 @@ fixture's header comment); the dummy credentials are fixtures, never real keys.
 | `examples/jira.lms` | `nodes/Jira/GenericFunctions.ts` (`/rest/api/2`), `credentials/JiraSoftwareCloudApi` | HTTP Basic `fixture@example.test:fixture-api-token`; 401/404 `{"errorMessages":[...],"errors":{}}` | `/rest/api/2/myself`, `issue/{key}`, `POST issue` (201), `search`, `project` | issue `FIX-429` -> 429 + Retry-After; `FIX-500` -> 500 |
 | `examples/stripe.lms` | `nodes/Stripe/helpers.ts` (form bodies), `credentials/StripeApi` | `Authorization: Bearer sk_test_fixture`; 401 `{"error":{"type":"invalid_request_error"}}`, key never echoed | `/v1/balance`, `customers` (GET/POST form, `{id}`), `charges` (GET/POST form), `tokens` | `amount=429` -> 429 `rate_limit_error`; `amount=500` -> 500 `api_error` |
 
+Additional annotated lmcode presets cover **Notion, Airtable, HubSpot, GitLab,
+Asana and Trello**. See [routes, authentication and limits](docs/http-presets.md).
+They support stateful create/read operations, pagination and deterministic faults.
+
 Each preset ships an assertion suite, `examples/<service>-client.json`, run by
 `tests/protocols.mjs`:
 

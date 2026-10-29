@@ -14,3 +14,5 @@ Go HTTP mock host backed by lmcode-go v0.6.37. Public repo lmctl-ai/lmmock, MIT.
 - `lmmock check --suite FILE [--url URL]` is a native HTTP assertion client with captures, dot-path JSON assertions and redacted summaries. tests/protocols.mjs tests protocol failures and replay races. Linux Actions checks released lmcurl v0.1.2 using an isolated v5 compiler (0.2.426); current compiler still builds lmmock v6 scripts.
 - [n8n connector auth shapes](n8n-connector-auth-shapes.md): what the Slack/Discord/Telegram/Jira/Stripe presets taught about credential tests, auth header shapes, vendor error shapes and fault routes.
 - [lmconn coverage review](../docs/lmconn-coverage.md): actual five command areas, new vendor/GitHub integration tests, and remaining auth/protocol gaps. Protocol CLI now rejects non-loopback addresses before readiness; Actions race-tests all internal packages.
+
+- [Expanded HTTP presets](../docs/http-presets.md): Notion, Airtable, HubSpot, GitLab, Asana and Trello use annotated Handler methods; source scripts plus shared native/lmconn suites cover auth, cursor pagination, create/read state and faults. Lists are fixed snapshots.
