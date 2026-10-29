@@ -109,6 +109,8 @@ JSON, collection, codec, and file functions are available as well.
 
 ## Protocol mock servers
 
+- `mongodb`: auth-less in-memory MongoDB wire mock; ping, insert/find/delete, numeric `$gt`, basic `$set` updates/count and database/collection listing. Config: `{"maxDocuments":10000}`; SCRAM deferred.
+
 Beyond scripted HTTP, `lmmock proto` serves binary/text wire protocols from
 built-in packages under `internal/proto/`:
 

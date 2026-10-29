@@ -157,3 +157,14 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
+MongoDB support uses `go.mongodb.org/mongo-driver/v2` v2.4.0 (Apache-2.0),
+https://github.com/mongodb/mongo-go-driver. Production imports only its BSON
+codec; tests use the official network client to verify actual wire compatibility.
+The BSON codec avoids reimplementing nested documents, arrays and ObjectIds.
+
+The official client's test dependency graph also includes: golang.org/x/crypto,
+golang.org/x/sync and golang.org/x/text (BSD-3-Clause); github.com/golang/snappy
+(BSD-3-Clause); github.com/klauspost/compress (BSD-3-Clause, with bundled notices);
+github.com/xdg-go/pbkdf2, scram and stringprep (BSD-3-Clause); and
+ github.com/youmark/pkcs8 (MIT). Versions are pinned in go.mod/go.sum. These network
+client dependencies are not imported by the MongoDB mock executable.
