@@ -23,6 +23,11 @@ var version = "0.1.0"
 
 func main() { os.Exit(run(os.Args[1:])) }
 func run(args []string) int {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if len(args) > 0 && args[0] == "proto" {
+		return protoCommand(ctx, args[1:])
+	}
 	if len(args) > 0 && args[0] == "check" {
 		return checkCommand(args[1:])
 	}
@@ -62,8 +67,6 @@ func run(args []string) int {
 		fmt.Fprintln(os.Stderr, "specify exactly one of --script or --dsl; exec requires -- COMMAND")
 		return 2
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	if *script != "" {
 		folder, err := os.MkdirTemp("", "lmmock-compile-")
 		if err != nil {
@@ -187,6 +190,8 @@ func usage() {
   lmmock exec --script mock.lms -- COMMAND [ARG...]
   lmmock exec --dsl mock.dslb -- COMMAND [ARG...]
   lmmock check --suite assertions.json [--url URL]
+  lmmock proto --list
+  lmmock proto <name> [--listen 127.0.0.1:0] [--config cfg.json] [--ready-file ready.json]
   lmmock --version
 exec sets LMMOCK_URL for the client and propagates its exit code.
 serve prints readiness JSON and stops on SIGINT/SIGTERM.

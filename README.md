@@ -107,6 +107,23 @@ is not a transaction. Each concurrent request uses its own VM registry and arena
 Copy and modify these scripts for your tests. The standard lmcode string, math,
 JSON, collection, codec, and file functions are available as well.
 
+## Protocol mock servers
+
+Beyond scripted HTTP, `lmmock proto` serves binary/text wire protocols from
+built-in packages under `internal/proto/`:
+
+```sh
+lmmock proto --list                                  # registered protocols
+lmmock proto redis --ready-file ready.json           # canned Redis (RESP) server
+lmmock proto redis --listen 127.0.0.1:0 --config cfg.json
+```
+
+Readiness JSON carries `url`, `address`, `protocol`, and `pid`; the lifecycle
+(loopback-only listeners, atomic ready file, SIGINT/SIGTERM shutdown) matches
+`serve`. Each protocol package self-registers from `init` and is blank-imported
+in `cmd/lmmock/proto_imports.go`; its `--config` schema is documented in the
+package doc comment.
+
 ## Standalone lifecycle
 
 ```sh
