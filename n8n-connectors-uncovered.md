@@ -8,8 +8,8 @@ PagerDuty and Linear now have selected HTTP contract fixtures (see
 [coverage and limitations](docs/http-presets.md)); their rows below remain in
 this historical snapshot because full node/trigger coverage is still open.
 Datadog now has a credential/HTTP-request fixture but is absent from the node-only
-inventory. Counts reflect the tables, including Wave 9 reclassifications;
-PagerDuty and Linear retain their historical classification pending reconciliation.
+inventory. Counts reflect the table classifications, including the Wave 9 moves
+to partial scripts; these remain partial service coverage.
 
 ## Inventory and counting
 
@@ -20,7 +20,7 @@ PagerDuty and Linear retain their historical classification pending reconciliati
 - Inventory comes from each package.json n8n.nodes array, not a recursive count of test files or an older installed n8n package.
 - Scope excludes community packages and credentials with no registered node. Source links below identify every registration in the two manifests.
 
-Base-family classification: **213 without a dedicated mock**, **21 with partial service scripts**,
+Base-family classification: **210 without a dedicated mock**, **24 with partial service scripts**,
 **9 with protocol-level subsets**, **1 OpenAI family with partial transport**, and
 **64 utility/plumbing families**. No category claims complete n8n operation coverage.
 
@@ -196,7 +196,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | Sendy | [Sendy](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Sendy/Sendy.node.ts) |
 | SentryIo | [SentryIo](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/SentryIo/SentryIo.node.ts) |
 | ServiceNow | [ServiceNow](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/ServiceNow/ServiceNow.node.ts) |
-| Shopify | [Shopify](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Shopify/Shopify.node.ts), [ShopifyTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Shopify/ShopifyTrigger.node.ts) |
 | Signl4 | [Signl4](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Signl4/Signl4.node.ts) |
 | Sms77 | [Sms77](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Sms77/Sms77.node.ts) |
 | Snowflake | [Snowflake](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Snowflake/Snowflake.node.ts) |
@@ -235,8 +234,6 @@ Existing sibling tools such as lmaws or lmssh are clients, not lmmock servers.
 | Wekan | [Wekan](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Wekan/Wekan.node.ts) |
 | WhatsApp | [WhatsAppTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/WhatsApp/WhatsAppTrigger.node.ts), [WhatsApp](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/WhatsApp/WhatsApp.node.ts) |
 | Wise | [Wise](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Wise/Wise.node.ts), [WiseTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Wise/WiseTrigger.node.ts) |
-| WooCommerce | [WooCommerce](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/WooCommerce/WooCommerce.node.ts), [WooCommerceTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/WooCommerce/WooCommerceTrigger.node.ts) |
-| Wordpress | [Wordpress](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Wordpress/Wordpress.node.ts) |
 | Workable | [WorkableTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Workable/WorkableTrigger.node.ts) |
 | Wufoo | [WufooTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Wufoo/WufooTrigger.node.ts) |
 | Xero | [Xero](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Xero/Xero.node.ts) |
@@ -267,6 +264,9 @@ vendor datastore. See [HTTP preset limits](docs/http-presets.md).
 | Bitbucket | [examples/bitbucket.lms](examples/bitbucket.lms) | [BitbucketTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Bitbucket/BitbucketTrigger.node.ts) |
 | CircleCi | [examples/circleci.lms](examples/circleci.lms) | [CircleCi](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/CircleCi/CircleCi.node.ts) |
 | PayPal | [examples/paypal.lms](examples/paypal.lms) | [PayPal](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/PayPal/PayPal.node.ts), [PayPalTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/PayPal/PayPalTrigger.node.ts) |
+| Shopify | [examples/shopify.lms](examples/shopify.lms) | [Shopify](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Shopify/Shopify.node.ts), [ShopifyTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Shopify/ShopifyTrigger.node.ts) |
+| WooCommerce | [examples/woocommerce.lms](examples/woocommerce.lms) | [WooCommerce](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/WooCommerce/WooCommerce.node.ts), [WooCommerceTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/WooCommerce/WooCommerceTrigger.node.ts) |
+| Wordpress | [examples/wordpress.lms](examples/wordpress.lms) | [Wordpress](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Wordpress/Wordpress.node.ts) |
 | Airtable | [examples/airtable.lms](examples/airtable.lms) | [Airtable](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Airtable/Airtable.node.ts), [AirtableTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Airtable/AirtableTrigger.node.ts) |
 | Asana | [examples/asana.lms](examples/asana.lms) | [Asana](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Asana/Asana.node.ts), [AsanaTrigger](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Asana/AsanaTrigger.node.ts) |
 | Discord | [examples/discord.lms](examples/discord.lms) | [Discord](https://github.com/n8n-io/n8n/blob/9f84b4b9f7b2744bb8df728c0caa6ed16a77fd2b/packages/nodes-base/nodes/Discord/Discord.node.ts) |

@@ -20,3 +20,5 @@ Go HTTP mock host backed by lmcode-go v0.6.37. Public repo lmctl-ai/lmmock, MIT.
 - [Expanded HTTP presets](../docs/http-presets.md): Notion, Airtable, HubSpot, GitLab, Asana and Trello use annotated Handler methods; source scripts plus shared native/lmconn suites cover auth, cursor pagination, create/read state and faults. Lists are fixed snapshots.
 
 - [Uncovered n8n connectors](../n8n-connectors-uncovered.md): manifest-based backlog for both official base and AI node packages, with pinned source links, partial service/protocol coverage and utilities separated. Refresh this list when adding presets.
+
+- [Commerce/publishing presets](../docs/http-presets.md#commerce-and-publishing-presets): Shopify, WordPress and WooCommerce source-derived credential checks, two-page header-based pagination, create/read state and credential overrides. `tests/commerce.mjs` additionally checks pagination termination and overrides. Protected-site WordPress policy and omitted vendor operations are explicit.

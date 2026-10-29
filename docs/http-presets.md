@@ -260,3 +260,41 @@ Error references: [Dropbox error guide](https://docs.dropboxapi.com/dropbox-api/
 [Cloudflare authentication errors](https://developers.cloudflare.com/terraform/troubleshooting/authentication-error-dns-records/).
 Suites exercise the native mock checker and lmconn HTTP CLI, not n8n itself or
 live vendor accounts.
+
+## Commerce and publishing presets
+
+These three presets use n8n source commit
+`dd5f870ecc38344951fb3956f1a7ba7852612c70`, under `packages/nodes-base/`:
+
+| Preset | Credential check first; other routes | Credentials/config |
+| --- | --- | --- |
+| shopify | GET /admin/api/2024-07/products.json; POST same; GET /admin/api/2024-07/products/{id}.json | X-Shopify-Access-Token; token=fixture-token |
+| wordpress | GET /wp-json/wp/v2/users; GET/POST /wp-json/wp/v2/posts; GET /wp-json/wp/v2/posts/{id} | Basic; username=fixture-user, password=fixture-password |
+| woocommerce | GET /wp-json/wc/v3/products/categories; GET/POST /wp-json/wc/v3/products; GET /wp-json/wc/v3/products/{id} | Basic or consumer_key/consumer_secret query; consumerKey=ck_fixture, consumerSecret=cs_fixture |
+
+Source files mined for each service: `credentials/ShopifyAccessTokenApi.credentials.ts`,
+`credentials/WordpressApi.credentials.ts`, `credentials/WooCommerceApi.credentials.ts`,
+and `nodes/Shopify/{Shopify.node.ts,GenericFunctions.ts}`,
+`nodes/Wordpress/{Wordpress.node.ts,GenericFunctions.ts}`,
+`nodes/WooCommerce/{WooCommerce.node.ts,GenericFunctions.ts}`.
+These credential-test routes differ from common shop.json, users/me and
+system_status examples; the fixtures follow the inspected n8n definitions.
+
+All three accept the deterministic `X-Lmmock-Fault: 500` fault. Shopify uses an
+errors object; WordPress/WooCommerce use code/message/data.status. Error shapes
+follow [Shopify REST status examples](https://shopify.dev/docs/api/admin-rest/latest),
+[WordPress application-password authentication](https://developer.wordpress.org/reference/functions/wp_authenticate_application_password/)
+and [WooCommerce authentication](https://woocommerce.github.io/code-reference/files/woocommerce-includes-class-wc-rest-authentication.html).
+WordPress models a protected site: all routes require authentication, although
+public WordPress installations can permit anonymous reads. Error messages and
+permission policy are simplified. No OAuth or legacy Shopify Basic authentication.
+
+Lists have two fixed pages: Shopify page_info/Link, WordPress page/X-WP-TotalPages,
+and WooCommerce page/Link (including a final prev link, as n8n expects the header).
+Only the documented page tokens are modeled; limit/filter validation is deferred.
+Links target the local fixture. The native tests follow them to termination and
+verify credential overrides. Create supports title (Shopify/WordPress) or name
+(WooCommerce), returns a generated numeric ID, and stores the object for read-back.
+Other write fields, content rendering, validation, update/delete and triggers are
+not modeled. List snapshots do not incorporate writes. Read-by-ID covers created
+objects only. Shopify's route captures the full ID filename including `.json`.
