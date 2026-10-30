@@ -51,7 +51,7 @@ jobs:
         if: matrix.label == 'linux-x64'
         env:
           CGO_ENABLED: '1'
-        run: go test -race ./internal/...
+        run: go test -race ./internal/... ./pkg/...
       - name: Released lmcurl compatibility (v5 compiler isolated)
         if: runner.os == 'Linux'
         env:

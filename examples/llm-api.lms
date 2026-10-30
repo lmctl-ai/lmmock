@@ -1,49 +1,492 @@
-# Standalone deterministic mock LLM API. See docs/llm-api.md.
+# Native lmscript JSON is evaluated at startup and passed into lmcode.
+responses = {
+  "embedding_row": {
+    "object": "embedding",
+    "index": 0,
+    "embedding": [
+      0.1,
+      0.2,
+      0.3
+    ]
+  },
+  "gemini_vector": {
+    "values": [
+      0.1,
+      0.2,
+      0.3
+    ]
+  },
+  "chat_chunk": {
+    "id": "chatcmpl-mock",
+    "object": "chat.completion.chunk",
+    "model": null,
+    "choices": [
+      {
+        "index": 0,
+        "delta": null,
+        "finish_reason": null
+      }
+    ]
+  },
+  "chat_finish": {
+    "choices": [
+      {
+        "index": 0,
+        "delta": {},
+        "finish_reason": null
+      }
+    ]
+  },
+  "chat_usage": {
+    "id": "chatcmpl-mock",
+    "object": "chat.completion.chunk",
+    "model": null,
+    "choices": [],
+    "usage": {
+      "prompt_tokens": 2,
+      "completion_tokens": 2,
+      "total_tokens": 4
+    }
+  },
+  "anthropic_message": {
+    "id": "msg_mock",
+    "type": "message",
+    "role": "assistant",
+    "model": "<response.model>",
+    "content": [
+      "<response.item>"
+    ],
+    "stop_reason": "<response.reason>",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 2,
+      "output_tokens": 2
+    }
+  },
+  "anthropic_start": {
+    "type": "message_start",
+    "message": {
+      "id": "msg_mock",
+      "type": "message",
+      "role": "assistant",
+      "model": null,
+      "content": [],
+      "stop_reason": null,
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 0
+      }
+    }
+  },
+  "chat_auth_error": {
+    "error": {
+      "message": null,
+      "type": "authentication_error"
+    }
+  },
+  "chat_rate_limit": {
+    "error": {
+      "message": "rate limited",
+      "type": "rate_limit_error"
+    }
+  },
+  "chat_unavailable": {
+    "error": {
+      "message": "unavailable"
+    }
+  },
+  "chat_model_missing": {
+    "error": {
+      "message": "model not found",
+      "type": "invalid_request_error",
+      "code": "model_not_found"
+    }
+  },
+  "chat_overloaded": {
+    "error": {
+      "message": "rate limited",
+      "type": "rate_limit_error"
+    }
+  },
+  "chat_response": {
+    "id": "chatcmpl-mock",
+    "object": "chat.completion",
+    "model": "<response.model>",
+    "choices": [
+      {
+        "index": 0,
+        "message": "<response.item>",
+        "finish_reason": "<response.reason>"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2,
+      "completion_tokens": 2,
+      "total_tokens": 4
+    }
+  },
+  "api_auth_error": {
+    "error": {
+      "message": "Invalid API key",
+      "type": "authentication_error",
+      "code": "invalid_api_key"
+    }
+  },
+  "api_rate_limit": {
+    "error": {
+      "message": "rate limited",
+      "type": "rate_limit_error"
+    }
+  },
+  "api_unavailable": {
+    "error": {
+      "message": "unavailable",
+      "type": "server_error"
+    }
+  },
+  "models": {
+    "object": "list",
+    "data": [
+      {
+        "id": "mock-agent",
+        "object": "model",
+        "created": 1700000000,
+        "owned_by": "lmmock"
+      },
+      {
+        "id": "mock-embedding",
+        "object": "model",
+        "created": 1700000000,
+        "owned_by": "lmmock"
+      }
+    ]
+  },
+  "embeddings": {
+    "object": "list",
+    "model": null,
+    "data": [
+      null
+    ],
+    "usage": {
+      "prompt_tokens": 2,
+      "total_tokens": 2
+    }
+  },
+  "anthropic_error": {
+    "type": "error",
+    "error": {
+      "type": null,
+      "message": null
+    }
+  },
+  "gemini_error": {
+    "error": {
+      "code": null,
+      "status": null,
+      "message": null
+    }
+  },
+  "gemini_embedding": {
+    "embedding": {
+      "values": [
+        0.1,
+        0.2,
+        0.3
+      ]
+    }
+  },
+  "gemini_embeddings": {
+    "embeddings": [
+      null
+    ]
+  },
+  "structured_city": {
+    "city": "Paris"
+  },
+  "empty_array": [],
+  "chat_tool_calls": [
+    {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+        "name": null,
+        "arguments": json_stringify({city:"Paris"})
+      }
+    }
+  ],
+  "chat_tool_message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": null
+  },
+  "chat_text_message": {
+    "role": "assistant",
+    "content": null
+  },
+  "chat_text_delta": {
+    "role": "assistant",
+    "content": null
+  },
+  "chat_tool_delta": {
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "index": 0,
+        "id": "call_1",
+        "type": "function",
+        "function": {
+          "name": null,
+          "arguments": json_stringify({city:"Paris"})
+        }
+      }
+    ]
+  },
+  "empty_object": {},
+  "responses_structured": {
+    "city": "Paris"
+  },
+  "responses_message": {
+    "type": "message",
+    "id": "msg_mock",
+    "status": "completed",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "output_text",
+        "text": null,
+        "annotations": []
+      }
+    ]
+  },
+  "responses_tool": {
+    "type": "function_call",
+    "id": "fc_mock",
+    "call_id": "call_1",
+    "status": "completed",
+    "name": null,
+    "arguments": json_stringify({city:"Paris"})
+  },
+  "responses_response": {
+    "id": "resp_mock",
+    "object": "response",
+    "created_at": 1700000000,
+    "status": "completed",
+    "model": "<response.model>",
+    "output": [
+      "<response.item>"
+    ],
+    "usage": {
+      "input_tokens": 2,
+      "output_tokens": 2,
+      "total_tokens": 4
+    }
+  },
+  "anthropic_structured": {
+    "city": "Paris"
+  },
+  "anthropic_text": {
+    "type": "text",
+    "text": null
+  },
+  "anthropic_text_start": {
+    "type": "text",
+    "text": ""
+  },
+  "anthropic_text_delta": {
+    "type": "text_delta",
+    "text": null
+  },
+  "anthropic_tool": {
+    "type": "tool_use",
+    "id": "call_1",
+    "name": null,
+    "input": {
+      "city": "Paris"
+    }
+  },
+  "anthropic_tool_start": {
+    "type": "tool_use",
+    "id": "call_1",
+    "name": null,
+    "input": {}
+  },
+  "anthropic_tool_delta": {
+    "type": "input_json_delta",
+    "partial_json": json_stringify({city:"Paris"})
+  },
+  "gemini_structured": {
+    "city": "Paris"
+  },
+  "gemini_text": {
+    "text": null
+  },
+  "gemini_function": {
+    "functionCall": {
+      "name": null,
+      "args": {
+        "city": "Paris"
+      }
+    }
+  },
+  "gemini_response": {
+    "candidates": [
+      {
+        "index": 0,
+        "content": {
+          "role": "model",
+          "parts": [
+            "<response.item>"
+          ]
+        },
+        "finishReason": "STOP"
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 2,
+      "candidatesTokenCount": 2,
+      "totalTokenCount": 4
+    },
+    "modelVersion": "mock-gemini"
+  },
+  "response_created": {
+    "type": "response.created",
+    "response": {
+      "id": "resp_mock",
+      "created_at": 1700000000,
+      "model": null
+    }
+  },
+  "response_output_item_added": {
+    "type": "response.output_item.added",
+    "output_index": 0,
+    "item": null
+  },
+  "response_content_part_added": {
+    "type": "response.content_part.added",
+    "item_id": "msg_mock",
+    "output_index": 0,
+    "content_index": 0,
+    "part": {
+      "type": "output_text",
+      "text": "",
+      "annotations": []
+    }
+  },
+  "response_output_text_delta": {
+    "type": "response.output_text.delta",
+    "item_id": "msg_mock",
+    "output_index": 0,
+    "content_index": 0,
+    "delta": null
+  },
+  "response_output_text_done": {
+    "type": "response.output_text.done",
+    "item_id": "msg_mock",
+    "output_index": 0,
+    "content_index": 0,
+    "text": null
+  },
+  "response_output_item_done": {
+    "type": "response.output_item.done",
+    "output_index": 0,
+    "item": null
+  },
+  "response_completed": {
+    "type": "response.completed",
+    "response": null
+  },
+  "content_block_start": {
+    "type": "content_block_start",
+    "index": 0,
+    "content_block": null
+  },
+  "content_block_delta": {
+    "type": "content_block_delta",
+    "index": 0,
+    "delta": null
+  },
+  "content_block_stop": {
+    "type": "content_block_stop",
+    "index": 0
+  },
+  "message_delta": {
+    "type": "message_delta",
+    "delta": {
+      "stop_reason": null,
+      "stop_sequence": null
+    },
+    "usage": {
+      "output_tokens": 2
+    }
+  },
+  "message_stop": {
+    "type": "message_stop"
+  }
+};
+
 p = _lmcode_ schema="schema.json";
+fn fixture(name: string) -> Json { return json_parse(${json_stringify(responses)}).get(name); }
+
+fn json_text(value: string) -> Json { return json_parse(json_quote(value)); }
+fn with_text(document: Json, pointer: string, value: string) -> Json { return json_with(document,pointer,json_text(value)); }
+fn render_response(name: string, model: string, item: Json, reason: string) -> string {
+ let values = json_parse("{}");
+ values = json_with(values,"/model",json_text(model));
+ values = json_with(values,"/item",item);
+ values = json_with(values,"/reason",json_text(reason));
+ let context = json_with(json_parse("{}"),"/response",values);
+ return json_render(fixture(name),context).to_json();
+}
+
 fn field(j: Json, key: string) -> string { let value = ""; if (j.has(key)) { value = j.get(key).as_string(); } return value; }
 @chat
 fn completion(x: Exchange) -> void implements Handler {
  while (true) {
   x.set("last",x.request_json());
   let c = json_parse(config()); let mode = field(c,"mode"); let auth = x.header("Authorization");
-  if (mode == "unauthorized" || (c.has("apiKey") && !secure_equal(auth,"Bearer " + field(c,"apiKey")))) { x.status(401); x.json("{\"error\":{\"message\":" + json_quote("Invalid API key") + ",\"type\":\"authentication_error\"}}"); break; }
+  if (mode == "unauthorized" || (c.has("apiKey") && !secure_equal(auth,"Bearer " + field(c,"apiKey")))) { x.status(401); x.json(json_with(fixture("chat_auth_error"),"/error/message",json_text("Invalid API key")).to_json()); break; }
   let retry = false; if (mode == "retry") { retry = x.increment("llm-retry") == 1; }
-  if (mode == "rate-limit" || retry) { x.status(429); x.set_header("Retry-After","1"); x.json("{\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"}}"); break; }
-  if (mode == "server-error") { x.status(503); x.json("{\"error\":{\"message\":\"unavailable\"}}"); break; }
+  if (mode == "rate-limit" || retry) { x.status(429); x.set_header("Retry-After","1"); x.json(fixture("chat_rate_limit").to_json()); break; }
+  if (mode == "server-error") { x.status(503); x.json(fixture("chat_unavailable").to_json()); break; }
   if (mode == "disconnect") { x.disconnect(); break; }
   if (mode == "bad-json") { x.json("{broken"); break; }
   if (mode == "timeout") { x.delay(1000); }
   let request = json_parse(x.body()); let model = "mock-agent"; if (request.has("model")) { model = field(request,"model"); }
-  if (mode == "unknown-model" || model == "unknown-model") { x.status(404); x.json("{\"error\":{\"message\":\"model not found\",\"type\":\"invalid_request_error\",\"code\":\"model_not_found\"}}"); break; }
-  if (model == "overloaded") { x.status(429); x.set_header("Retry-After","1"); x.json("{\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"}}"); break; }
+  if (mode == "unknown-model" || model == "unknown-model") { x.status(404); x.json(fixture("chat_model_missing").to_json()); break; }
+  if (model == "overloaded") { x.status(429); x.set_header("Retry-After","1"); x.json(fixture("chat_overloaded").to_json()); break; }
   let content = "pong"; let reason = "stop"; let message = ""; let tool = false;
   let messages = request.get("messages"); let tool_result = false;
   for (i in range(0,messages.len())) { if (field(messages.at(i),"role") == "tool") { tool_result = true; content = "Tool result: " + field(messages.at(i),"content"); } }
   if (request.has("tools") && !tool_result) { tool = request.get("tools").len() > 0; }
   if (request.has("tool_choice")) { if (request.get("tool_choice").to_json() == json_quote("none")) { tool = false; } }
   if (c.has("text")) { content = field(c,"text"); }
-  if (request.has("response_format")) { content = "{\"city\":\"Paris\"}"; if (c.has("structuredOutput")) { content = c.get("structuredOutput").to_json(); } }
+  if (request.has("response_format")) { content = fixture("structured_city").to_json(); if (c.has("structuredOutput")) { content = c.get("structuredOutput").to_json(); } }
   if (mode == "ok" || mode == "echo" || mode == "timeout") { model = "served-model"; }
   if (c.has("responseModel")) { model = field(c,"responseModel"); }
   if (mode == "echo") { content = str_substr(auth,7,str_len(auth)); }
-  let tools = "[]";
+  let tools = fixture("empty_array").to_json();
   if (tool) {
    let name = field(request.get("tools").at(0).get("function"),"name");
-   tools = "[{\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":" + json_quote(name) + ",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\"}}]";
-   reason = "tool_calls"; message = "{\"role\":\"assistant\",\"content\":null,\"tool_calls\":" + tools + "}";
-  } else { message = "{\"role\":\"assistant\",\"content\":" + json_quote(content) + "}"; }
+   tools = json_with(fixture("chat_tool_calls"),"/0/function/name",json_text(name)).to_json();
+   reason = "tool_calls"; message = json_with(fixture("chat_tool_message"),"/tool_calls",json_parse(tools)).to_json();
+  } else { message = json_with(fixture("chat_text_message"),"/content",json_text(content)).to_json(); }
   let stream = false; if (request.has("stream")) { stream = request.get("stream").as_bool(); }
   if (stream) {
    x.set_header("Content-Type","text/event-stream");
-   let delta = "{\"role\":\"assistant\",\"content\":" + json_quote(content) + "}";
-   if (tool) { let name = field(request.get("tools").at(0).get("function"),"name"); delta = "{\"role\":\"assistant\",\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":" + json_quote(name) + ",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\"}}]}"; }
-   x.send("data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"delta\":" + delta + ",\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":" + json_quote(reason) + "}]}\n\ndata: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":\"mock-agent\",\"choices\":[],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":2,\"total_tokens\":4}}\n\ndata: [DONE]\n\n");
-  } else { x.json("{\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"message\":" + message + ",\"finish_reason\":" + json_quote(reason) + "}],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":2,\"total_tokens\":4}}"); }
+   let delta = json_with(fixture("chat_text_delta"),"/content",json_text(content)).to_json();
+   if (tool) { let name = field(request.get("tools").at(0).get("function"),"name"); delta = json_with(fixture("chat_tool_delta"),"/tool_calls/0/function/name",json_text(name)).to_json(); }
+   let chunk = with_text(fixture("chat_chunk"),"/model",model);
+   chunk = json_with(chunk,"/choices/0/delta",json_parse(delta));
+   let finish = with_text(fixture("chat_finish"),"/choices/0/finish_reason",reason);
+   let usage = with_text(fixture("chat_usage"),"/model",model);
+   x.send("data: " + chunk.to_json() + "\n\ndata: " + finish.to_json() + "\n\ndata: " + usage.to_json() + "\n\ndata: [DONE]\n\n");
+  } else { x.json(render_response("chat_response",model,json_parse(message),reason)); }
   break;
  }
 }
 @inspect
-fn inspect(x: Exchange) -> void implements Handler { let last = x.get("last"); if (last == "") { last = "{}"; } x.json(last); }
+fn inspect(x: Exchange) -> void implements Handler { let last = x.get("last"); if (last == "") { last = fixture("empty_object").to_json(); } x.json(last); }
 route("POST","/chat/completions","chat");
 route("POST","/api/v1/chat/completions","chat");
 route("POST","/v1/chat/completions","chat");route("GET","/__inspect","inspect");
@@ -56,9 +499,9 @@ fn api_allowed(x: Exchange) -> bool {
   ok = secure_equal(x.header("Authorization"), "Bearer " + field(c,"apiKey"));
  }
  let mode = field(c,"mode");
- if (!ok || mode == "unauthorized") { ok = false; x.status(401); x.json("{\"error\":{\"message\":\"Invalid API key\",\"type\":\"authentication_error\",\"code\":\"invalid_api_key\"}}"); }
- else if (mode == "rate-limit") { ok = false; x.status(429); x.set_header("Retry-After","1"); x.json("{\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"}}"); }
- else if (mode == "server-error") { ok = false; x.status(503); x.json("{\"error\":{\"message\":\"unavailable\",\"type\":\"server_error\"}}"); }
+ if (!ok || mode == "unauthorized") { ok = false; x.status(401); x.json(fixture("api_auth_error").to_json()); }
+ else if (mode == "rate-limit") { ok = false; x.status(429); x.set_header("Retry-After","1"); x.json(fixture("api_rate_limit").to_json()); }
+ else if (mode == "server-error") { ok = false; x.status(503); x.json(fixture("api_unavailable").to_json()); }
  else if (mode == "disconnect") { ok = false; x.disconnect(); }
  else if (mode == "bad-json") { ok = false; x.json("{broken"); }
  else if (mode == "timeout") { x.delay(1000); }
@@ -66,7 +509,7 @@ fn api_allowed(x: Exchange) -> bool {
 }
 @models
 fn models(x: Exchange) -> void implements Handler {
- if (api_allowed(x)) { x.json("{\"object\":\"list\",\"data\":[{\"id\":\"mock-agent\",\"object\":\"model\",\"created\":1700000000,\"owned_by\":\"lmmock\"},{\"id\":\"mock-embedding\",\"object\":\"model\",\"created\":1700000000,\"owned_by\":\"lmmock\"}]}"); }
+ if (api_allowed(x)) { x.json(fixture("models").to_json()); }
 }
 @embeddings
 fn embeddings(x: Exchange) -> void implements Handler {
@@ -74,12 +517,13 @@ fn embeddings(x: Exchange) -> void implements Handler {
  if (api_allowed(x)) {
   let b = json_parse(x.body()); let count = 1;
   if (str_starts_with(b.get("input").to_json(),"[")) { count = b.get("input").len(); }
-  let data = "";
+  let data = fixture("empty_array");
   for (i in range(0,count)) {
-   if (i > 0) { data = data + ","; }
-   data = data + "{\"object\":\"embedding\",\"index\":" + str(i) + ",\"embedding\":[0.1,0.2,0.3]}";
+   let row = json_with(fixture("embedding_row"),"/index",json_parse(str(i)));
+   data = json_with(data,"/-",row);
   }
-  x.json("{\"object\":\"list\",\"model\":" + json_quote(field(b,"model")) + ",\"data\":[" + data + "],\"usage\":{\"prompt_tokens\":2,\"total_tokens\":2}}");
+  let result = with_text(fixture("embeddings"),"/model",field(b,"model"));
+  x.json(json_with(result,"/data",data).to_json());
  }
 }
 fn event(kind: string, body: string) -> string { return "event: " + kind + "\ndata: " + body + "\n\n"; }
@@ -106,28 +550,28 @@ fn responses(x: Exchange) -> void implements Handler {
   if (b.has("tool_choice")) { if (b.get("tool_choice").to_json() == json_quote("none")) { tool = false; } }
   if (b.has("text")) {
    if (b.get("text").has("format")) {
-    content = "{\"city\":\"Paris\"}";
+    content = fixture("responses_structured").to_json();
     if (c.has("structuredOutput")) { content = c.get("structuredOutput").to_json(); }
    }
   }
-  let item = "{\"type\":\"message\",\"id\":\"msg_mock\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":" + json_quote(content) + ",\"annotations\":[]}]}";
+  let item = json_with(fixture("responses_message"),"/content/0/text",json_text(content)).to_json();
   if (tool) {
-   item = "{\"type\":\"function_call\",\"id\":\"fc_mock\",\"call_id\":\"call_1\",\"status\":\"completed\",\"name\":" + json_quote(field(b.get("tools").at(0),"name")) + ",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\"}";
+   item = json_with(fixture("responses_tool"),"/name",json_text(field(b.get("tools").at(0),"name"))).to_json();
   }
-  let response = "{\"id\":\"resp_mock\",\"object\":\"response\",\"created_at\":1700000000,\"status\":\"completed\",\"model\":" + json_quote(model) + ",\"output\":[" + item + "],\"usage\":{\"input_tokens\":2,\"output_tokens\":2,\"total_tokens\":4}}";
+  let response = render_response("responses_response",model,json_parse(item),"");
   let stream = false; if (b.has("stream")) { stream = b.get("stream").as_bool(); }
   if (!stream) { x.json(response); }
   else {
    x.set_header("Content-Type","text/event-stream");
-   let events = event("response.created","{\"type\":\"response.created\",\"response\":{\"id\":\"resp_mock\",\"created_at\":1700000000,\"model\":" + json_quote(model) + "}}");
-   events = events + event("response.output_item.added","{\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":" + item + "}");
+   let events = event("response.created",json_with(fixture("response_created"),"/response/model",json_text(model)).to_json());
+   events = events + event("response.output_item.added",json_with(fixture("response_output_item_added"),"/item",json_parse(item)).to_json());
    if (!tool) {
-    events = events + event("response.content_part.added","{\"type\":\"response.content_part.added\",\"item_id\":\"msg_mock\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[]}}");
-    events = events + event("response.output_text.delta","{\"type\":\"response.output_text.delta\",\"item_id\":\"msg_mock\",\"output_index\":0,\"content_index\":0,\"delta\":" + json_quote(content) + "}");
-    events = events + event("response.output_text.done","{\"type\":\"response.output_text.done\",\"item_id\":\"msg_mock\",\"output_index\":0,\"content_index\":0,\"text\":" + json_quote(content) + "}");
+    events = events + event("response.content_part.added",fixture("response_content_part_added").to_json());
+    events = events + event("response.output_text.delta",json_with(fixture("response_output_text_delta"),"/delta",json_text(content)).to_json());
+    events = events + event("response.output_text.done",json_with(fixture("response_output_text_done"),"/text",json_text(content)).to_json());
    }
-   events = events + event("response.output_item.done","{\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":" + item + "}");
-   events = events + event("response.completed","{\"type\":\"response.completed\",\"response\":" + response + "}");
+   events = events + event("response.output_item.done",json_with(fixture("response_output_item_done"),"/item",json_parse(item)).to_json());
+   events = events + event("response.completed",json_with(fixture("response_completed"),"/response",json_parse(response)).to_json());
    x.send(events);
   }
  }
@@ -141,9 +585,9 @@ route("POST","/v1/responses","responses");route("POST","/responses","responses")
 fn native_error(x: Exchange, provider: string, status: int, kind: string, message: string) -> void {
  x.status(status);
  if (provider == "anthropic") {
-  x.json("{\"type\":\"error\",\"error\":{\"type\":" + json_quote(kind) + ",\"message\":" + json_quote(message) + "}}");
+  x.json(json_with(json_with(fixture("anthropic_error"),"/error/type",json_text(kind)),"/error/message",json_text(message)).to_json());
  } else {
-  x.json("{\"error\":{\"code\":" + str(status) + ",\"status\":" + json_quote(kind) + ",\"message\":" + json_quote(message) + "}}");
+  x.json(json_with(json_with(json_with(fixture("gemini_error"),"/error/code",json_parse(str(status))),"/error/status",json_text(kind)),"/error/message",json_text(message)).to_json());
  }
 }
 fn native_allowed(x: Exchange, provider: string) -> bool {
@@ -196,33 +640,33 @@ fn anthropic_messages(x: Exchange) -> void implements Handler {
   if (b.has("tool_choice")) { if (field(b.get("tool_choice"),"type") == "none") { tool = false; } }
   if (b.has("output_config")) {
    if (b.get("output_config").has("format")) {
-    text = "{\"city\":\"Paris\"}";
+    text = fixture("anthropic_structured").to_json();
     if (c.has("structuredOutput")) { text = c.get("structuredOutput").to_json(); }
    }
   }
   let reason = "end_turn";
-  let block = "{\"type\":\"text\",\"text\":" + json_quote(text) + "}";
-  let start_block = "{\"type\":\"text\",\"text\":\"\"}";
-  let delta = "{\"type\":\"text_delta\",\"text\":" + json_quote(text) + "}";
+  let block = json_with(fixture("anthropic_text"),"/text",json_text(text)).to_json();
+  let start_block = fixture("anthropic_text_start").to_json();
+  let delta = json_with(fixture("anthropic_text_delta"),"/text",json_text(text)).to_json();
   if (tool) {
    reason = "tool_use";
    let name = field(b.get("tools").at(0),"name");
-   block = "{\"type\":\"tool_use\",\"id\":\"call_1\",\"name\":" + json_quote(name) + ",\"input\":{\"city\":\"Paris\"}}";
-   start_block = "{\"type\":\"tool_use\",\"id\":\"call_1\",\"name\":" + json_quote(name) + ",\"input\":{}}";
-   delta = "{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"city\\\":\\\"Paris\\\"}\"}";
+   block = json_with(fixture("anthropic_tool"),"/name",json_text(name)).to_json();
+   start_block = json_with(fixture("anthropic_tool_start"),"/name",json_text(name)).to_json();
+   delta = fixture("anthropic_tool_delta").to_json();
   }
-  let prefix = "{\"id\":\"msg_mock\",\"type\":\"message\",\"role\":\"assistant\",\"model\":" + json_quote(field(b,"model"));
-  let response = prefix + ",\"content\":[" + block + "],\"stop_reason\":" + json_quote(reason) + ",\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":2}}";
+  let response = render_response("anthropic_message",field(b,"model"),json_parse(block),reason);
   let stream = false; if (b.has("stream")) { stream = b.get("stream").as_bool(); }
   if (!stream) { x.json(response); }
   else {
    x.set_header("Content-Type","text/event-stream");
-   let events = event("message_start","{\"type\":\"message_start\",\"message\":" + prefix + ",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":0}}}");
-   events = events + event("content_block_start","{\"type\":\"content_block_start\",\"index\":0,\"content_block\":" + start_block + "}");
-   events = events + event("content_block_delta","{\"type\":\"content_block_delta\",\"index\":0,\"delta\":" + delta + "}");
-   events = events + event("content_block_stop","{\"type\":\"content_block_stop\",\"index\":0}");
-   events = events + event("message_delta","{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":" + json_quote(reason) + ",\"stop_sequence\":null},\"usage\":{\"output_tokens\":2}}");
-   events = events + event("message_stop","{\"type\":\"message_stop\"}");
+   let start = with_text(fixture("anthropic_start"),"/message/model",field(b,"model"));
+   let events = event("message_start",start.to_json());
+   events = events + event("content_block_start",json_with(fixture("content_block_start"),"/content_block",json_parse(start_block)).to_json());
+   events = events + event("content_block_delta",json_with(fixture("content_block_delta"),"/delta",json_parse(delta)).to_json());
+   events = events + event("content_block_stop",fixture("content_block_stop").to_json());
+   events = events + event("message_delta",json_with(fixture("message_delta"),"/delta/stop_reason",json_text(reason)).to_json());
+   events = events + event("message_stop",fixture("message_stop").to_json());
    x.send(events);
   }
  }
@@ -233,15 +677,12 @@ fn gemini_content(x: Exchange) -> void implements Handler {
  if (native_allowed(x,"gemini")) {
   let operation = x.param("operation");
   if (str_ends_with(operation,":embedContent")) {
-   x.json("{\"embedding\":{\"values\":[0.1,0.2,0.3]}}");
+   x.json(fixture("gemini_embedding").to_json());
   } else if (str_ends_with(operation,":batchEmbedContents")) {
-   let b = json_parse(x.body()); let rows = "";
+   let b = json_parse(x.body()); let rows = fixture("empty_array");
    let requests = b.get("requests");
-   for (i in range(0,requests.len())) {
-    if (i > 0) { rows = rows + ","; }
-    rows = rows + "{\"values\":[0.1,0.2,0.3]}";
-   }
-   x.json("{\"embeddings\":[" + rows + "]}");
+   for (i in range(0,requests.len())) { rows = json_with(rows,"/-",fixture("gemini_vector")); }
+   x.json(json_with(fixture("gemini_embeddings"),"/embeddings",rows).to_json());
   } else if (!str_ends_with(operation,":generateContent") && !str_ends_with(operation,":streamGenerateContent")) {
    native_error(x,"gemini",404,"NOT_FOUND","Unsupported model operation");
   } else {
@@ -273,13 +714,13 @@ fn gemini_content(x: Exchange) -> void implements Handler {
    }
    if (b.has("generationConfig")) {
     if (field(b.get("generationConfig"),"responseMimeType") == "application/json") {
-     text = "{\"city\":\"Paris\"}";
+     text = fixture("gemini_structured").to_json();
      if (c.has("structuredOutput")) { text = c.get("structuredOutput").to_json(); }
     }
    }
-   let part = "{\"text\":" + json_quote(text) + "}";
-   if (tool_name != "") { part = "{\"functionCall\":{\"name\":" + json_quote(tool_name) + ",\"args\":{\"city\":\"Paris\"}}}"; }
-   let response = "{\"candidates\":[{\"index\":0,\"content\":{\"role\":\"model\",\"parts\":[" + part + "]},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":2,\"candidatesTokenCount\":2,\"totalTokenCount\":4},\"modelVersion\":\"mock-gemini\"}";
+   let part = json_with(fixture("gemini_text"),"/text",json_text(text)).to_json();
+   if (tool_name != "") { part = json_with(fixture("gemini_function"),"/functionCall/name",json_text(tool_name)).to_json(); }
+   let response = render_response("gemini_response","",json_parse(part),"");
    if (str_ends_with(operation,":streamGenerateContent")) {
     x.set_header("Content-Type","text/event-stream"); x.send("data: " + response + "\n\n");
    } else { x.json(response); }

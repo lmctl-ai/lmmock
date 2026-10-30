@@ -8,3 +8,6 @@ fs.writeFileSync('build/not-found.lms',`p = _lmcode_ schema=${schema};\n@missing
 // A verified entry with the wrong interface but the exact host schema.
 // The schema hash must match, so mutate only the entry's interface name in bytecode.
 const good=fs.readFileSync('build/api.dslb');const wrong=Buffer.from(good);const needle=Buffer.from('interface Handler(Exchange) -> void');const at=wrong.indexOf(needle);if(at<0)throw Error('entry interface missing');Buffer.from('interface NotMock(Exchange) -> void').copy(wrong,at);fs.writeFileSync('build/wrong-interface.dslb',wrong);
+
+const oldSchema=JSON.stringify(path.resolve("internal/mock/schema-v1.json").split(path.sep).join("/"));
+fs.writeFileSync("build/legacy.lms", "p = _lmcode_ schema="+oldSchema+";\n"+handler+'route("GET","/","ok");\nend _lmcode_\nsavedsl(p,ARGV[0]);\n');
