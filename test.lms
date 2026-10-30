@@ -18,3 +18,7 @@ step(["node", "tests/integration.mjs", "build/lmmock" + ext]);
 
 step(["build/lmmock" + ext, "exec", "--dsl", "build/llm.dslb", "--config", "examples/llm-config.json", "--", path_join(Directory, "build/lmmock" + ext), "check", "--suite", "examples/llm-client.json"]);
 step(["node", "tests/protocols.mjs", "build/lmmock" + ext]);
+
+# Real SDK clients; install tests/vercel dependencies with npm ci first.
+step(["node", "tests/vercel/run.mjs", "build/lmmock" + ext]);
+step(["build/lmmock" + ext, "exec", "--dsl", "build/llm-gateway.dslb", "--", "go", "run", "-C", "tests/litellm-go", "."]);
