@@ -6,6 +6,8 @@
     "test": "node acceptance.mjs"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "4.0.92",
+    "@ai-sdk/google": "4.0.108",
     "@ai-sdk/openai": "4.0.105",
     "@ai-sdk/openai-compatible": "3.0.81",
     "ai": "7.0.157",

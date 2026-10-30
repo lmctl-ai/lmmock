@@ -309,7 +309,8 @@ lmmock exec --dsl build/slack.dslb -- lmmock check --suite examples/slack-client
 
 For a broader scriptable LLM API with **real Vercel AI SDK client
 acceptance**, use [llm-api.lms](examples/llm-api.lms).
-It adds Responses, embeddings and model discovery alongside chat, tools and SSE.
+It supports OpenAI Chat/Responses, native Anthropic Messages and native Gemini
+generateContent, plus OpenAI/Gemini embeddings, tools, structured output and SSE.
 See [setup, tested clients and limits](docs/llm-api.md).
 
 
