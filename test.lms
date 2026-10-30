@@ -21,3 +21,5 @@ step(["node", "tests/protocols.mjs", "build/lmmock" + ext]);
 
 # Real Vercel AI SDK client; install tests/vercel dependencies with npm ci first.
 step(["node", "tests/vercel/run.mjs", "build/lmmock" + ext]);
+
+step(["node", "tests/runtime-json.mjs", "build/lmmock" + ext]);

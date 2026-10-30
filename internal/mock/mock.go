@@ -20,6 +20,11 @@ import (
 //go:embed schema.json
 var Schema []byte
 
+// Previous schema remains accepted for already compiled fixtures.
+//
+//go:embed schema-v1.json
+var legacySchema []byte
+
 type route struct {
 	method, path, annotation string
 	entry                    int
@@ -32,6 +37,7 @@ type store struct {
 type Engine struct {
 	options   Options
 	code      []byte
+	schema    []byte
 	routes    []route
 	state     *store
 	mux       *http.ServeMux
@@ -73,7 +79,13 @@ func NewWithOptions(code []byte, options Options) (*Engine, error) {
 		e.routes = append(e.routes, route{method: method, path: path, annotation: annotation})
 		return nil
 	})
-	p, err := lmcode.Load(e.code, Schema, reg)
+	e.schema = Schema
+	p, err := lmcode.Load(e.code, e.schema, reg)
+	if err != nil {
+		if old, oldErr := lmcode.Load(e.code, legacySchema, reg); oldErr == nil {
+			p, err, e.schema = old, nil, legacySchema
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +175,7 @@ func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 	x := &exchange{request: r, body: string(body), status: 200, headers: make(http.Header), state: e.state}
 	// A fresh registry isolates VM arenas and execution locks between concurrent requests.
 	reg := registry(e.options, e.state, func(string, string, string) error { return errors.New("route() is only available during startup") })
-	p, err := lmcode.Load(e.code, Schema, reg)
+	p, err := lmcode.Load(e.code, e.schema, reg)
 	if err == nil {
 		_, err = p.Call(route.entry, lmcode.NewContext(), reg, []lmcode.Value{lmcode.Object("Exchange", x)})
 	}

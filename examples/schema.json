@@ -1,6 +1,6 @@
 {
   "dsl.schema": 2,
-  "name": "lmmock_v1",
+  "name": "lmmock_v2",
   "types": {
     "Exchange": {
       "methods": {
@@ -228,6 +228,25 @@
           "string"
         ],
         "returns": "bool"
+      }
+    ],
+    "json_with": [
+      {
+        "params": [
+          "Json",
+          "string",
+          "Json"
+        ],
+        "returns": "Json"
+      }
+    ],
+    "json_render": [
+      {
+        "params": [
+          "Json",
+          "Json"
+        ],
+        "returns": "Json"
       }
     ]
   },

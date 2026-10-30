@@ -1,0 +1,26 @@
+# Ordinary runtime lmscript data: a template and a nested context map.
+template = {
+  message: "<request.text>",
+  metadata: "<metadata>",
+  items: "<request.items>"
+};
+context = {
+  request: {text: env("LMMOCK_GREETING") || "hello", items: []},
+  metadata: {provider: "lmmock", enabled: true}
+};
+
+p = _lmcode_ schema="schema.json";
+@message
+fn message(x: Exchange) -> void implements Handler {
+ let template = json_parse(${json_stringify(template)});
+ let context = json_parse(${json_stringify(context)});
+ if (x.query("text") != "") {
+  let text = json_parse(json_quote(x.query("text")));
+  context = json_with(context, "/request/text", text);
+  context = json_with(context, "/request/items/-", text);
+ }
+ x.json(json_render(template, context).to_json());
+}
+route("GET", "/message", "message");
+end _lmcode_
+savedsl(p, ARGV[0]);

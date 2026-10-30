@@ -16,6 +16,10 @@ Go/schema only for a reusable host capability that does not already exist.
 The non-HTTP mocks under internal/proto are separate; Handler does not implement
 their wire protocols.
 
+For new JSON-heavy fixtures, prefer [native lmscript response objects and structured
+updates](../docs/runtime-json.md). This avoids handwritten escaped JSON. The small
+example below still illustrates the raw-string host API.
+
 ## Minimal working Handler
 
 Place this beside examples/schema.json, or adjust the schema path:
@@ -74,7 +78,8 @@ state methods to retain data across requests, not local variables.
   Value helpers accumulate a result and return at the end. Handler branches use
   if/else, or while(true) with break for a single-pass early-exit pattern.
 - Keep internal/mock/schema.json and examples/schema.json byte-identical. Schema
-  changes require recompiling fixtures and checking the pinned host version.
+  changes require recompiling fixtures and checking the pinned host version. The
+  current v2 host also accepts frozen v1 bytecode for compatibility.
 - Scripts are trusted. VM execution has no instruction deadline. Avoid unbounded
   loops. Responses, including the current LLM SSE fixture, are buffered.
 
