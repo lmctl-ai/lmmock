@@ -9,17 +9,25 @@ context = {
   metadata: {provider: "lmmock", enabled: true}
 };
 
+# Remove placeholder quotes from the serialized template: each is a JSON token.
+template_text = json_stringify(template);
+for (path in ["request.text", "metadata", "request.items"]) {
+ template_text = replace(template_text, json_stringify("<" + path + ">"), "<" + path + ">");
+}
+
 p = _lmcode_ schema="schema.json";
 @message
 fn message(x: Exchange) -> void implements Handler {
- let template = json_parse(${json_stringify(template)});
+ let template = ${template_text};
  let context = json_parse(${json_stringify(context)});
  if (x.query("text") != "") {
   let text = json_parse(json_quote(x.query("text")));
   context = json_with(context, "/request/text", text);
   context = json_with(context, "/request/items/-", text);
  }
- x.json(json_render(template, context).to_json());
+ let text_token = json_parse(json_quote(json_quote(context.get("request").get("text").as_string())));
+ context = json_with(context, "/request/text", text_token);
+ x.json(json_parse(template_render(template, context)).to_json());
 }
 route("GET", "/message", "message");
 end _lmcode_

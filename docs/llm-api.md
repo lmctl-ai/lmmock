@@ -9,8 +9,8 @@ credential-echo behavior used by connector redaction tests. The new fixture does
 not echo credentials in authentication errors.
 
 Response templates are now native lmscript JSON objects, passed into lmcode at
-script execution. Handlers use immutable typed template rendering and structured updates instead of escaped
-JSON string construction. See [runtime JSON data flow](runtime-json.md).
+script execution. Handlers use standard `template_render` with explicit JSON string encoding
+and immutable structured updates. See [runtime JSON data flow](runtime-json.md).
 
 ## Implemented interfaces
 
