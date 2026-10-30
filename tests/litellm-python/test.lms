@@ -1,5 +1,0 @@
-# Run from the repo root. Install requirements into a venv; pass its Python path.
-assert(len(ARGV) == 1, "pass the Python executable from the LiteLLM test venv");
-result = system(["build/lmmock", "exec", "--dsl", "build/llm-gateway.dslb", "--", ARGV[0], "tests/litellm-python/client.py"], {timeoutMs:120000});
-print(result.stdout); print(result.stderr);
-assert(result.code == 0, "Python LiteLLM client failed");

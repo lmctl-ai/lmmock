@@ -7,7 +7,7 @@ try {
  const config=join(dir,'config.json');
  writeFileSync(config,JSON.stringify({apiKey:'fixture-key'}));
  const r=spawnSync(resolve(process.argv[2] || 'build/lmmock'),[
-  'exec','--dsl','build/llm-gateway.dslb','--config',config,'--',
+  'exec','--dsl','build/llm-api.dslb','--config',config,'--',
   process.execPath,'tests/vercel/acceptance.mjs'
  ],{stdio:'inherit',env:{...process.env,MOCK_CONFIG:config},timeout:120000});
  if(r.error) throw r.error;
