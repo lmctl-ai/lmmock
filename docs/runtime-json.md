@@ -3,78 +3,43 @@
 See [json-response.lms](../examples/json-response.lms) for the small example and
 [llm-api.lms](../examples/llm-api.lms) for the full OpenAI, Anthropic and Gemini mock.
 
-## JSON template renderer: Go reference implementation
+## Standard text templates
 
-The reusable, standard-library-only package is
-[pkg/jsontemplate](../pkg/jsontemplate/render.go):
-
-~~~go
-result, err := jsontemplate.Render(templateJSON, contextJSON)
-~~~
-
-Its lmcode host adapter exposes:
+lmmock uses lmcode-go's standard function (SDK v0.6.38):
 
 ~~~text
-json_render(template: Json, context: Json) -> Json
+template_render(template: string, context: Json) -> string
 ~~~
 
-A template is valid JSON with placeholders inside string values. The context
-must be a JSON object and can contain arbitrarily nested JSON values:
+There is no lmmock-specific template engine. Templates can contain any text;
+JSON is only the container for the context. The portable contract and shared
+conformance vectors live in the SDK's `std/template.md` and
+`std/template-cases.json`.
 
-~~~json
-{
-  "message": "Hello, <user.name>!",
-  "profile": "<user.profile>",
-  "firstId": "<items.0.id>"
-}
-~~~
+- Nested maps: `<user.profile.name>`.
+- List indexes: `<items[0].name>`.
+- Loops: `<items:{item|<index>:<item.name>}; separator=", ">`.
+- Boolean conditions: `<if(user.active)>yes<else>no<endif>`.
+- Literal opening bracket: `<<` emits `<`.
+- Substitution is one pass. Inserted text containing placeholders stays literal.
+- Strings insert as raw text; other values insert as compact JSON.
+- Missing paths, wrong types and malformed blocks fail. Only the selected
+  conditional branch is evaluated. There are no expressions, includes or macros.
 
-Given this context:
+The renderer does not escape JSON, HTML or any other format. For JSON output,
+encode string values with `json_quote` before placing them in the context;
+objects and lists can be inserted directly. Then use `json_parse` to validate
+the rendered text before sending it.
 
-~~~json
-{
-  "user": {"name": "World", "profile": {"enabled": true}},
-  "items": [{"id": 7}]
-}
-~~~
+The examples construct native lmscript objects and serialize them with
+`json_stringify`. At script execution, they remove the quotes around the
+specific whole-token placeholders they own. Handlers supply encoded string
+tokens or structured values. This avoids handwritten escaped JSON while keeping
+format-specific encoding explicit. Do not remove quotes around arbitrary data.
 
-The result is:
-
-~~~json
-{
-  "message": "Hello, World!",
-  "profile": {"enabled": true},
-  "firstId": 7
-}
-~~~
-
-### Portable contract
-
-- A whole-value placeholder preserves the selected JSON type: string, number,
-  boolean, null, array or object. It can also replace the template root.
-- Inline placeholders accept strings, numbers, booleans and null. Numbers keep
-  their JSON spelling; booleans and null become their JSON text. Objects and
-  arrays in inline text are errors, avoiding ambiguous serialization.
-- Paths use ASCII identifiers and dots; subsequent components can be decimal
-  array indexes. Arrays use canonical zero-based indexes (0, 1, 2; no 01).
-  Keys containing dots, hyphens or other punctuation are not addressable in
-  this first API; entire objects containing such keys can still be inserted.
-- Missing paths, invalid JSON and a non-object context produce errors. Error
-  wording and object key order are not part of the portable contract.
-- Only string values are interpreted, never object keys. Rendering is one pass:
-  inserted values containing placeholders stay literal.
-- Use << to emit a literal <, so "<<user.name>" produces "<user.name>".
-  Other text that is not a recognized placeholder is preserved.
-- Inputs remain unchanged. Large numbers retain their original JSON lexemes;
-  the Go implementation does not convert them to float64.
-- Angle-bracket placeholders do not overlap with lmscript ${...} interpolation.
-  This is a small JSON-aware template language inspired by StringTemplate,
-  not an implementation of its loops, conditions or full syntax.
-
-[render_test.go](../pkg/jsontemplate/render_test.go) contains conformance vectors
-for porting this contract to other lmcode hosts. The current schema registration
-lives in lmmock; promoting json_render into lmcode's standard schema and SDKs is
-a separate step. There is no Java or ANTLR dependency.
+Angle-bracket placeholders do not overlap with lmscript interpolation. The
+small example demonstrates escaped request strings, nested maps and lists;
+the LLM fixture uses the same standard function for response envelopes.
 
 ## Data is not the interface schema
 
@@ -158,11 +123,12 @@ typed fields as needed, and serialize at the HTTP boundary. Tool arguments that 
 with lmscript json_stringify, not handwritten escaping. SSE framing remains text;
 its JSON event bodies use the same objects. SSE remains buffered.
 
-The updated host schema is lmmock_v2. The host also accepts the frozen
-schema-v1.json contract so previously compiled fixtures continue to run.
-New scripts calling json_render or json_with require the new host; an older binary cannot run
-them. Do not copy the new schema into a client repo while leaving its lmmock
-binary pinned to an older release.
+The updated host schema is lmmock_v3. The host also accepts the frozen
+schema-v1.json contract. Recompile v2 fixtures: the former local `json_render`
+function has been removed in favor of standard `template_render`. Update the
+lmmock binary and schema together. The explicit standard signature in the host
+schema also allows compilation with an npm compiler whose bundled catalog has
+not yet received the standard function.
 
 Validation includes the full 60-scenario SDK suite, template paths, escaping, JSON types, JSON Pointer and numeric
 edge cases, an old-schema compiled handler, and a real --script startup test.

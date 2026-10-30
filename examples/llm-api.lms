@@ -425,18 +425,31 @@ responses = {
   }
 };
 
+# Build text templates from native JSON objects. Placeholders stand for complete
+# JSON tokens; handlers explicitly quote string tokens before rendering.
+response_templates = {};
+for (name in ["chat_response", "responses_response", "anthropic_message", "gemini_response"]) {
+ text = json_stringify(responses[name]);
+ for (path in ["response.model", "response.item", "response.reason"]) {
+  text = replace(text, json_stringify("<" + path + ">"), "<" + path + ">");
+ }
+ response_templates[name] = text;
+}
+
 p = _lmcode_ schema="schema.json";
 fn fixture(name: string) -> Json { return json_parse(${json_stringify(responses)}).get(name); }
+
+fn response_template(name: string) -> string { return json_parse(${json_stringify(response_templates)}).get(name).as_string(); }
 
 fn json_text(value: string) -> Json { return json_parse(json_quote(value)); }
 fn with_text(document: Json, pointer: string, value: string) -> Json { return json_with(document,pointer,json_text(value)); }
 fn render_response(name: string, model: string, item: Json, reason: string) -> string {
  let values = json_parse("{}");
- values = json_with(values,"/model",json_text(model));
+ values = json_with(values,"/model",json_text(json_quote(model)));
  values = json_with(values,"/item",item);
- values = json_with(values,"/reason",json_text(reason));
+ values = json_with(values,"/reason",json_text(json_quote(reason)));
  let context = json_with(json_parse("{}"),"/response",values);
- return json_render(fixture(name),context).to_json();
+ return json_parse(template_render(response_template(name),context)).to_json();
 }
 
 fn field(j: Json, key: string) -> string { let value = ""; if (j.has(key)) { value = j.get(key).as_string(); } return value; }

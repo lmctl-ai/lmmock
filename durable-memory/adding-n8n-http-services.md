@@ -79,7 +79,9 @@ state methods to retain data across requests, not local variables.
   if/else, or while(true) with break for a single-pass early-exit pattern.
 - Keep internal/mock/schema.json and examples/schema.json byte-identical. Schema
   changes require recompiling fixtures and checking the pinned host version. The
-  current v2 host also accepts frozen v1 bytecode for compatibility.
+  current v3 host also accepts frozen v1 bytecode for compatibility. Recompile
+  v2 fixtures after replacing json_render with standard template_render. See
+  [runtime JSON data flow](../docs/runtime-json.md) for explicit JSON encoding.
 - Scripts are trusted. VM execution has no instruction deadline. Avoid unbounded
   loops. Responses, including the current LLM SSE fixture, are buffered.
 
