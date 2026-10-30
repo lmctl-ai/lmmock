@@ -16,6 +16,11 @@ not echo credentials in authentication errors.
 | POST /v1/responses | Text, function calls and continuation, JSON output, Responses SSE events and usage |
 | POST /v1/embeddings | Single/batch inputs return deterministic three-dimensional vectors |
 | GET /v1/models | Deterministic model discovery |
+| POST /v1/messages | Native Anthropic Messages: text, tool_use/tool_result, structured output and named SSE events |
+| POST /v1beta/models/{model}:generateContent | Native Gemini text, functionCall/functionResponse and structured output |
+| POST /v1beta/models/{model}:streamGenerateContent | Native Gemini SSE with usageMetadata |
+| POST /v1beta/models/{model}:embedContent | Gemini single embedding |
+| POST /v1beta/models/{model}:batchEmbedContents | Gemini batch embeddings |
 | GET /__inspect | Last request for assertions; synthetic test credentials only |
 
 Unprefixed /chat/completions, /responses, /embeddings and /models also work.
@@ -55,6 +60,46 @@ for await (const text of streamed.textStream) process.stdout.write(text);
 For ephemeral integration tests, use lmmock exec. It exports LMMOCK_URL to the
 child, waits for the client to finish, propagates its exit code and closes the
 server. See tests/vercel/run.mjs for a complete temporary-config example.
+
+## Anthropic and Gemini clients
+
+All three API families run on the same server. Use native SDK providers:
+
+~~~js
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { generateText } from 'ai';
+
+const anthropic = createAnthropic({
+  baseURL: 'http://127.0.0.1:4000/v1',
+  apiKey: 'fixture-key',
+});
+const gemini = createGoogleGenerativeAI({
+  baseURL: 'http://127.0.0.1:4000/v1beta',
+  apiKey: 'fixture-key',
+});
+await generateText({ model: anthropic('claude-sonnet-4-5'), prompt: 'ping' });
+await generateText({ model: gemini('gemini-2.5-flash'), prompt: 'ping' });
+~~~
+
+These model IDs select the clients' request formats; no live models are called.
+The mock accepts arbitrary model IDs for these native routes.
+
+When apiKey is configured, OpenAI requires Authorization: Bearer, Anthropic
+requires x-api-key, and Gemini requires x-goog-api-key or a key query parameter.
+Anthropic also requires an anthropic-version header; its SDK supplies it.
+A Bearer token alone is rejected on the native Anthropic and Gemini endpoints.
+
+Native errors retain their provider envelope. Anthropic uses type:error and
+error.type (401 authentication_error, 429 rate_limit_error, 529 overloaded_error).
+Gemini uses error.code/status/message (403 PERMISSION_DENIED,
+429 RESOURCE_EXHAUSTED, 503 UNAVAILABLE). Unsupported Gemini operation suffixes
+return 404 NOT_FOUND. The same configured failure modes apply across providers.
+
+Wire formats were checked against the installed native provider source and
+the [Anthropic SDK provider documentation](https://ai-sdk.dev/providers/ai-sdk-providers/anthropic)
+and [Gemini API reference](https://ai.google.dev/api/generate-content).
+Vercel is a sample acceptance client, not the definition of the server's scope.
 
 ## Customize with lmcode or configuration
 
@@ -96,11 +141,13 @@ The tests use real installed client libraries and a real loopback server.
 No fetch stub, custom Vercel provider or live LLM credentials are used.
 
 - Vercel AI SDK: ai 7.0.157, @ai-sdk/openai 4.0.105,
-  @ai-sdk/openai-compatible 3.0.81; exact npm lockfile in tests/vercel.
-  Thirty scenarios cover three provider paths, text, SSE, usage, tool execution
+  @ai-sdk/openai-compatible 3.0.81, @ai-sdk/anthropic 4.0.92 and
+  @ai-sdk/google 4.0.108; exact npm lockfile in tests/vercel.
+  Sixty scenarios cover five provider paths, text, SSE, usage, tool execution
   and streamed multi-step workflows, tool-choice none, structured output,
   embeddings, model discovery, HTTP errors, malformed JSON, retries, disconnects,
-  deadlines and credential rejection.
+  deadlines and credential rejection, including native authentication and errors.
+
 Run the normal suite after installing the test-only npm packages:
 
 ~~~sh
@@ -116,6 +163,8 @@ was a design reference only; Vercel AI SDK acceptance is the test target.
 
 This is a standalone mock LLM API server. It does not route requests to models,
 perform inference, or implement production billing or provider translation.
-Native Anthropic/Gemini/Bedrock formats, audio/images/files and Responses
-persistence are not implemented. Vercel compatibility means the pinned versions
+OpenAI, Anthropic and Gemini text/tool contracts are supported. Bedrock,
+multimodal generation, provider-hosted tools, Anthropic thinking, Gemini grounding,
+provider model catalogs (except the OpenAI fixture) and Responses persistence are
+not implemented. Vercel compatibility means the pinned versions
 and scenarios above, not every provider or feature in the SDK.

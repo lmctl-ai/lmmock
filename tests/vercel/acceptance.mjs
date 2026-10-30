@@ -4,16 +4,20 @@ import {generateText,streamText,embed,embedMany,tool,stepCountIs,Output} from 'a
 import {createOpenAI} from '@ai-sdk/openai';
 import {createOpenAICompatible} from '@ai-sdk/openai-compatible';
 import {z} from 'zod';
+import {createAnthropic} from '@ai-sdk/anthropic';
+import {createGoogleGenerativeAI} from '@ai-sdk/google';
 const baseURL=process.env.LMMOCK_URL+'/v1';
 assert.ok(process.env.LMMOCK_URL,'Run via tests/vercel/run.mjs');
 const set=patch=>writeFileSync(process.env.MOCK_CONFIG,JSON.stringify({apiKey:'fixture-key',...patch}));
 const openai=createOpenAI({baseURL,apiKey:'fixture-key'});
 const compatible=createOpenAICompatible({name:'lmmock',baseURL,apiKey:'fixture-key',includeUsage:true,supportsStructuredOutputs:true});
+const anthropic=createAnthropic({baseURL,apiKey:'fixture-key'});
+const google=createGoogleGenerativeAI({baseURL:process.env.LMMOCK_URL+'/v1beta',apiKey:'fixture-key'});
 const schema=z.object({city:z.string()});
 const tools={weather:tool({description:'Weather in a city',inputSchema:schema,execute:async({city})=>({city,temperature:21})})};
 let passed=0;
 async function check(name,fn){set({});await fn();passed++;console.log('PASS '+name);}
-for(const [name,model] of [['compatible',compatible.chatModel('mock-agent')],['openai-chat',openai.chat('mock-agent')],['openai-responses',openai('mock-agent')]]){
+for(const [name,model] of [['compatible',compatible.chatModel('mock-agent')],['openai-chat',openai.chat('mock-agent')],['openai-responses',openai('mock-agent')],['anthropic',anthropic('claude-sonnet-4-5')],['gemini',google('gemini-2.5-flash')]]){
  await check(name+' generateText',async()=>{
   const r=await generateText({model,prompt:'ping',maxRetries:0});
   assert.equal(r.text,'pong'); assert.equal(r.finishReason,'stop');
@@ -45,7 +49,7 @@ for(const [name,model] of [['compatible',compatible.chatModel('mock-agent')],['o
   assert.deepEqual(r.output,{city:'Paris'});
  });
 }
-for(const [name,model] of [['compatible',compatible.embeddingModel('mock-embedding')],['openai',openai.embedding('mock-embedding')]]){
+for(const [name,model] of [['compatible',compatible.embeddingModel('mock-embedding')],['openai',openai.embedding('mock-embedding')],['gemini',google.embedding('gemini-embedding-001')]]){
  await check(name+' embeddings',async()=>{
   const single=await embed({model,value:'one',maxRetries:0});
   assert.deepEqual(single.embedding,[0.1,0.2,0.3]);
@@ -88,5 +92,54 @@ await check('client deadline aborts slow handler',async()=>{
 await check('real bad credential',async()=>{
  const wrong=createOpenAICompatible({name:'bad',baseURL,apiKey:'wrong'});
  await assert.rejects(generateText({model:wrong('mock-agent'),prompt:'ping',maxRetries:0}),e=>e.statusCode===401 && !e.message.includes('wrong'));
+});
+
+for(const [name,model,statuses] of [
+ ['anthropic',anthropic('claude-sonnet-4-5'),[401,429,529]],
+ ['gemini',google('gemini-2.5-flash'),[403,429,503]]
+]){
+ for(const [index,mode] of ['unauthorized','rate-limit','server-error'].entries()) {
+  await check(name+' '+mode,async()=>{
+   set({mode});
+   await assert.rejects(generateText({model,prompt:'ping',maxRetries:0}),e=>e.statusCode===statuses[index]);
+  });
+ }
+ await check(name+' malformed JSON',async()=>{
+  set({mode:'bad-json'});
+  await assert.rejects(generateText({model,prompt:'ping',maxRetries:0}));
+ });
+ await check(name+' disconnect',async()=>{
+  set({mode:'disconnect'});
+  await assert.rejects(generateText({model,prompt:'ping',maxRetries:0}));
+ });
+ await check(name+' deadline',async()=>{
+  set({mode:'timeout'});
+  await assert.rejects(generateText({model,prompt:'ping',maxRetries:0,abortSignal:AbortSignal.timeout(50)}));
+ });
+ await check(name+' configurable text',async()=>{
+  set({text:'configured'});
+  assert.equal((await generateText({model,prompt:'ping',maxRetries:0})).text,'configured');
+ });
+}
+await check('Anthropic enforces native authentication and version',async()=>{
+ for(const [headers,status,type] of [
+  [{Authorization:'Bearer fixture-key','anthropic-version':'2023-06-01'},401,'authentication_error'],
+  [{'x-api-key':'fixture-key'},400,'invalid_request_error']
+ ]){
+  const r=await fetch(baseURL+'/messages',{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify({model:'mock',messages:[],max_tokens:10})});
+  assert.equal(r.status,status); assert.equal((await r.json()).error.type,type);
+ }
+});
+await check('Gemini enforces native auth and accepts query key',async()=>{
+ const url=process.env.LMMOCK_URL+'/v1beta/models/mock:generateContent';
+ const body=JSON.stringify({contents:[{parts:[{text:'ping'}]}]});
+ const bad=await fetch(url,{method:'POST',headers:{Authorization:'Bearer fixture-key'},body});
+ assert.equal(bad.status,403);assert.equal((await bad.json()).error.status,'PERMISSION_DENIED');
+ const good=await fetch(url+'?key=fixture-key',{method:'POST',body});
+ assert.equal(good.status,200);assert.equal((await good.json()).candidates[0].content.parts[0].text,'pong');
+});
+await check('Gemini rejects unsupported operations',async()=>{
+ const r=await fetch(process.env.LMMOCK_URL+'/v1beta/models/mock:unsupported',{method:'POST',headers:{'x-goog-api-key':'fixture-key'},body:'{}'});
+ assert.equal(r.status,404);assert.equal((await r.json()).error.status,'NOT_FOUND');
 });
 console.log('PASS Vercel AI SDK acceptance: '+passed+' scenarios');

@@ -135,5 +135,158 @@ fn responses(x: Exchange) -> void implements Handler {
 route("GET","/v1/models","models");route("GET","/models","models");
 route("POST","/v1/embeddings","embeddings");route("POST","/embeddings","embeddings");
 route("POST","/v1/responses","responses");route("POST","/responses","responses");
+
+
+# Native provider policies preserve their credential and error envelopes.
+fn native_error(x: Exchange, provider: string, status: int, kind: string, message: string) -> void {
+ x.status(status);
+ if (provider == "anthropic") {
+  x.json("{\"type\":\"error\",\"error\":{\"type\":" + json_quote(kind) + ",\"message\":" + json_quote(message) + "}}");
+ } else {
+  x.json("{\"error\":{\"code\":" + str(status) + ",\"status\":" + json_quote(kind) + ",\"message\":" + json_quote(message) + "}}");
+ }
+}
+fn native_allowed(x: Exchange, provider: string) -> bool {
+ let c = json_parse(config()); let mode = field(c,"mode"); let ok = true;
+ let credential = x.header("x-api-key");
+ if (provider == "gemini") {
+  credential = x.header("x-goog-api-key");
+  if (credential == "") { credential = x.query("key"); }
+ }
+ if (c.has("apiKey")) { ok = secure_equal(credential,field(c,"apiKey")); }
+ if (!ok || mode == "unauthorized") {
+  ok = false;
+  if (provider == "anthropic") { native_error(x,provider,401,"authentication_error","Invalid API key"); }
+  else { native_error(x,provider,403,"PERMISSION_DENIED","Invalid API key"); }
+ } else if (provider == "anthropic" && x.header("anthropic-version") == "") {
+  ok = false; native_error(x,provider,400,"invalid_request_error","anthropic-version is required");
+ } else if (mode == "rate-limit") {
+  ok = false; x.set_header("Retry-After","1");
+  if (provider == "anthropic") { native_error(x,provider,429,"rate_limit_error","Rate limited"); }
+  else { native_error(x,provider,429,"RESOURCE_EXHAUSTED","Rate limited"); }
+ } else if (mode == "server-error") {
+  ok = false;
+  if (provider == "anthropic") { native_error(x,provider,529,"overloaded_error","Overloaded"); }
+  else { native_error(x,provider,503,"UNAVAILABLE","Unavailable"); }
+ } else if (mode == "bad-json") { ok = false; x.json("{broken"); }
+ else if (mode == "disconnect") { ok = false; x.disconnect(); }
+ else if (mode == "timeout") { x.delay(1000); }
+ return ok;
+}
+@anthropic_messages
+fn anthropic_messages(x: Exchange) -> void implements Handler {
+ x.set("last",x.request_json());
+ if (native_allowed(x,"anthropic")) {
+  let b = json_parse(x.body()); let c = json_parse(config()); let text = "pong";
+  if (c.has("text")) { text = field(c,"text"); }
+  let tool_result = false;
+  let messages = b.get("messages");
+  for (i in range(0,messages.len())) {
+   let blocks = messages.at(i).get("content");
+   if (str_starts_with(blocks.to_json(),"[")) {
+    for (j in range(0,blocks.len())) {
+     if (field(blocks.at(j),"type") == "tool_result") {
+      tool_result = true; text = "Tool result: " + blocks.at(j).get("content").to_json();
+     }
+    }
+   }
+  }
+  let tool = false;
+  if (b.has("tools") && !tool_result) { tool = b.get("tools").len() > 0; }
+  if (b.has("tool_choice")) { if (field(b.get("tool_choice"),"type") == "none") { tool = false; } }
+  if (b.has("output_config")) {
+   if (b.get("output_config").has("format")) {
+    text = "{\"city\":\"Paris\"}";
+    if (c.has("structuredOutput")) { text = c.get("structuredOutput").to_json(); }
+   }
+  }
+  let reason = "end_turn";
+  let block = "{\"type\":\"text\",\"text\":" + json_quote(text) + "}";
+  let start_block = "{\"type\":\"text\",\"text\":\"\"}";
+  let delta = "{\"type\":\"text_delta\",\"text\":" + json_quote(text) + "}";
+  if (tool) {
+   reason = "tool_use";
+   let name = field(b.get("tools").at(0),"name");
+   block = "{\"type\":\"tool_use\",\"id\":\"call_1\",\"name\":" + json_quote(name) + ",\"input\":{\"city\":\"Paris\"}}";
+   start_block = "{\"type\":\"tool_use\",\"id\":\"call_1\",\"name\":" + json_quote(name) + ",\"input\":{}}";
+   delta = "{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"city\\\":\\\"Paris\\\"}\"}";
+  }
+  let prefix = "{\"id\":\"msg_mock\",\"type\":\"message\",\"role\":\"assistant\",\"model\":" + json_quote(field(b,"model"));
+  let response = prefix + ",\"content\":[" + block + "],\"stop_reason\":" + json_quote(reason) + ",\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":2}}";
+  let stream = false; if (b.has("stream")) { stream = b.get("stream").as_bool(); }
+  if (!stream) { x.json(response); }
+  else {
+   x.set_header("Content-Type","text/event-stream");
+   let events = event("message_start","{\"type\":\"message_start\",\"message\":" + prefix + ",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2,\"output_tokens\":0}}}");
+   events = events + event("content_block_start","{\"type\":\"content_block_start\",\"index\":0,\"content_block\":" + start_block + "}");
+   events = events + event("content_block_delta","{\"type\":\"content_block_delta\",\"index\":0,\"delta\":" + delta + "}");
+   events = events + event("content_block_stop","{\"type\":\"content_block_stop\",\"index\":0}");
+   events = events + event("message_delta","{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":" + json_quote(reason) + ",\"stop_sequence\":null},\"usage\":{\"output_tokens\":2}}");
+   events = events + event("message_stop","{\"type\":\"message_stop\"}");
+   x.send(events);
+  }
+ }
+}
+@gemini_content
+fn gemini_content(x: Exchange) -> void implements Handler {
+ x.set("last",x.request_json());
+ if (native_allowed(x,"gemini")) {
+  let operation = x.param("operation");
+  if (str_ends_with(operation,":embedContent")) {
+   x.json("{\"embedding\":{\"values\":[0.1,0.2,0.3]}}");
+  } else if (str_ends_with(operation,":batchEmbedContents")) {
+   let b = json_parse(x.body()); let rows = "";
+   let requests = b.get("requests");
+   for (i in range(0,requests.len())) {
+    if (i > 0) { rows = rows + ","; }
+    rows = rows + "{\"values\":[0.1,0.2,0.3]}";
+   }
+   x.json("{\"embeddings\":[" + rows + "]}");
+  } else if (!str_ends_with(operation,":generateContent") && !str_ends_with(operation,":streamGenerateContent")) {
+   native_error(x,"gemini",404,"NOT_FOUND","Unsupported model operation");
+  } else {
+   let b = json_parse(x.body()); let c = json_parse(config()); let text = "pong";
+   if (c.has("text")) { text = field(c,"text"); }
+   let tool_result = false; let contents = b.get("contents");
+   for (i in range(0,contents.len())) {
+    let parts = contents.at(i).get("parts");
+    for (j in range(0,parts.len())) {
+     if (parts.at(j).has("functionResponse")) {
+      tool_result = true; text = "Tool result: " + parts.at(j).get("functionResponse").get("response").to_json();
+     }
+    }
+   }
+   let tool_name = "";
+   if (b.has("tools") && !tool_result) {
+    let tools = b.get("tools");
+    for (i in range(0,tools.len())) {
+     if (tools.at(i).has("functionDeclarations")) {
+      let declarations = tools.at(i).get("functionDeclarations");
+      if (declarations.len() > 0 && tool_name == "") { tool_name = field(declarations.at(0),"name"); }
+     }
+    }
+   }
+   if (b.has("toolConfig")) {
+    if (b.get("toolConfig").has("functionCallingConfig")) {
+     if (field(b.get("toolConfig").get("functionCallingConfig"),"mode") == "NONE") { tool_name = ""; }
+    }
+   }
+   if (b.has("generationConfig")) {
+    if (field(b.get("generationConfig"),"responseMimeType") == "application/json") {
+     text = "{\"city\":\"Paris\"}";
+     if (c.has("structuredOutput")) { text = c.get("structuredOutput").to_json(); }
+    }
+   }
+   let part = "{\"text\":" + json_quote(text) + "}";
+   if (tool_name != "") { part = "{\"functionCall\":{\"name\":" + json_quote(tool_name) + ",\"args\":{\"city\":\"Paris\"}}}"; }
+   let response = "{\"candidates\":[{\"index\":0,\"content\":{\"role\":\"model\",\"parts\":[" + part + "]},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":2,\"candidatesTokenCount\":2,\"totalTokenCount\":4},\"modelVersion\":\"mock-gemini\"}";
+   if (str_ends_with(operation,":streamGenerateContent")) {
+    x.set_header("Content-Type","text/event-stream"); x.send("data: " + response + "\n\n");
+   } else { x.json(response); }
+  }
+ }
+}
+route("POST","/v1/messages","anthropic_messages");
+route("POST","/v1beta/models/{operation}","gemini_content");
 end _lmcode_
 savedsl(p,ARGV[0]);
