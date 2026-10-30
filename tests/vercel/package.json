@@ -1,0 +1,14 @@
+{
+  "name": "lmmock-vercel-acceptance",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node acceptance.mjs"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "4.0.105",
+    "@ai-sdk/openai-compatible": "3.0.81",
+    "ai": "7.0.157",
+    "zod": "4.6.7"
+  }
+}

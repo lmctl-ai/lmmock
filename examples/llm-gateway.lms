@@ -1,0 +1,139 @@
+# LiteLLM/OpenAI-compatible deterministic API fixture. See docs/llm-gateway.md.
+p = _lmcode_ schema="schema.json";
+fn field(j: Json, key: string) -> string { let value = ""; if (j.has(key)) { value = j.get(key).as_string(); } return value; }
+@chat
+fn completion(x: Exchange) -> void implements Handler {
+ while (true) {
+  x.set("last",x.request_json());
+  let c = json_parse(config()); let mode = field(c,"mode"); let auth = x.header("Authorization");
+  if (mode == "unauthorized" || (c.has("apiKey") && !secure_equal(auth,"Bearer " + field(c,"apiKey")))) { x.status(401); x.json("{\"error\":{\"message\":" + json_quote("Invalid API key") + ",\"type\":\"authentication_error\"}}"); break; }
+  let retry = false; if (mode == "retry") { retry = x.increment("llm-retry") == 1; }
+  if (mode == "rate-limit" || retry) { x.status(429); x.set_header("Retry-After","1"); x.json("{\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"}}"); break; }
+  if (mode == "server-error") { x.status(503); x.json("{\"error\":{\"message\":\"unavailable\"}}"); break; }
+  if (mode == "disconnect") { x.disconnect(); break; }
+  if (mode == "bad-json") { x.json("{broken"); break; }
+  if (mode == "timeout") { x.delay(1000); }
+  let request = json_parse(x.body()); let model = "mock-agent"; if (request.has("model")) { model = field(request,"model"); }
+  if (mode == "unknown-model" || model == "unknown-model") { x.status(404); x.json("{\"error\":{\"message\":\"model not found\",\"type\":\"invalid_request_error\",\"code\":\"model_not_found\"}}"); break; }
+  if (model == "overloaded") { x.status(429); x.set_header("Retry-After","1"); x.json("{\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"}}"); break; }
+  let content = "pong"; let reason = "stop"; let message = ""; let tool = false;
+  let messages = request.get("messages"); let tool_result = false;
+  for (i in range(0,messages.len())) { if (field(messages.at(i),"role") == "tool") { tool_result = true; content = "Tool result: " + field(messages.at(i),"content"); } }
+  if (request.has("tools") && !tool_result) { tool = request.get("tools").len() > 0; }
+  if (request.has("tool_choice")) { if (request.get("tool_choice").to_json() == json_quote("none")) { tool = false; } }
+  if (c.has("text")) { content = field(c,"text"); }
+  if (request.has("response_format")) { content = "{\"city\":\"Paris\"}"; if (c.has("structuredOutput")) { content = c.get("structuredOutput").to_json(); } }
+  if (mode == "ok" || mode == "echo" || mode == "timeout") { model = "served-model"; }
+  if (c.has("responseModel")) { model = field(c,"responseModel"); }
+  if (mode == "echo") { content = str_substr(auth,7,str_len(auth)); }
+  let tools = "[]";
+  if (tool) {
+   let name = field(request.get("tools").at(0).get("function"),"name");
+   tools = "[{\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":" + json_quote(name) + ",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\"}}]";
+   reason = "tool_calls"; message = "{\"role\":\"assistant\",\"content\":null,\"tool_calls\":" + tools + "}";
+  } else { message = "{\"role\":\"assistant\",\"content\":" + json_quote(content) + "}"; }
+  let stream = false; if (request.has("stream")) { stream = request.get("stream").as_bool(); }
+  if (stream) {
+   x.set_header("Content-Type","text/event-stream");
+   let delta = "{\"role\":\"assistant\",\"content\":" + json_quote(content) + "}";
+   if (tool) { let name = field(request.get("tools").at(0).get("function"),"name"); delta = "{\"role\":\"assistant\",\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":" + json_quote(name) + ",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\"}}]}"; }
+   x.send("data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"delta\":" + delta + ",\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":" + json_quote(reason) + "}]}\n\ndata: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":\"mock-agent\",\"choices\":[],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":2,\"total_tokens\":4}}\n\ndata: [DONE]\n\n");
+  } else { x.json("{\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"message\":" + message + ",\"finish_reason\":" + json_quote(reason) + "}],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":2,\"total_tokens\":4}}"); }
+  break;
+ }
+}
+@inspect
+fn inspect(x: Exchange) -> void implements Handler { let last = x.get("last"); if (last == "") { last = "{}"; } x.json(last); }
+route("POST","/chat/completions","chat");
+route("POST","/api/v1/chat/completions","chat");
+route("POST","/v1/chat/completions","chat");route("GET","/__inspect","inspect");
+
+
+# Shared policy for models, embeddings and Responses.
+fn gateway_allowed(x: Exchange) -> bool {
+ let c = json_parse(config()); let ok = true;
+ if (c.has("apiKey")) {
+  ok = secure_equal(x.header("Authorization"), "Bearer " + field(c,"apiKey"));
+ }
+ let mode = field(c,"mode");
+ if (!ok || mode == "unauthorized") { ok = false; x.status(401); x.json("{\"error\":{\"message\":\"Invalid API key\",\"type\":\"authentication_error\",\"code\":\"invalid_api_key\"}}"); }
+ else if (mode == "rate-limit") { ok = false; x.status(429); x.set_header("Retry-After","1"); x.json("{\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"}}"); }
+ else if (mode == "server-error") { ok = false; x.status(503); x.json("{\"error\":{\"message\":\"unavailable\",\"type\":\"server_error\"}}"); }
+ else if (mode == "disconnect") { ok = false; x.disconnect(); }
+ else if (mode == "bad-json") { ok = false; x.json("{broken"); }
+ else if (mode == "timeout") { x.delay(1000); }
+ return ok;
+}
+@models
+fn models(x: Exchange) -> void implements Handler {
+ if (gateway_allowed(x)) { x.json("{\"object\":\"list\",\"data\":[{\"id\":\"mock-agent\",\"object\":\"model\",\"created\":1700000000,\"owned_by\":\"lmmock\"},{\"id\":\"mock-embedding\",\"object\":\"model\",\"created\":1700000000,\"owned_by\":\"lmmock\"}]}"); }
+}
+@embeddings
+fn embeddings(x: Exchange) -> void implements Handler {
+ x.set("last",x.request_json());
+ if (gateway_allowed(x)) {
+  let b = json_parse(x.body()); let count = 1;
+  if (str_starts_with(b.get("input").to_json(),"[")) { count = b.get("input").len(); }
+  let data = "";
+  for (i in range(0,count)) {
+   if (i > 0) { data = data + ","; }
+   data = data + "{\"object\":\"embedding\",\"index\":" + str(i) + ",\"embedding\":[0.1,0.2,0.3]}";
+  }
+  x.json("{\"object\":\"list\",\"model\":" + json_quote(field(b,"model")) + ",\"data\":[" + data + "],\"usage\":{\"prompt_tokens\":2,\"total_tokens\":2}}");
+ }
+}
+fn event(kind: string, body: string) -> string { return "event: " + kind + "\ndata: " + body + "\n\n"; }
+@responses
+fn responses(x: Exchange) -> void implements Handler {
+ x.set("last",x.request_json());
+ if (gateway_allowed(x)) {
+  let b = json_parse(x.body()); let c = json_parse(config());
+  let model = field(b,"model"); let content = "pong";
+  if (c.has("text")) { content = field(c,"text"); }
+  let tool_result = false;
+  if (b.has("input")) {
+   if (str_starts_with(b.get("input").to_json(),"[")) {
+    let input = b.get("input");
+    for (i in range(0,input.len())) {
+     if (field(input.at(i),"type") == "function_call_output") {
+      tool_result = true; content = "Tool result: " + field(input.at(i),"output");
+     }
+    }
+   }
+  }
+  let tool = false;
+  if (b.has("tools") && !tool_result) { tool = b.get("tools").len() > 0; }
+  if (b.has("tool_choice")) { if (b.get("tool_choice").to_json() == json_quote("none")) { tool = false; } }
+  if (b.has("text")) {
+   if (b.get("text").has("format")) {
+    content = "{\"city\":\"Paris\"}";
+    if (c.has("structuredOutput")) { content = c.get("structuredOutput").to_json(); }
+   }
+  }
+  let item = "{\"type\":\"message\",\"id\":\"msg_mock\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":" + json_quote(content) + ",\"annotations\":[]}]}";
+  if (tool) {
+   item = "{\"type\":\"function_call\",\"id\":\"fc_mock\",\"call_id\":\"call_1\",\"status\":\"completed\",\"name\":" + json_quote(field(b.get("tools").at(0),"name")) + ",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\"}";
+  }
+  let response = "{\"id\":\"resp_mock\",\"object\":\"response\",\"created_at\":1700000000,\"status\":\"completed\",\"model\":" + json_quote(model) + ",\"output\":[" + item + "],\"usage\":{\"input_tokens\":2,\"output_tokens\":2,\"total_tokens\":4}}";
+  let stream = false; if (b.has("stream")) { stream = b.get("stream").as_bool(); }
+  if (!stream) { x.json(response); }
+  else {
+   x.set_header("Content-Type","text/event-stream");
+   let events = event("response.created","{\"type\":\"response.created\",\"response\":{\"id\":\"resp_mock\",\"created_at\":1700000000,\"model\":" + json_quote(model) + "}}");
+   events = events + event("response.output_item.added","{\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":" + item + "}");
+   if (!tool) {
+    events = events + event("response.content_part.added","{\"type\":\"response.content_part.added\",\"item_id\":\"msg_mock\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[]}}");
+    events = events + event("response.output_text.delta","{\"type\":\"response.output_text.delta\",\"item_id\":\"msg_mock\",\"output_index\":0,\"content_index\":0,\"delta\":" + json_quote(content) + "}");
+    events = events + event("response.output_text.done","{\"type\":\"response.output_text.done\",\"item_id\":\"msg_mock\",\"output_index\":0,\"content_index\":0,\"text\":" + json_quote(content) + "}");
+   }
+   events = events + event("response.output_item.done","{\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":" + item + "}");
+   events = events + event("response.completed","{\"type\":\"response.completed\",\"response\":" + response + "}");
+   x.send(events);
+  }
+ }
+}
+route("GET","/v1/models","models");route("GET","/models","models");
+route("POST","/v1/embeddings","embeddings");route("POST","/embeddings","embeddings");
+route("POST","/v1/responses","responses");route("POST","/responses","responses");
+end _lmcode_
+savedsl(p,ARGV[0]);

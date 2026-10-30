@@ -22,3 +22,5 @@ Go HTTP mock host backed by lmcode-go v0.6.37. Public repo lmctl-ai/lmmock, MIT.
 - [Uncovered n8n connectors](../n8n-connectors-uncovered.md): manifest-based backlog for both official base and AI node packages, with pinned source links, partial service/protocol coverage and utilities separated. Refresh this list when adding presets.
 
 - [Commerce/publishing presets](../docs/http-presets.md#commerce-and-publishing-presets): Shopify, WordPress and WooCommerce source-derived credential checks, two-page header-based pagination, create/read state and credential overrides. `tests/commerce.mjs` additionally checks pagination termination and overrides. Protected-site WordPress policy and omitted vendor operations are explicit.
+
+- [LLM API acceptance](../docs/llm-gateway.md): llm-gateway.lms adds annotated Chat/Responses/embeddings/models handlers. Real Vercel SDK and Go LiteLLM clients run from test.lms; Python LiteLLM client runs in an isolated Linux CI venv. Install npm ci --prefix tests/vercel before the main suite. Legacy llm.lms remains for credential-redaction tests. SSE is buffered; native Anthropic/Gemini and the Go typed gateway protocol are not implemented.

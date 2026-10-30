@@ -307,6 +307,12 @@ lmmock exec --dsl build/slack.dslb -- lmmock check --suite examples/slack-client
 
 ## LLM and agent workflow tests
 
+For a broader scriptable LLM API with **real Vercel AI SDK and LiteLLM client
+acceptance**, use [llm-gateway.lms](examples/llm-gateway.lms).
+It adds Responses, embeddings and model discovery alongside chat, tools and SSE.
+See [setup, tested clients and limits](docs/llm-gateway.md).
+
+
 [examples/llm.lms](examples/llm.lms) serves the shared OpenAI-compatible route family below. It returns
 OpenAI-compatible text, usage, tool calls and SSE-formatted responses. When tools
 are supplied it requests `lookup` (or the first supplied function) with Paris as

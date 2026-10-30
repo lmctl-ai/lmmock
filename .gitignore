@@ -4,3 +4,5 @@
 *.lmc
 /p1.txt
 /p2.txt
+
+node_modules/
