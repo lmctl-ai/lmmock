@@ -1,4 +1,4 @@
-# LiteLLM/OpenAI-compatible deterministic API fixture. See docs/llm-gateway.md.
+# Standalone deterministic mock LLM API. See docs/llm-api.md.
 p = _lmcode_ schema="schema.json";
 fn field(j: Json, key: string) -> string { let value = ""; if (j.has(key)) { value = j.get(key).as_string(); } return value; }
 @chat
@@ -50,7 +50,7 @@ route("POST","/v1/chat/completions","chat");route("GET","/__inspect","inspect");
 
 
 # Shared policy for models, embeddings and Responses.
-fn gateway_allowed(x: Exchange) -> bool {
+fn api_allowed(x: Exchange) -> bool {
  let c = json_parse(config()); let ok = true;
  if (c.has("apiKey")) {
   ok = secure_equal(x.header("Authorization"), "Bearer " + field(c,"apiKey"));
@@ -66,12 +66,12 @@ fn gateway_allowed(x: Exchange) -> bool {
 }
 @models
 fn models(x: Exchange) -> void implements Handler {
- if (gateway_allowed(x)) { x.json("{\"object\":\"list\",\"data\":[{\"id\":\"mock-agent\",\"object\":\"model\",\"created\":1700000000,\"owned_by\":\"lmmock\"},{\"id\":\"mock-embedding\",\"object\":\"model\",\"created\":1700000000,\"owned_by\":\"lmmock\"}]}"); }
+ if (api_allowed(x)) { x.json("{\"object\":\"list\",\"data\":[{\"id\":\"mock-agent\",\"object\":\"model\",\"created\":1700000000,\"owned_by\":\"lmmock\"},{\"id\":\"mock-embedding\",\"object\":\"model\",\"created\":1700000000,\"owned_by\":\"lmmock\"}]}"); }
 }
 @embeddings
 fn embeddings(x: Exchange) -> void implements Handler {
  x.set("last",x.request_json());
- if (gateway_allowed(x)) {
+ if (api_allowed(x)) {
   let b = json_parse(x.body()); let count = 1;
   if (str_starts_with(b.get("input").to_json(),"[")) { count = b.get("input").len(); }
   let data = "";
@@ -86,7 +86,7 @@ fn event(kind: string, body: string) -> string { return "event: " + kind + "\nda
 @responses
 fn responses(x: Exchange) -> void implements Handler {
  x.set("last",x.request_json());
- if (gateway_allowed(x)) {
+ if (api_allowed(x)) {
   let b = json_parse(x.body()); let c = json_parse(config());
   let model = field(b,"model"); let content = "pong";
   if (c.has("text")) { content = field(c,"text"); }

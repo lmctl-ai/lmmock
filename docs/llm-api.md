@@ -1,6 +1,6 @@
 # Scriptable LLM API mock and real-client acceptance
 
-The server is examples/llm-gateway.lms. Annotated lmcode Handler functions
+The server is examples/llm-api.lms. Annotated lmcode Handler functions
 implement the API; the generic Go host provides loopback HTTP and lifecycle.
 No Python server or provider-specific Go handler is required.
 
@@ -27,7 +27,7 @@ Install the compiler and start a server:
 
 ~~~sh
 npm i -g @lmctl-ai/lmctl
-lmmock serve --script examples/llm-gateway.lms --listen 127.0.0.1:4000
+lmmock serve --script examples/llm-api.lms --listen 127.0.0.1:4000
 ~~~
 
 Configure a normal Vercel AI SDK provider with the local base URL:
@@ -101,12 +101,6 @@ No fetch stub, custom Vercel provider or live LLM credentials are used.
   and streamed multi-step workflows, tool-choice none, structured output,
   embeddings, model discovery, HTTP errors, malformed JSON, retries, disconnects,
   deadlines and credential rejection.
-- Go LiteLLM: github.com/voocel/litellm v1.9.6, isolated test module.
-  Its compat and openai Responses adapters exercise chat, stream and a tool loop.
-- Python LiteLLM: 1.106.6 with proxy extras, isolated test environment.
-  Its OpenAI adapter exercises chat, stream, tool loop and batch embeddings.
-  The proxy extras are needed by this release's tool-call imports.
-
 Run the normal suite after installing the test-only npm packages:
 
 ~~~sh
@@ -114,30 +108,14 @@ npm ci --prefix tests/vercel
 lmscript --no-preflight test.lms
 ~~~
 
-test.lms drives Vercel and Go clients on all five release platforms.
-Python acceptance is an additional Linux x64 Actions step, also driven by
-lmscript. To run it locally after the main suite:
+test.lms drives the real Vercel client on all five release platforms. The mock
+server has no LiteLLM dependency or LiteLLM compatibility requirement. LiteLLM
+was a design reference only; Vercel AI SDK acceptance is the test target.
 
-~~~sh
-python3 -m venv /tmp/lmmock-litellm
-/tmp/lmmock-litellm/bin/pip install -r tests/litellm-python/requirements.txt
-lmscript --no-preflight tests/litellm-python/test.lms /tmp/lmmock-litellm/bin/python
-~~~
+## Scope
 
-Python is a client dependency in this test, not the test orchestrator or server.
-
-## Relationship to LiteLLM
-
-[Python LiteLLM](https://docs.litellm.ai/docs/simple_proxy) offers an
-OpenAI-compatible gateway. lmmock implements a selected compatible API surface
-and can serve as the offline endpoint for its client.
-[Go LiteLLM](https://github.com/voocel/litellm) has OpenAI-compatible adapters
-and a separate typed gateway protocol at /v1/llm. This work tests its adapters,
-not that separate gateway protocol.
-
-This is not a replacement for either project's production routing, billing,
-authentication management or provider translation. Native Anthropic/Gemini/
-Bedrock formats, audio/images/files, Responses persistence and the Python
-proxy's management endpoints are not implemented. Vercel compatibility means
-the pinned versions and scenarios above; it is not a claim about every provider
-or feature in the [Vercel AI SDK](https://ai-sdk.dev/providers/openai-compatible-providers).
+This is a standalone mock LLM API server. It does not route requests to models,
+perform inference, or implement production billing or provider translation.
+Native Anthropic/Gemini/Bedrock formats, audio/images/files and Responses
+persistence are not implemented. Vercel compatibility means the pinned versions
+and scenarios above, not every provider or feature in the SDK.

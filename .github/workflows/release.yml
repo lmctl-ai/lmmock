@@ -47,12 +47,6 @@ jobs:
           [[ "$(build/lmmock --version | tr -d '\r')" == "lmmock $SAMPLE_VERSION" ]]
           mkdir -p dist
           cp 'build/lmmock${{ matrix.ext }}' 'dist/lmmock-${{ matrix.label }}${{ matrix.ext }}'
-      - name: Python LiteLLM client compatibility
-        if: matrix.label == 'linux-x64'
-        run: |
-          python3 -m venv "$RUNNER_TEMP/litellm-python"
-          "$RUNNER_TEMP/litellm-python/bin/pip" install -r tests/litellm-python/requirements.txt
-          lmscript --no-preflight tests/litellm-python/test.lms "$RUNNER_TEMP/litellm-python/bin/python"
       - name: Race detector
         if: matrix.label == 'linux-x64'
         env:
