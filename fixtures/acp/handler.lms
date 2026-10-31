@@ -1,0 +1,72 @@
+p = _lmcode_ schema="../../internal/rpcstdio/presets/schema.json";
+fn text(j: Json,k: string) -> string { let value="";if(j.has(k)){value=j.get(k).as_string();}return value; }
+fn cfg() -> Json { return json_parse(config()); }
+fn sid() -> string { return cfg().get("session").as_string(); }
+fn check_session(x: RPC,p: Json) -> void { if(x.get("open")!="yes"||text(p,"sessionId")!=sid()){x.abort("No conversation found with session ID fixture");} }
+fn update(x: RPC,event: Json) -> void { x.notify("session/update","{\"sessionId\":"+json_quote(sid())+",\"update\":"+event.to_json()+"}"); }
+@startup fn startup(x: RPC) -> void implements RPCHandler {
+ let args=json_parse(x.params()).get("argv");let expected=cfg().get("argv");
+ if(args.to_json()!=expected.to_json()){x.abort("ACP profile argv mismatch");}
+}
+@initialize fn initialize(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());if(p.get("protocolVersion").as_int()!=1){x.abort("ACP v1 required");}
+ if(text(cfg(),"fault")=="auth"){x.error(-32000,"Authentication required: synthetic fixture");}
+ else{x.set("initialized","yes");x.reply("{\"protocolVersion\":1,\"agentCapabilities\":{\"loadSession\":true},\"authMethods\":[]}");}
+}
+@ready fn ready(x: RPC) -> void implements RPCHandler {if(x.get("initialized")!="yes"){x.abort("initialize first");}x.set("ready","yes");}
+@authenticate fn authenticate(x: RPC) -> void implements RPCHandler {x.error(-32000,"Authentication required: no credential exchange in fixtures");}
+@open fn open(x: RPC) -> void implements RPCHandler {
+ if(x.get("ready")!="yes"){x.abort("initialized notification required");}
+ let p=json_parse(x.params());let loading=x.method()=="session/load";
+ if(loading&&(text(p,"sessionId")!=sid()||text(cfg(),"fault")=="stale")){x.error(-32002,"No conversation found with session ID fixture");}
+ else{
+  if(p.get("cwd").kind()!="string"||p.get("mcpServers").kind()!="array"){x.abort("invalid session context");}
+  x.set("open","yes");x.set("model",cfg().get("initial_model").as_string());x.set("config_count","0");x.set("epoch",str(x.next("open")));
+  if(loading&&cfg().has("replay")){let replay=cfg().get("replay");for(i in range(0,replay.len())){update(x,replay.at(i));}}
+  x.reply("{\"sessionId\":"+json_quote(sid())+",\"configOptions\":[],\"models\":{\"currentModelId\":"+json_quote(x.get("model"))+",\"availableModels\":[]}}");
+ }
+}
+@configure fn configure(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());check_session(x,p);let steps=cfg().get("configure");let n=x.next("config:"+x.get("epoch"))-1;
+ if(n>=steps.len()){x.abort("unexpected configuration step");}
+ let step=steps.at(n);if(x.method()!=step.get("method").as_string()){x.abort("configuration event ordering mismatch");}
+ let key=step.get("key").as_string();if(text(p,key)!=step.get("value").as_string()){x.abort("configuration value mismatch");}
+ if(step.has("configId")){if(text(p,"configId")!=step.get("configId").as_string()){x.abort("configuration selector mismatch");}}
+ x.set("config_count",str(n+1));
+ if(text(cfg(),"fault")=="config"&&n==steps.len()-1){x.error(-32602,"model is not supported: synthetic fixture");}
+ else{if(key=="modelId"||text(p,"configId")=="model"){x.set("model",text(p,key));}x.reply("{\"configOptions\":[],\"currentModelId\":"+json_quote(x.get("model"))+"}");}
+}
+@prompt fn prompt(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());check_session(x,p);
+ if(x.get("pending")!=""){x.abort("a fixture prompt is already pending");}
+ if(x.get("config_count")!=str(cfg().get("configure").len())){x.abort("prompt preceded profile configuration");}
+ if(p.get("prompt").kind()!="array"||p.get("prompt").len()==0){x.abort("prompt content array required");}
+ let n=x.next("turn");let cells=cfg().get("cells");let found=json_parse("{}");let matches=0;
+ for(i in range(0,cells.len())){let cell=cells.at(i);if(cell.get("alias").as_string()==x.alias()&&cell.get("turn").as_int()==n){found=cell;matches=matches+1;}}
+ if(matches!=1){x.abort("unscripted ACP profile turn");}
+ if(found.has("expect")){if(!str_contains(x.params(),found.get("expect").as_string())){x.abort("prompt expectation failed");}}
+ let events=found.get("events");for(i in range(0,events.len())){update(x,events.at(i));}
+ let mode=found.get("completion").as_string();
+ if(mode=="cancel"){x.set("pending",x.defer_reply());x.set("pending_session",sid());}
+ else if(mode=="permission"){
+  x.set("pending",x.defer_reply());let id=x.request("session/request_permission","{\"sessionId\":"+json_quote(sid())+",\"toolCall\":{\"toolCallId\":\"tool-fixture\",\"title\":\"Read synthetic note\",\"kind\":\"read\",\"status\":\"pending\"},\"options\":[{\"optionId\":\"allow-once\",\"name\":\"Allow once\",\"kind\":\"allow_once\"}]}");
+ }
+ else if(mode=="missing"){let ticket=x.defer_reply();x.close();}
+ else if(mode=="error"){x.error(-32000,found.get("error").as_string());}
+ else if(mode=="end_turn"){x.reply("{\"stopReason\":\"end_turn\"}");}
+ else{x.abort("unsupported completion mode");}
+}
+@cancel fn cancel(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());check_session(x,p);
+ if(x.get("pending")!=""){x.reply_to(x.get("pending"),"{\"stopReason\":\"cancelled\"}");x.set("pending","");x.set("cancelled","yes");}
+}
+@permission_result fn permission_result(x: RPC) -> void implements RPCHandler {
+ let response=json_parse(x.message());if(!response.has("error")||response.get("error").get("code").as_int()!=-32601){x.abort("expected lmctl unsupported permission response");}
+ update(x,json_parse("{\"sessionUpdate\":\"tool_call_update\",\"toolCallId\":\"tool-fixture\",\"status\":\"failed\"}"));
+ update(x,json_parse("{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"permission rejected\"}}"));
+ x.reply_to(x.get("pending"),"{\"stopReason\":\"end_turn\"}");x.set("pending","");
+}
+bind("$response","permission_result");bind("$start","startup");bind("initialize","initialize");bind("notifications/initialized","ready");bind("authenticate","authenticate");
+bind("session/new","open");bind("session/load","open");bind("session/set_config_option","configure");bind("session/set_model","configure");bind("session/set_mode","configure");bind("session/prompt","prompt");bind("session/cancel","cancel");
+end _lmcode_
+savedsl(p,ARGV[0]);

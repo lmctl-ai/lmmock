@@ -1,0 +1,63 @@
+{
+  "profile": "gemini",
+  "model": "fixture-gemini-gemini",
+  "initial_model": "fixture-default",
+  "session": "11111111-2222-4333-8444-555555555555",
+  "argv": [
+    "--acp",
+    "-y",
+    "--skip-trust",
+    "--model",
+    "fixture-gemini-gemini"
+  ],
+  "configure": [],
+  "fault": "",
+  "replay": [
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "old replay must not leak"
+      }
+    }
+  ],
+  "cells": [
+    {
+      "alias": "Worker",
+      "turn": 1,
+      "expect": "ping",
+      "events": [
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "po"
+          }
+        }
+      ],
+      "completion": "cancel"
+    },
+    {
+      "alias": "Worker",
+      "turn": 2,
+      "expect": "ping",
+      "events": [
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "po"
+          }
+        },
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "ng"
+          }
+        }
+      ],
+      "completion": "end_turn"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "copilot": {
+    "model": "fixture-copilot-gpt",
+    "usage_reason": "session_totals_only",
+    "enabled": true
+  },
+  "kimi": {
+    "model": "fixture-kimi-kimi-k2",
+    "usage_reason": "native_record_missing",
+    "enabled": true
+  },
+  "opencode": {
+    "model": "fixture-opencode-configured-provider-model",
+    "usage_reason": "native_record_missing",
+    "enabled": true
+  },
+  "hermes": {
+    "model": "fixture-hermes-deepseek",
+    "usage_reason": "session_totals_only",
+    "enabled": true
+  },
+  "gemini": {
+    "model": "fixture-gemini-gemini",
+    "usage_reason": "turn_not_completed",
+    "enabled": false
+  },
+  "miniplayer": {
+    "model": "fixture-miniplayer-anthropic",
+    "usage_reason": "native_record_missing",
+    "enabled": true
+  }
+}

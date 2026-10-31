@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "id": "acp-opencode",
+  "dialect": {
+    "id": "acp-opencode",
+    "version": "1",
+    "transport": "acp"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "https://agentclientprotocol.com/protocol/v1/prompt-turn",
+    "version": "ACP v1; npm lmctl 0.2.448; mono 8e334dda",
+    "retrieved": "2026-10-31",
+    "note": "Synthetic model families and wire values. Gemini is profile-only: the published adapter is disabled. Usage metadata is not billing usage."
+  },
+  "server": {
+    "kind": "stdio",
+    "handler": "fixtures/acp/handler.lms",
+    "config": "fixtures/acp/opencode-success.json",
+    "binary": "lmmock"
+  },
+  "models": [
+    {
+      "id": "fixture-opencode-configured-provider-model",
+      "family": "configured-provider-model",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    }
+  ],
+  "routes": [
+    {
+      "id": "initialize",
+      "method": "RPC",
+      "path": "/initialize",
+      "annotation": "initialize",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-new",
+      "method": "RPC",
+      "path": "/session/new",
+      "annotation": "open",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-load",
+      "method": "RPC",
+      "path": "/session/load",
+      "annotation": "open",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-prompt",
+      "method": "RPC",
+      "path": "/session/prompt",
+      "annotation": "prompt",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-cancel",
+      "method": "RPC",
+      "path": "/session/cancel",
+      "annotation": "cancel",
+      "sam": "RPCHandler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "opencode-success",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "opencode-success"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-success.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "model": "fixture-opencode-configured-provider-model",
+        "json": {
+          "usage.source": null,
+          "usage.inputUncached": null,
+          "usage.cacheRead": null,
+          "usage.cacheWrite": null,
+          "usage.output": null,
+          "usage.reasoning": null,
+          "usage.costUsd": null,
+          "usage.reason": "native_record_missing"
+        }
+      }
+    },
+    {
+      "id": "opencode-auth",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "opencode-auth"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-auth.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "auth_required",
+        "stdout_contains": "Authentication required"
+      },
+      "faults": [
+        "auth-invalid"
+      ]
+    },
+    {
+      "id": "opencode-cancel",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "opencode-cancel"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-cancel.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "events": [
+            "agent_message_chunk",
+            "cancelled",
+            "end_turn"
+          ]
+        }
+      }
+    },
+    {
+      "id": "opencode-missing",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "opencode-missing"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-missing.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "unknown"
+      },
+      "faults": [
+        "missing-terminal"
+      ]
+    },
+    {
+      "id": "opencode-stale",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "opencode-stale"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-stale.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "stderr_contains": "session/load failed"
+      },
+      "faults": [
+        "session-stale"
+      ]
+    },
+    {
+      "id": "opencode-permission",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "opencode-permission"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-permission.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "permission rejected"
+      }
+    },
+    {
+      "id": "opencode-config",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "opencode-config"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-config.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "stderr_contains": "set_config_option"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "auth-invalid",
+      "surface": "process",
+      "trigger": {
+        "case_id": "opencode-auth"
+      },
+      "description": "Deterministic ACP auth fixture; no delay or vendor contact."
+    },
+    {
+      "id": "missing-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "opencode-missing"
+      },
+      "description": "Deterministic ACP missing fixture; no delay or vendor contact."
+    },
+    {
+      "id": "session-stale",
+      "surface": "session",
+      "trigger": {
+        "case_id": "opencode-stale"
+      },
+      "description": "Deterministic ACP stale fixture; no delay or vendor contact."
+    }
+  ]
+}
