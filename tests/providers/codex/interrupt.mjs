@@ -1,27 +1,15 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import net from 'node:net';
-import readline from 'node:readline';
 import {fork} from 'node:child_process';
 import {prepareCase,root} from './client.mjs';
 const c=prepareCase('interrupt',{batch:true});
 fs.writeFileSync(c.script,'m='+JSON.stringify({provider:'codex',alias:'Worker',model:'gpt-5.6-sol',sessiondir:c.dir,sessionid:c.wire.session})+';\nh=lm_batch_open(m); assert(h != null); println("OPENED"); r=lm_batch_turn(h,"cancel"); println(json_stringify(r)); lm_batch_close(h);\n');
 let child,stdout='',stderr='',sent=false;
-// Observe actual native output over an owned stream: fs.watch may coalesce or
-// miss an append, leaving cancellation waiting forever on some native platforms.
-const sockets=new Set();
-const observer=net.createServer(socket=>{
- sockets.add(socket);socket.once('close',()=>sockets.delete(socket));
- const lines=readline.createInterface({input:socket});
- lines.on('line',line=>{
-  if(!sent&&JSON.parse(line).method==='turn/started'){sent=true;child.send({signal:'SIGINT'});}
- });
-});
-await new Promise((resolve,reject)=>{observer.once('error',reject);observer.listen(0,'127.0.0.1',resolve);});
-c.env.LMMOCK_CODEX_OBSERVER_ADDR='127.0.0.1:'+observer.address().port;
+
 try{
  child=fork(path.join(root,'tests/providers/codex/signal-client.mjs'),[c.script,c.pkg],{cwd:c.dir,env:c.env,stdio:['ignore','pipe','pipe','ipc']});
+ child.on('message',message=>{if(!sent&&message?.observed==='turn/started'){sent=true;child.send({signal:'SIGINT'});}});
  child.stdout.setEncoding('utf8');child.stderr.setEncoding('utf8');child.stdout.on('data',s=>stdout+=s);child.stderr.on('data',s=>stderr+=s);
  const result=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',(status,signal)=>resolve({status,signal,stdout,stderr}));});
  const e=c.collect(result);
@@ -39,4 +27,4 @@ try{
   assert.match(stdout,/OPENED/);
   console.log('PASS published Codex interrupt: notification rendezvous, correlated RPC, terminal acknowledgement, owned cleanup; published running-row accounting limitation observed');
  }finally{e.cleanup();}
-}finally{for(const socket of sockets)socket.destroy();await new Promise(resolve=>observer.close(resolve));if(child&&child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');}
+}finally{if(child&&child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');}
