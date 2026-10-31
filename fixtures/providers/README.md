@@ -34,11 +34,11 @@ node tests/provider-fixtures/run.mjs fixtures/providers/openai-chat.json build/l
 The runner starts an HTTP handler with `lmmock serve`, waits for its readiness
 record, executes cases in manifest order, and sends SIGTERM only to that child when
 finished. It has no per-case timeout. `tests/provider-fixtures/contract.test.mjs`
-enumerates every provider manifest, mutates a successful expectation and an lmcode
-handler response to prove both are caught, exercises shell-free process assertions,
-and refuses malformed manifests before opening the server. Non-HTTP server lifecycle
-drivers remain protocol-owned; their process request/expectation shapes use this same
-manifest contract.
+validates every manifest, executes HTTP profiles, and leaves non-HTTP lifecycle
+execution to the corresponding protocol-owned process suite; both use this same
+manifest contract. It mutates a successful expectation and an lmcode handler response
+to prove both are caught, exercises shell-free process assertions, and refuses
+malformed manifests before opening the server.
 
 Source kinds distinguish published public specs, SDK type definitions, captures and
 synthetic-only contracts. Capture provenance must explain whose client was captured
