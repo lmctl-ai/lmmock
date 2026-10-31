@@ -519,6 +519,7 @@ fn api_allowed(x: Exchange) -> bool {
  let mode = field(c,"mode");
  if (!ok || mode == "unauthorized") { ok = false; x.status(401); x.json(fixture("api_auth_error").to_json()); }
  else if (mode == "rate-limit") { ok = false; x.status(429); x.set_header("Retry-After","1"); x.json(fixture("api_rate_limit").to_json()); }
+ else if (mode == "retry" && x.increment("llm-retry") == 1) { ok = false; x.status(429); x.set_header("Retry-After","1"); x.json(fixture("api_rate_limit").to_json()); }
  else if (mode == "server-error") { ok = false; x.status(503); x.json(fixture("api_unavailable").to_json()); }
  else if (mode == "disconnect") { ok = false; x.disconnect(); }
  else if (mode == "bad-json") { ok = false; x.json("{broken"); }
