@@ -1,6 +1,7 @@
 package scenario
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -13,12 +14,15 @@ func TestRequestLogEmptyAndQuotedCredentials(t *testing.T) {
 		}
 	})
 	cases := map[string]Request{
-		"quoted-cookie": {Path: "/", Headers: map[string][]string{"Cookie": {`session="synthetic-cookie-secret"`}}, Content: []byte(`{"echo":"synthetic-cookie-secret"}`)},
+		"quoted-cookie": {Path: "/", Headers: map[string][]string{"Cookie": {`session="synthetic-cookie-secret"`}}, Content: []byte(`{"echo":"synthetic-cookie-\u0073ecret"}`)},
 		"query-key":     {Path: "/generate?key=synthetic-query-secret", Headers: map[string][]string{}, Content: []byte(`{"echo":"synthetic-query-secret"}`)},
 	}
 	for name, request := range cases {
 		t.Run(name, func(t *testing.T) {
 			got := RedactRequest(request)
+			if !json.Valid(got.Content) {
+				t.Fatal("credential scrub corrupted JSON log body")
+			}
 			if strings.Contains(got.Path+string(got.Content), "synthetic-") {
 				t.Fatal("quoted cookie/query credential escaped request-log scrubbing")
 			}
