@@ -84,11 +84,17 @@ Go's path cleaning, redirects, 404 and 405 handling apply. Methods supported by
 | `send(body)` | Replace the response body, preserving bytes |
 | `json(body)` | Set body and application/json content type; deliberately allows malformed JSON |
 | `delay(milliseconds)` | Delay the response, 0–60000 ms; client cancellation stops the wait |
-| `disconnect()` | Close the connection without sending an HTTP response |
+| `disconnect()` | Close the connection; after a committed stream its prefix remains visible |
+| `stream_event(bytes)` | Write and flush ordered bytes immediately during the Handler call |
+| `stream_fault(kind)` | HTTP/1 disconnect, truncated-chunk or malformed-chunk after an optional prefix |
+| `request_log()` | Redacted request-history JSON, enabled with --request-log |
+| `reset()` | Clear shared strings, counters and request history; used by lmcode admin routes |
 | `get(key)`, `set(key, value)` | Shared string state for this server instance |
 | `increment(key)` | Atomically increment a separate integer counter, starting at 1 |
 
-Responses are buffered until the handler finishes. A VM error produces HTTP 500.
+send/json responses remain buffered until the handler finishes. stream_event commits and flushes
+during the handler call. A VM error before commit produces HTTP 500; after commit
+it aborts the stream rather than appending another response.
 Repeated status/body/delay calls replace the previous value; headers and state are
 updated as called. State persists across requests and resets on server restart.
 Individual state operations are synchronized; a sequence of get/set operations
@@ -139,7 +145,7 @@ package doc comment.
 ### Selective upstream fallback
 
 Keep explicit `route()` mocks and forward only paths with no registered route to one fixed
-upstream with the `serve`/`exec` options below. No DSL or schema change is needed,
+upstream with the `serve`/`exec` options below. No lmcode or schema change is needed,
 so existing precompiled scripts remain compatible:
 
 ```sh
@@ -161,8 +167,8 @@ and headers named by Connection are removed in both directions. HTTP framing may
 change; response status, end-to-end headers, Location and body bytes do not.
 
 Passthrough streams request/response bodies outside the VM, including large
-artifacts; scripted responses still buffer. Go's normal TLS certificate validation
-applies outbound; the inbound listener remains loopback HTTP. The client does not
+artifacts; send/json responses still buffer; stream_event responses flush incrementally. Go's normal TLS certificate validation
+applies outbound; the inbound listener uses loopback HTTP or explicitly enabled HTTPS. The client does not
 follow redirects, decompress bodies, use environment proxies, inject credentials,
 or add forwarding headers. The upstream transport uses HTTP/1.1 only, including
 over TLS. Caller-supplied Authorization/Cookie headers are normally preserved.
@@ -204,8 +210,8 @@ Scripts are trusted test code, with the same filesystem privileges as the server
 They are not sandboxed. Request bodies are limited to 1 MiB, header reads to five
 seconds, and request reads to ten seconds. There is no VM instruction timeout:
 a script with an infinite loop must be terminated with its server process. These
-mocks implement HTTP/1.x, not TLS, WebSockets, streaming responses, or arbitrary
-wire protocols. `exec` manages its direct child; the child should clean up any
+mocks implement HTTP/1.x with optional TLS and ordered streaming. WebSocket and
+HTTP/2/gRPC adapters are separate protocol slices. `exec` manages its direct child; the child should clean up any
 background descendants it creates. Abrupt process termination may leave a ready
 file behind, so use a fresh path for each test run.
 
@@ -316,8 +322,8 @@ See [setup, tested clients and limits](docs/llm-api.md).
 OpenAI-compatible text, usage, tool calls and SSE-formatted responses. When tools
 are supplied it requests `lookup` (or the first supplied function) with Paris as
 the city. Submit a `role: tool` message to receive the final answer. This is a
-deterministic protocol fixture, not a language model. SSE events are buffered in
-one response; this tests event parsing, not incremental network timing.
+deterministic protocol fixture, not a language model. SSE records flush individually through an lmcode helper; no pacing timers or
+recorded wall-clock delays are used.
 
 Configuration `mode` selects `ok`, `echo`, `unauthorized`, `rate-limit`,
 `server-error`, `bad-json`, `timeout`, `disconnect`, `retry`, or `unknown-model`.
@@ -348,7 +354,7 @@ For compatibility with lmconn redaction tests, explicit modes `ok`, `echo`, and
 (e.g. `fixture-model` for migration of lmclient's Python fixture). `echo` returns
 the bearer value so clients can check redaction. Use no mode to echo the requested
 model. The native suite checks all three paths, auth failures, errors, tools and
-buffered SSE; protocol tests also check retry recovery, headers and request fields.
+ordered SSE; protocol tests also check retry recovery, headers and request fields.
 
 Both current provider registries implement `claude`, `codex`, `agy`, and `kimi`
 as subprocesses, not HTTP APIs. There is no Anthropic `/messages` or Kimi HTTP
@@ -447,10 +453,11 @@ lmmock exec --lmcode build/scenario.dslb --config captures/copilot/scenario.json
 
 Handlers remain annotated lmcode entries implementing the Handler single-method
 interface. The generic HTTP transport adds Exchange.stream_event(bytes): each event
-is written and flushed in order after handler completion, without delays, sleeps,
+is written and flushed in order during the Handler call, without delays, sleeps,
 recorded timing or a timeout option. TCP packet boundaries are not event boundaries.
-A handler error before emission is still an HTTP error. send/json replace any queued
-events; use either event emission or a final buffered body in one response.
+A handler error before emission is still an HTTP error. After stream commit, status,
+headers, send/json and delay are refused; emitted bytes cannot be replaced. An error
+then aborts the connection. Choose either event emission or a final buffered body.
 
 ## Add a preset and verify fidelity
 
@@ -459,7 +466,7 @@ under captures/NAME. Keep raw files outside the checkout. The engine matches exa
 sanitized method, URI/query, raw body and credential identity; it does not generalize
 prompts or parse arbitrary request bodies as JSON. Identical requests consume their
 recorded replies in occurrence order (for example 429 then 200). Unmatched or exhausted
-rules return 501. Restart the server to reset the conversation; concurrent duplicate
+rules return 501. POST /__reset resets the conversation; concurrent duplicate
 requests receive occurrence numbers in arrival order. Scheme/host are intentionally
 not matchers so a TLS capture can replay over loopback HTTP.
 
@@ -482,3 +489,83 @@ the new streaming primitive must be tested before release; it does not substitut
 older release binary. The normal test matrix also runs the fidelity suite. Publishing
 requires the separate manual workflow dispatch; pushes run tests only. Native
 Copilot CLI live integration is not part of the default offline gate.
+
+
+## Incremental streams and framing faults
+
+[examples/streaming.lms](examples/streaming.lms) is an annotated Handler preset.
+`/tokens` emits two SSE records; `/chunks` emits two ordinary byte chunks.
+`/fault/disconnect`, `/fault/truncated-chunk` and `/fault/malformed-chunk` emit a
+valid prefix followed by the selected HTTP/1 framing fault. The truncation declares
+a chunk longer than its remaining bytes; the malformed case writes a nonhex chunk
+size. Clients must observe a partial body and a transport error, not a repaired
+successful response. These raw chunk faults require HTTP/1.
+
+stream_event writes immediately and flushes before the next lmcode instruction.
+The normal HTTP server owns chunk framing; TCP packets are not event boundaries.
+The scenario, Copilot, LLM and native-provider presets use this primitive without
+changing their service payloads. No new sleep, latency, timeout or pacing feature
+is provided. The older buffered delay fixtures are unchanged.
+
+## TLS and per-run client trust
+
+Enable HTTPS with `--tls`; repeat `--tls-host` to add fixed DNS/IP identities.
+The listener still binds only a loopback IP. A fresh CA and server key are generated
+for that server invocation. Only the public CA certificate is written to a private
+temporary directory; private keys stay in memory. Close/shutdown removes the CA
+file. Readiness JSON adds `ca_cert` and its URL uses https.
+
+```sh
+lmmock exec --tls --tls-host fixed.mock.test --script examples/streaming.lms -- YOUR_CLIENT
+lmmock serve --tls --tls-host fixed.mock.test --script examples/streaming.lms --ready-file ready.json
+```
+
+The exec child receives LMMOCK_URL, LMMOCK_CA_CERT, SSL_CERT_FILE,
+NODE_EXTRA_CA_CERTS, REQUESTS_CA_BUNDLE and CURL_CA_BUNDLE. These values replace
+inherited values only inside that child; the parent and machine trust stores are
+not changed. Node reads NODE_EXTRA_CA_CERTS when it starts. The native lmmock check
+client explicitly loads LMMOCK_CA_CERT on Linux, macOS and Windows rather than
+relying on platform-specific SSL_CERT_FILE behavior. Certificate verification
+stays enabled; an untrusted client fails the TLS handshake.
+
+A client with a fixed `https://fixed.mock.test/...` URL also needs local connection
+routing while preserving the original URL authority/SNI. The acceptance client
+uses an HTTPS Agent connection override to the allocated loopback port. curl can
+use --connect-to together with --cacert. This server does not edit DNS/hosts files,
+redirect traffic to a vendor, or implement a CONNECT proxy. For clients without a
+trust-file option, a test-owned trust store is another choice: the distribution CA
+store on Linux, a test keychain on macOS, or CurrentUser Root on Windows. The harness
+must install/remove that public CA itself; lmmock never installs system trust.
+
+## Request history and deterministic reset
+
+Enable `--request-log` for redacted metadata; `--request-log-bodies` additionally
+captures consumed body bytes and implies metadata logging. The scenario and streaming
+presets expose GET /__requests and POST /__reset as ordinary annotated lmcode routes.
+A new service can expose them by calling request_log/reset; no Go route is added.
+
+History JSON has enabled and requests fields. Records are in arrival order with
+id, method, uri, scrubbed headers, status, response bytes, complete and optional
+error. Active requests remain visible with complete=false; faults keep their
+committed status and error kind. Body logging is opt-in, limited to the first
+1 MiB read by the handler/forwarder, with body_complete and body_truncated markers.
+Unconsumed bodies are not invented. Encoded or binary bodies are omitted; use the
+capture converter for byte-faithful recordings.
+
+Credential headers, sensitive query/body keys, known credential echoes and the
+converter's secret patterns are scrubbed. Unknown application secrets still need
+review; these endpoints are for synthetic test traffic. Logging is off by default.
+Admin calls do not log themselves. Reset clears strings, counters, occurrence
+state and history together; an old in-flight log record cannot reappear afterward.
+Reset is not rollback/cancellation of an already executing handler: quiesce concurrent
+clients when starting a new deterministic scenario.
+
+## Streaming and TLS acceptance
+
+The normal test.lms and five-platform Actions matrix run the streaming/TLS client
+and compiled production controls. A causal Go assertion sees each token flushed
+before its handler advances; the old queued build fails that assertion. Node checks
+separate SSE chunks at a fixed HTTPS URL, succeeds with the exported CA and fails
+in a fresh untrusted process. Additional controls remove flush/CA export/reset/scrub
+or repair malformed/truncated framing and require real assertion failures. No
+wall-clock thresholds, sleeps or timeout mock behavior are used by these tests.

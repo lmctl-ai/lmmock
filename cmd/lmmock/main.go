@@ -67,6 +67,9 @@ func run(args []string) int {
 	upstreamTimeout := f.Duration("upstream-timeout", 2*time.Minute, "total upstream request timeout")
 	upstreamReadOnly := f.Bool("upstream-read-only", false, "forward only GET/HEAD; reject other unmatched methods")
 	auditLog := f.String("audit-log", "", "append mocked/forwarded request metadata as JSONL")
+	requestLog := f.Bool("request-log", false, "record redacted request metadata for lmcode admin handlers")
+	requestBodies := f.Bool("request-log-bodies", false, "also record scrubbed request bodies (implies --request-log)")
+	tlsOptions := addTLSFlags(f)
 	if err := f.Parse(args[1:]); err != nil {
 		return 2
 	}
@@ -110,12 +113,12 @@ func run(args []string) int {
 		audit = file
 		fmt.Fprintln(os.Stderr, "lmmock audit log:", *auditLog)
 	}
-	engine, err := mock.NewWithOptions(code, mock.Options{ConfigFile: *config, Upstream: *upstream,
+	engine, err := mock.NewWithOptions(code, mock.Options{ConfigFile: *config, RequestLog: *requestLog, RequestLogBodies: *requestBodies, Upstream: *upstream,
 		UpstreamTimeout: *upstreamTimeout, UpstreamReadOnly: *upstreamReadOnly, AuditWriter: audit})
 	if err != nil {
 		return fail(err)
 	}
-	server, err := mock.Start(engine, *listen)
+	server, err := tlsOptions.start(engine, *listen)
 	if err != nil {
 		return fail(err)
 	}
@@ -125,9 +128,10 @@ func run(args []string) int {
 		}
 	}()
 	info := struct {
-		URL string `json:"url"`
-		PID int    `json:"pid"`
-	}{server.URL, os.Getpid()}
+		URL    string `json:"url"`
+		PID    int    `json:"pid"`
+		CACert string `json:"ca_cert,omitempty"`
+	}{server.URL, os.Getpid(), server.CACert}
 	if *ready != "" {
 		data, _ := json.Marshal(info)
 		data = append(data, '\n')
@@ -158,12 +162,7 @@ func run(args []string) int {
 		return 0
 	}
 	child := exec.CommandContext(ctx, command[0], command[1:]...)
-	for _, v := range os.Environ() {
-		if !strings.EqualFold(strings.SplitN(v, "=", 2)[0], "LMMOCK_URL") {
-			child.Env = append(child.Env, v)
-		}
-	}
-	child.Env = append(child.Env, "LMMOCK_URL="+server.URL)
+	child.Env = server.ClientEnv(os.Environ())
 	child.Stdin = os.Stdin
 	child.Stdout = os.Stdout
 	child.Stderr = os.Stderr
@@ -209,7 +208,7 @@ func usage() {
   lmmock serve --script mock.lms [--listen 127.0.0.1:0] [--ready-file ready.json]
   lmmock exec --script mock.lms -- COMMAND [ARG...]
   lmmock exec --lmcode mock.dslb -- COMMAND [ARG...]
-  serve/exec: [--upstream http(s)://host/base/] [--upstream-timeout 2m]
+  serve/exec: [--tls] [--tls-host DNS_NAME] [--upstream http(s)://host/base/] [--upstream-timeout 2m]
               [--upstream-read-only] [--audit-log requests.jsonl]
   lmmock check --suite assertions.json [--url URL]
   lmmock proto --list

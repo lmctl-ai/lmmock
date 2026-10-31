@@ -1,6 +1,6 @@
 {
   "dsl.schema": 2,
-  "name": "lmmock_v3",
+  "name": "lmmock_v4",
   "types": {
     "Exchange": {
       "methods": {
@@ -138,6 +138,26 @@
               "string"
             ],
             "returns": "void"
+          }
+        ],
+        "stream_fault": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "reset": [
+          {
+            "params": [],
+            "returns": "void"
+          }
+        ],
+        "request_log": [
+          {
+            "params": [],
+            "returns": "string"
           }
         ]
       }
