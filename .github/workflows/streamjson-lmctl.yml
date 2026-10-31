@@ -1,0 +1,45 @@
+name: Stream-json published provider clients
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  process:
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-24.04, label: linux-x64, ext: ''}
+          - {os: ubuntu-24.04-arm, label: linux-arm64, ext: ''}
+          - {os: macos-15, label: macos-arm64, ext: ''}
+          - {os: macos-15-intel, label: macos-x64, ext: ''}
+          - {os: windows-2022, label: windows-x64, ext: '.exe'}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34
+        with: {go-version: '1.26'}
+      - name: Download pinned published client and compiler
+        run: |
+          pin="$(node -p 'JSON.parse(require("fs").readFileSync("tests/streamjson/client.json")).version')"
+          npm install --prefix "$RUNNER_TEMP/streamjson-lmctl" "@lmctl-ai/lmctl@$pin"
+          echo "$RUNNER_TEMP/streamjson-lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "LMMOCK_LMCTL_PACKAGE=$RUNNER_TEMP/streamjson-lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
+      - name: Compile and exercise annotated native process fixtures
+        run: |
+          bash scripts/compile-streamjson.sh
+          git diff --exit-code -- fixtures/streamjson/handler.dslb
+          go test ./internal/rpcstdio ./cmd/lmmock -count=1
+          mkdir -p build
+          go build -o build/lmmock${{ matrix.ext }} ./cmd/lmmock
+          node tests/streamjson/process.mjs build/lmmock${{ matrix.ext }}
+          node tests/streamjson/run.mjs build/lmmock${{ matrix.ext }}
+          node tests/streamjson/controls.mjs build/lmmock${{ matrix.ext }}

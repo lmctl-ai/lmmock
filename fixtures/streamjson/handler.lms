@@ -7,14 +7,17 @@ fn emit_events(x: RPC, c: Json) -> void {
  if(c.has("close")){if(c.get("close").as_bool()){x.close();}}
 }
 @start fn start(x: RPC) -> void implements RPCHandler {
- let c=cfg();let args=json_parse(x.params()).get("argv");let stream=false;
- for(i in range(0,args.len())){if(args.at(i).as_string()=="--input-format"){stream=true;}}
+ let c=cfg();let args=json_parse(x.params()).get("argv");let stream=false;let want_version=false;
+ for(i in range(0,args.len())){if(args.at(i).as_string()=="--input-format"){stream=true;}if(args.at(i).as_string()=="--version"){want_version=true;}}
  file_append(c.get("audit").as_string(),x.params()+"\n");
- if(!stream){
-  let seed=c.get("seed");if(!str_contains(x.params(),seed.get("expect").as_string())){x.abort("seed prompt mismatch");}
-  if(seed.has("files")){let files=seed.get("files");for(i in range(0,files.len())){let f=files.at(i);file_write(f.get("path").as_string(),f.get("text").as_string());}}
-  emit_events(x,seed);x.close();
- }else{emit_events(x,c.get("init"));}
+ if(want_version){x.forward("version");}else{if(stream){x.forward("open");}else{x.forward("seed");}}
+}
+@version fn version(x: RPC) -> void implements RPCHandler {x.write_text(cfg().get("version").as_string()+"\n");x.close();}
+@open fn open(x: RPC) -> void implements RPCHandler {emit_events(x,cfg().get("init"));}
+@seed fn seed(x: RPC) -> void implements RPCHandler {
+ let seed_cell=cfg().get("seed");if(!str_contains(x.params(),seed_cell.get("expect").as_string())){x.abort("seed prompt mismatch");}
+ if(seed_cell.has("files")){let files=seed_cell.get("files");for(i in range(0,files.len())){let f=files.at(i);file_write(f.get("path").as_string(),f.get("text").as_string());}}
+ emit_events(x,seed_cell);x.close();
 }
 @message fn message(x: RPC) -> void implements RPCHandler {
  let c=cfg();let request=json_parse(x.message());
@@ -23,6 +26,6 @@ fn emit_events(x: RPC, c: Json) -> void {
  let cell=turns.at(turn-1);if(!str_contains(request.get("message").get("content").as_string(),cell.get("expect").as_string())){x.abort("turn prompt mismatch");}
  file_append(c.get("audit").as_string(),x.message()+"\n");emit_events(x,cell);
 }
-bind("$start","start");bind("$message","message");
+bind("$start","start");bind("version","version");bind("seed","seed");bind("open","open");bind("$message","message");
 end _lmcode_
 savedsl(p, ARGV[0]);

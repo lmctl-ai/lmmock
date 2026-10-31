@@ -712,3 +712,13 @@ route-specific synthetic auth, JSON and ordered event SSE, tool-call items,
 usage and deterministic HTTP/parser faults. Normal native tests exercise the
 SDK; the OpenAI HTTP published-client job also drives real npm lmctl through
 pinned Miniplayer on loopback and checks session/token/error telemetry.
+
+### Native Claude/Qwen JSONL processes
+
+[The stream-json fixtures](fixtures/streamjson/README.md) use annotated lmcode
+handlers with the generic JSONL process layer. Private copied executables in PATH
+exercise published lmctl seed, prompt, native session readers and persistent batch
+on all native platforms. Model families are manifest data. Missing result/error
+classes and unavailable usage are pinned to observed client behavior; documented
+client gaps are not disguised as successful rejection. No vendor traffic or real
+credentials are involved.

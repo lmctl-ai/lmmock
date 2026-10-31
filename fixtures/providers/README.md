@@ -45,3 +45,8 @@ synthetic-only contracts. Capture provenance must explain whose client was captu
 and whether the traffic was local synthetic data. Captures needing an operator-owned
 client or credential are labeled `capture`/“capture needs operator”; tests must not
 read or store credentials. All tokens in checked-in examples are synthetic.
+
+JSONL stdio manifests use the protocol-specific published-client adapter in
+tests/streamjson/run.mjs through the shared loader/expectation checker; no HTTP
+server is started for native CLI fixtures. See fixtures/streamjson/README.md for
+the isolated fake PATH and pinned parser limitations.
