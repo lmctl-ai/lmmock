@@ -49,7 +49,7 @@ for profile,meta in profiles.items():
   if variant=='config':expect={'exit_code':0,**({'error_class':'model_not_offered'} if profile=='hermes' else {'stdout_contains':'pong','stderr_contains':'set_config_option'})}
   # Gemini is a wire-profile fixture, not an enabled session adapter claim.
   if profile=='gemini' and variant in ['success','auth','stale','missing','permission']:expect={'exit_code':0,'error_class':'unknown','stdout_contains':'Standalone Gemini CLI support is disabled'}
-  case={'id':profile+'-'+variant,'kind':'error' if variant in ['auth','missing','stale','config','mode-error'] else 'stream','request':{'kind':'process','executable':'node','argv':['tests/acp-profiles/run-case.mjs',profile+'-'+variant],'env':{'LMMOCK_ACP_SCENARIO':path}},'expect':expect}
+  case={'id':profile+'-'+variant,'kind':'error' if variant in ['auth','missing','stale','config','mode-error'] else 'stream','request':{'kind':'process','executable':'node','argv':['tests/acp-profiles/run-case.mjs',profile+'-'+variant]},'expect':expect}
   if variant in ['auth','missing','stale']:
    fault={'auth':'auth-invalid','missing':'missing-terminal','stale':'session-stale'}[variant]
    case['faults']=[fault];faults.append({'id':fault,'surface':'session' if variant=='stale' else 'stream' if variant=='missing' else 'process','trigger':{'case_id':case['id']},'description':'Deterministic ACP '+variant+' fixture; no delay or vendor contact.'})

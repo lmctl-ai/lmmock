@@ -88,10 +88,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "gemini-success"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/gemini-success.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -108,10 +105,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "gemini-auth"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/gemini-auth.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -131,10 +125,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "gemini-cancel"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/gemini-cancel.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -156,10 +147,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "gemini-missing"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/gemini-missing.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -179,10 +167,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "gemini-stale"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/gemini-stale.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -202,10 +187,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "gemini-permission"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/gemini-permission.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,

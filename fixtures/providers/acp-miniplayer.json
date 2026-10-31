@@ -138,10 +138,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "miniplayer-success"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-success.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -168,10 +165,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "miniplayer-auth"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-auth.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -191,10 +185,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "miniplayer-cancel"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-cancel.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -216,10 +207,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "miniplayer-missing"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-missing.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -238,10 +226,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "miniplayer-stale"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-stale.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -261,10 +246,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "miniplayer-permission"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-permission.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
