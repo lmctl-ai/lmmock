@@ -1,0 +1,41 @@
+{
+  "session": "fixture-session",
+  "expected": "pong",
+  "cells": [
+    {
+      "alias": "Worker",
+      "turn": 1,
+      "expect": "ping",
+      "text": "pong",
+      "chunks": [
+        "po",
+        "ng"
+      ]
+    },
+    {
+      "alias": "Worker",
+      "turn": 2,
+      "text": "second"
+    },
+    {
+      "alias": "Error",
+      "turn": 1,
+      "error": "fixture failure"
+    },
+    {
+      "alias": "Empty",
+      "turn": 1,
+      "text": ""
+    },
+    {
+      "alias": "MCP",
+      "turn": 1,
+      "text": "pong"
+    },
+    {
+      "alias": "Peer",
+      "turn": 1,
+      "text": "peer"
+    }
+  ]
+}
