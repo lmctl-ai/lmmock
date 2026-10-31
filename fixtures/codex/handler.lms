@@ -35,7 +35,7 @@ fn thread_reply(x: RPC, id: string) -> void {
  if (x.get("phase")!="initialized") { x.abort("initialize must precede initialized"); }
  x.set("phase","ready");
 }
-@thread fn thread(x: RPC) -> void implements RPCHandler {
+fn open_thread(x: RPC) -> void {
  let p=json_parse(x.params());
  if (x.get("phase")!="ready" && x.get("phase")!="open") { x.error(-32600,"initialize must precede thread open"); }
  else { if (x.get("active")!="") { x.error(-32600,"turn still active"); }
@@ -46,6 +46,9 @@ fn thread_reply(x: RPC, id: string) -> void {
  else { if (x.method()=="thread/fork") { if (fork=="") { x.error(-32602,"fork fixture not configured"); } else { thread_reply(x,fork); } }
  else { thread_reply(x,id); } } } } } }
 }
+@thread_start fn thread_start(x: RPC) -> void implements RPCHandler { open_thread(x); }
+@thread_resume fn thread_resume(x: RPC) -> void implements RPCHandler { open_thread(x); }
+@thread_fork fn thread_fork(x: RPC) -> void implements RPCHandler { open_thread(x); }
 @turn fn turn(x: RPC) -> void implements RPCHandler {
  let p=json_parse(x.params());
  if (x.get("phase")!="open" || field(p,"threadId")!=x.get("thread")) { x.error(-32602,"turn requires opened thread"); }
@@ -78,7 +81,7 @@ fn thread_reply(x: RPC, id: string) -> void {
  else { x.reply("{}"); x.notify("turn/completed","{\"threadId\":"+json_quote(x.get("thread"))+",\"turn\":{\"id\":"+json_quote(id)+",\"status\":\"interrupted\",\"error\":null}}"); x.set("active",""); }
 }
 bind("initialize","initialize");bind("initialized","initialized");
-bind("thread/start","thread");bind("thread/resume","thread");bind("thread/fork","thread");
+bind("thread/start","thread_start");bind("thread/resume","thread_resume");bind("thread/fork","thread_fork");
 bind("turn/start","turn");bind("turn/interrupt","interrupt");
 end _lmcode_
 savedsl(p,ARGV[0]);

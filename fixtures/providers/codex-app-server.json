@@ -58,21 +58,21 @@
       "id": "thread-start",
       "method": "RPC",
       "path": "/thread/start",
-      "annotation": "thread",
+      "annotation": "thread_start",
       "sam": "RPCHandler"
     },
     {
       "id": "thread-resume",
       "method": "RPC",
       "path": "/thread/resume",
-      "annotation": "thread",
+      "annotation": "thread_resume",
       "sam": "RPCHandler"
     },
     {
       "id": "thread-fork",
       "method": "RPC",
       "path": "/thread/fork",
-      "annotation": "thread",
+      "annotation": "thread_fork",
       "sam": "RPCHandler"
     },
     {

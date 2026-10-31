@@ -143,3 +143,26 @@ func TestCodexProviderLegacyCellsHaveDistinctTurnIDs(t *testing.T) {
 		t.Fatalf("consecutive legacy cells need distinct turn IDs: %v", ids)
 	}
 }
+
+func TestCodexProviderMethodSAMEntries(t *testing.T) {
+	raw, err := os.ReadFile("../../fixtures/providers/codex-app-server.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest struct {
+		Routes []struct {
+			Annotation string `json:"annotation"`
+			SAM        string `json:"sam"`
+		} `json:"routes"`
+	}
+	if err = json.Unmarshal(raw, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	annotations := map[string]bool{}
+	for _, route := range manifest.Routes {
+		if route.SAM != "RPCHandler" || annotations[route.Annotation] {
+			t.Fatalf("each Codex method requires its own declared RPCHandler entry: %s", route.Annotation)
+		}
+		annotations[route.Annotation] = true
+	}
+}
