@@ -1,0 +1,544 @@
+{
+  "cases": {
+    "chat": {
+      "success": {
+        "status": 200,
+        "body": {
+          "id": "chatcmpl-fixture",
+          "object": "chat.completion",
+          "created": 1,
+          "model": "fixture-gpt",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "pong"
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 10,
+            "completion_tokens": 2,
+            "total_tokens": 12,
+            "prompt_tokens_details": {
+              "cached_tokens": 3
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"pong\"},\"finish_reason\":null}]}\n\n",
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":2,\"total_tokens\":12,\"prompt_tokens_details\":{\"cached_tokens\":3},\"completion_tokens_details\":{\"reasoning_tokens\":1}}}\n\n",
+          "data: [DONE]\n\n"
+        ],
+        "headers": {}
+      },
+      "bad-usage": {
+        "status": 200,
+        "body": {
+          "id": "chatcmpl-fixture",
+          "object": "chat.completion",
+          "created": 1,
+          "model": "fixture-gpt",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "pong"
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": "not-an-integer",
+            "completion_tokens": 2,
+            "total_tokens": 12,
+            "prompt_tokens_details": {
+              "cached_tokens": 3
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"pong\"},\"finish_reason\":null}]}\n\n",
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[],\"usage\":{\"prompt_tokens\":\"not-an-integer\",\"completion_tokens\":2,\"total_tokens\":12,\"prompt_tokens_details\":{\"cached_tokens\":3},\"completion_tokens_details\":{\"reasoning_tokens\":1}}}\n\n",
+          "data: [DONE]\n\n"
+        ],
+        "headers": {}
+      },
+      "tools": {
+        "status": 200,
+        "body": {
+          "id": "chatcmpl-fixture",
+          "object": "chat.completion",
+          "created": 1,
+          "model": "fixture-gpt",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": null,
+                "tool_calls": [
+                  {
+                    "id": "call_fixture",
+                    "type": "function",
+                    "function": {
+                      "name": "weather",
+                      "arguments": "{\"city\":\"Paris\"}"
+                    }
+                  }
+                ]
+              },
+              "finish_reason": "tool_calls"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 10,
+            "completion_tokens": 2,
+            "total_tokens": 12,
+            "prompt_tokens_details": {
+              "cached_tokens": 3
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"id\":\"call_fixture\",\"type\":\"function\",\"function\":{\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\"},\"index\":0}]},\"finish_reason\":null}]}\n\n",
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n",
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":2,\"total_tokens\":12,\"prompt_tokens_details\":{\"cached_tokens\":3},\"completion_tokens_details\":{\"reasoning_tokens\":1}}}\n\n",
+          "data: [DONE]\n\n"
+        ],
+        "headers": {}
+      },
+      "auth-error": {
+        "status": 401,
+        "body": {
+          "error": {
+            "message": "fixture auth-error",
+            "type": "auth_error",
+            "code": "auth-error"
+          }
+        },
+        "headers": {
+          "retry-after": "0",
+          "x-ratelimit-remaining-requests": "0",
+          "x-request-id": "fixture-request"
+        },
+        "events": []
+      },
+      "rate-limit": {
+        "status": 429,
+        "body": {
+          "error": {
+            "message": "fixture rate-limit",
+            "type": "rate_limit",
+            "code": "rate-limit"
+          }
+        },
+        "headers": {
+          "retry-after": "0",
+          "x-ratelimit-remaining-requests": "0",
+          "x-request-id": "fixture-request"
+        },
+        "events": []
+      },
+      "server-error": {
+        "status": 503,
+        "body": {
+          "error": {
+            "message": "fixture server-error",
+            "type": "server_error",
+            "code": "server-error"
+          }
+        },
+        "headers": {
+          "retry-after": "0",
+          "x-ratelimit-remaining-requests": "0",
+          "x-request-id": "fixture-request"
+        },
+        "events": []
+      },
+      "bad-terminal": {
+        "status": 200,
+        "body": {
+          "id": "chatcmpl-fixture",
+          "object": "chat.completion",
+          "created": 1,
+          "model": "fixture-gpt",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "pong"
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 10,
+            "completion_tokens": 2,
+            "total_tokens": 12,
+            "prompt_tokens_details": {
+              "cached_tokens": 3
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"pong\"},\"finish_reason\":null}]}\n\n",
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+          "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":\"invalid\",\"completion_tokens\":2,\"total_tokens\":12}}\n\n",
+          "data: [DONE]\n\n"
+        ],
+        "headers": {}
+      },
+      "missing-terminal": {
+        "status": 200,
+        "body": {
+          "id": "chatcmpl-fixture",
+          "object": "chat.completion",
+          "created": 1,
+          "model": "fixture-gpt",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "pong"
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 10,
+            "completion_tokens": 2,
+            "total_tokens": 12,
+            "prompt_tokens_details": {
+              "cached_tokens": 3
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"pong\"},\"finish_reason\":null}]}\n\n",
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+          "data: {\"id\":\"chatcmpl-fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-gpt\",\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":2,\"total_tokens\":12,\"prompt_tokens_details\":{\"cached_tokens\":3},\"completion_tokens_details\":{\"reasoning_tokens\":1}}}\n\n"
+        ],
+        "headers": {}
+      }
+    },
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "id": "resp_fixture",
+          "object": "response",
+          "created_at": 1,
+          "model": "fixture-gpt",
+          "status": "completed",
+          "output": [
+            {
+              "id": "msg_fixture",
+              "type": "message",
+              "status": "completed",
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "output_text",
+                  "text": "pong",
+                  "annotations": []
+                }
+              ]
+            }
+          ],
+          "error": null,
+          "incomplete_details": null,
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 2,
+            "total_tokens": 12,
+            "input_tokens_details": {
+              "cached_tokens": 3
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_fixture\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-gpt\",\"status\":\"in_progress\",\"output\":[],\"error\":null,\"incomplete_details\":null,\"usage\":null},\"sequence_number\":0}\n\n",
+          "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"in_progress\",\"role\":\"assistant\",\"content\":[]},\"sequence_number\":1}\n\n",
+          "event: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[]},\"sequence_number\":2}\n\n",
+          "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"delta\":\"pong\",\"sequence_number\":3}\n\n",
+          "event: response.output_text.done\ndata: {\"type\":\"response.output_text.done\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"text\":\"pong\",\"sequence_number\":4}\n\n",
+          "event: response.content_part.done\ndata: {\"type\":\"response.content_part.done\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]},\"sequence_number\":5}\n\n",
+          "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]}]},\"sequence_number\":6}\n\n",
+          "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_fixture\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-gpt\",\"status\":\"completed\",\"output\":[{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]}]}],\"error\":null,\"incomplete_details\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":2,\"total_tokens\":12,\"input_tokens_details\":{\"cached_tokens\":3},\"output_tokens_details\":{\"reasoning_tokens\":1}}},\"sequence_number\":7}\n\n"
+        ],
+        "headers": {}
+      },
+      "bad-usage": {
+        "status": 200,
+        "body": {
+          "id": "resp_fixture",
+          "object": "response",
+          "created_at": 1,
+          "model": "fixture-gpt",
+          "status": "completed",
+          "output": [
+            {
+              "id": "msg_fixture",
+              "type": "message",
+              "status": "completed",
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "output_text",
+                  "text": "pong",
+                  "annotations": []
+                }
+              ]
+            }
+          ],
+          "error": null,
+          "incomplete_details": null,
+          "usage": {
+            "input_tokens": "not-an-integer",
+            "output_tokens": 2,
+            "total_tokens": 12,
+            "input_tokens_details": {
+              "cached_tokens": 3
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_fixture\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-gpt\",\"status\":\"in_progress\",\"output\":[],\"error\":null,\"incomplete_details\":null,\"usage\":null},\"sequence_number\":0}\n\n",
+          "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"in_progress\",\"role\":\"assistant\",\"content\":[]},\"sequence_number\":1}\n\n",
+          "event: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[]},\"sequence_number\":2}\n\n",
+          "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"delta\":\"pong\",\"sequence_number\":3}\n\n",
+          "event: response.output_text.done\ndata: {\"type\":\"response.output_text.done\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"text\":\"pong\",\"sequence_number\":4}\n\n",
+          "event: response.content_part.done\ndata: {\"type\":\"response.content_part.done\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]},\"sequence_number\":5}\n\n",
+          "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]}]},\"sequence_number\":6}\n\n",
+          "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_fixture\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-gpt\",\"status\":\"completed\",\"output\":[{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]}]}],\"error\":null,\"incomplete_details\":null,\"usage\":{\"input_tokens\":\"not-an-integer\",\"output_tokens\":2,\"total_tokens\":12,\"input_tokens_details\":{\"cached_tokens\":3},\"output_tokens_details\":{\"reasoning_tokens\":1}}},\"sequence_number\":7}\n\n"
+        ],
+        "headers": {}
+      },
+      "tools": {
+        "status": 200,
+        "body": {
+          "id": "resp_fixture",
+          "object": "response",
+          "created_at": 1,
+          "model": "fixture-gpt",
+          "status": "completed",
+          "output": [
+            {
+              "type": "function_call",
+              "id": "fc_fixture",
+              "call_id": "call_fixture",
+              "name": "weather",
+              "arguments": "{\"city\":\"Paris\"}",
+              "status": "completed"
+            }
+          ],
+          "error": null,
+          "incomplete_details": null,
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 2,
+            "total_tokens": 12,
+            "input_tokens_details": {
+              "cached_tokens": 3
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_fixture\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-gpt\",\"status\":\"in_progress\",\"output\":[],\"error\":null,\"incomplete_details\":null,\"usage\":null},\"sequence_number\":0}\n\n",
+          "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"type\":\"function_call\",\"id\":\"fc_fixture\",\"call_id\":\"call_fixture\",\"name\":\"weather\",\"arguments\":\"\",\"status\":\"completed\"},\"sequence_number\":1}\n\n",
+          "event: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"item_id\":\"fc_fixture\",\"output_index\":0,\"delta\":\"{\\\"city\\\":\\\"Paris\\\"}\",\"sequence_number\":2}\n\n",
+          "event: response.function_call_arguments.done\ndata: {\"type\":\"response.function_call_arguments.done\",\"item_id\":\"fc_fixture\",\"output_index\":0,\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\",\"sequence_number\":3}\n\n",
+          "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"function_call\",\"id\":\"fc_fixture\",\"call_id\":\"call_fixture\",\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\",\"status\":\"completed\"},\"sequence_number\":4}\n\n",
+          "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_fixture\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-gpt\",\"status\":\"completed\",\"output\":[{\"type\":\"function_call\",\"id\":\"fc_fixture\",\"call_id\":\"call_fixture\",\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\",\"status\":\"completed\"}],\"error\":null,\"incomplete_details\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":2,\"total_tokens\":12,\"input_tokens_details\":{\"cached_tokens\":3},\"output_tokens_details\":{\"reasoning_tokens\":1}}},\"sequence_number\":5}\n\n"
+        ],
+        "headers": {}
+      },
+      "auth-error": {
+        "status": 401,
+        "body": {
+          "error": {
+            "message": "fixture auth-error",
+            "type": "auth_error",
+            "code": "auth-error"
+          }
+        },
+        "headers": {
+          "retry-after": "0",
+          "x-ratelimit-remaining-requests": "0",
+          "x-request-id": "fixture-request"
+        },
+        "events": []
+      },
+      "rate-limit": {
+        "status": 429,
+        "body": {
+          "error": {
+            "message": "fixture rate-limit",
+            "type": "rate_limit",
+            "code": "rate-limit"
+          }
+        },
+        "headers": {
+          "retry-after": "0",
+          "x-ratelimit-remaining-requests": "0",
+          "x-request-id": "fixture-request"
+        },
+        "events": []
+      },
+      "server-error": {
+        "status": 503,
+        "body": {
+          "error": {
+            "message": "fixture server-error",
+            "type": "server_error",
+            "code": "server-error"
+          }
+        },
+        "headers": {
+          "retry-after": "0",
+          "x-ratelimit-remaining-requests": "0",
+          "x-request-id": "fixture-request"
+        },
+        "events": []
+      },
+      "bad-terminal": {
+        "status": 200,
+        "body": {
+          "id": "resp_fixture",
+          "object": "response",
+          "created_at": 1,
+          "model": "fixture-gpt",
+          "status": "completed",
+          "output": [
+            {
+              "id": "msg_fixture",
+              "type": "message",
+              "status": "completed",
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "output_text",
+                  "text": "pong",
+                  "annotations": []
+                }
+              ]
+            }
+          ],
+          "error": null,
+          "incomplete_details": null,
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 2,
+            "total_tokens": 12,
+            "input_tokens_details": {
+              "cached_tokens": 3
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_fixture\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-gpt\",\"status\":\"in_progress\",\"output\":[],\"error\":null,\"incomplete_details\":null,\"usage\":null},\"sequence_number\":0}\n\n",
+          "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"in_progress\",\"role\":\"assistant\",\"content\":[]},\"sequence_number\":1}\n\n",
+          "event: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[]},\"sequence_number\":2}\n\n",
+          "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"delta\":\"pong\",\"sequence_number\":3}\n\n",
+          "event: response.output_text.done\ndata: {\"type\":\"response.output_text.done\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"text\":\"pong\",\"sequence_number\":4}\n\n",
+          "event: response.content_part.done\ndata: {\"type\":\"response.content_part.done\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]},\"sequence_number\":5}\n\n",
+          "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]}]},\"sequence_number\":6}\n\n",
+          "event: response.completed\ndata: {\"type\":\"response.completed\",\"sequence_number\":7,\"response\":{\"id\":\"resp_fixture\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-gpt\",\"status\":\"completed\",\"output\":[{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]}]}],\"error\":null,\"incomplete_details\":null,\"usage\":{\"input_tokens\":\"invalid\",\"output_tokens\":2,\"total_tokens\":12}}}\n\n"
+        ],
+        "headers": {}
+      },
+      "missing-terminal": {
+        "status": 200,
+        "body": {
+          "id": "resp_fixture",
+          "object": "response",
+          "created_at": 1,
+          "model": "fixture-gpt",
+          "status": "completed",
+          "output": [
+            {
+              "id": "msg_fixture",
+              "type": "message",
+              "status": "completed",
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "output_text",
+                  "text": "pong",
+                  "annotations": []
+                }
+              ]
+            }
+          ],
+          "error": null,
+          "incomplete_details": null,
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 2,
+            "total_tokens": 12,
+            "input_tokens_details": {
+              "cached_tokens": 3
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 1
+            }
+          }
+        },
+        "events": [
+          "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_fixture\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-gpt\",\"status\":\"in_progress\",\"output\":[],\"error\":null,\"incomplete_details\":null,\"usage\":null},\"sequence_number\":0}\n\n",
+          "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"in_progress\",\"role\":\"assistant\",\"content\":[]},\"sequence_number\":1}\n\n",
+          "event: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[]},\"sequence_number\":2}\n\n",
+          "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"delta\":\"pong\",\"sequence_number\":3}\n\n",
+          "event: response.output_text.done\ndata: {\"type\":\"response.output_text.done\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"text\":\"pong\",\"sequence_number\":4}\n\n",
+          "event: response.content_part.done\ndata: {\"type\":\"response.content_part.done\",\"item_id\":\"msg_fixture\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]},\"sequence_number\":5}\n\n",
+          "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"msg_fixture\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"pong\",\"annotations\":[]}]},\"sequence_number\":6}\n\n"
+        ],
+        "headers": {}
+      }
+    }
+  },
+  "selected": "success",
+  "models": [
+    "fixture-gpt",
+    "fixture-reasoning"
+  ],
+  "keys": {
+    "chat": "fixture-chat-key",
+    "responses": "fixture-responses-key"
+  }
+}

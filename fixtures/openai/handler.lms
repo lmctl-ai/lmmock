@@ -1,0 +1,34 @@
+# HTTP policy belongs to annotated lmcode functions; models and payloads are data.
+p = _lmcode_ schema="../../examples/schema.json";
+fn handle(x: Exchange, dialect: string) -> void {
+  let cfg = json_parse(config());
+  if (x.header("Authorization") != "Bearer " + cfg.get("keys").get(dialect).as_string()) {
+    x.status(401); x.json("{\"error\":{\"message\":\"fixture wrong route credential\",\"type\":\"authentication_error\",\"code\":\"invalid_api_key\"}}");
+  } else {
+  let request = json_parse(x.body());
+  let models = cfg.get("models");
+  let supported = false;
+  for (i in range(0, models.len())) { if (request.get("model").as_string() == models.at(i).as_string()) { supported = true; } }
+  if (!supported) { x.status(404); x.json("{\"error\":{\"message\":\"fixture unsupported model\",\"code\":\"model_not_found\"}}"); }
+  else {
+  let reply = cfg.get("cases").get(dialect).get(cfg.get("selected").as_string());
+  x.status(reply.get("status").as_int());
+  let headers = reply.get("headers");
+  let keys = headers.keys();
+  for (i in range(0, keys.len())) { x.set_header(keys.at(i), headers.get(keys.at(i)).as_string()); }
+  if (request.has("stream") && request.get("stream").as_bool() && reply.get("status").as_int() == 200) {
+    x.set_header("Content-Type", "text/event-stream");
+    let events = reply.get("events");
+    for (i in range(0, events.len())) { x.stream_event(events.at(i).as_string()); }
+  } else { x.json(reply.get("body").to_json()); }
+  }
+  }
+}
+@chat
+fn chat(x: Exchange) -> void implements Handler { handle(x, "chat"); }
+@responses
+fn responses(x: Exchange) -> void implements Handler { handle(x, "responses"); }
+route("POST", "/v1/chat/completions", "chat");
+route("POST", "/v1/responses", "responses");
+end _lmcode_
+savedsl(p, ARGV[0]);
