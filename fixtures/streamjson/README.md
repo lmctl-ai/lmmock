@@ -19,6 +19,11 @@ wire.json is source data, not a ready-to-run scenario. The fixture client render
 its model/session placeholders and private audit/native-store paths into a per-case
 configuration with version, seed, init and turns. Each cell explicitly declares
 its events, close behavior, optional diagnostic, and owned transcript effects.
+Result-bearing cells wait for input EOF, which the real client sends after
+processing a result. Missing-terminal faults explicitly close instead. This avoids
+Windows exit-versus-stdout races without a mock grace timer. A dropped-terminal
+mutant also closes, matching the finite missing-result fault rather than creating
+a two-sided wait for an acknowledgement that can never arrive.
 Unknown turns refuse. Source handler extensions need lmcode, not Go switches.
 
 Tests use the frozen P0 manifests and shared expectation checker. They run the real

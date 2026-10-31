@@ -4,7 +4,7 @@ const root=process.cwd(),binary=path.resolve(process.argv[2]||'build/lmmock'),di
 try{
  const pkg=clientPackage(),source=fs.readFileSync('fixtures/streamjson/handler.lms','utf8');
  const anchor='x.emit(events.at(i).to_json());';assert.equal(source.split(anchor).length-1,1,'terminal mutation anchor');
- const changed=source.replace(anchor,'if(events.at(i).get("type").as_string()!="result"){x.emit(events.at(i).to_json());}').replace('schema="../../internal/rpcstdio/presets/schema.json"','schema='+JSON.stringify(path.join(root,'internal/rpcstdio/presets/schema.json').replaceAll('\\','/')));
+ const changed=source.replace(anchor,'if(events.at(i).get("type").as_string()!="result"){x.emit(events.at(i).to_json());}else{x.close();}').replace('schema="../../internal/rpcstdio/presets/schema.json"','schema='+JSON.stringify(path.join(root,'internal/rpcstdio/presets/schema.json').replaceAll('\\','/')));
  const script=path.join(dir,'drop-terminal.lms'),code=path.join(dir,'drop-terminal.dslb');fs.writeFileSync(script,changed);
  const compiled=spawnSync(process.execPath,[path.join(pkg,'bin/lmscript'),'--no-preflight',script,code],{encoding:'utf8'});assert.ifError(compiled.error);assert.equal(compiled.status,0,'mutant must compile: '+compiled.stderr);
  for(const provider of ['claude','qwen']){
