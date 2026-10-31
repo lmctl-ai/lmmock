@@ -613,6 +613,8 @@ fn native_error(x: Exchange, provider: string, status: int, kind: string, messag
  x.status(status);
  if (provider == "anthropic") {
   x.json(json_with(json_with(fixture("anthropic_error"),"/error/type",json_text(kind)),"/error/message",json_text(message)).to_json());
+ } else if (provider == "ollama") {
+  x.json("{\"error\":" + json_quote(message) + "}");
  } else {
   x.json(json_with(json_with(json_with(fixture("gemini_error"),"/error/code",json_parse(str(status))),"/error/status",json_text(kind)),"/error/message",json_text(message)).to_json());
  }
@@ -623,21 +625,29 @@ fn native_allowed(x: Exchange, provider: string) -> bool {
  if (provider == "gemini") {
   credential = x.header("x-goog-api-key");
   if (credential == "") { credential = x.query("key"); }
+ } else if (provider == "ollama") {
+  credential = x.header("Authorization");
+  if (str_starts_with(credential, "Bearer ")) {
+   credential = str_substr(credential, 7, str_len(credential));
+  }
  }
  if (c.has("apiKey")) { ok = secure_equal(credential,field(c,"apiKey")); }
  if (!ok || mode == "unauthorized") {
   ok = false;
   if (provider == "anthropic") { native_error(x,provider,401,"authentication_error","Invalid API key"); }
+  else if (provider == "ollama") { native_error(x,provider,401,"unauthorized","unauthorized"); }
   else { native_error(x,provider,403,"PERMISSION_DENIED","Invalid API key"); }
  } else if (provider == "anthropic" && x.header("anthropic-version") == "") {
   ok = false; native_error(x,provider,400,"invalid_request_error","anthropic-version is required");
  } else if (mode == "rate-limit") {
   ok = false; x.set_header("Retry-After","1");
   if (provider == "anthropic") { native_error(x,provider,429,"rate_limit_error","Rate limited"); }
+  else if (provider == "ollama") { native_error(x,provider,429,"rate_limit_error","Rate limited"); }
   else { native_error(x,provider,429,"RESOURCE_EXHAUSTED","Rate limited"); }
  } else if (mode == "server-error") {
   ok = false;
   if (provider == "anthropic") { native_error(x,provider,529,"overloaded_error","Overloaded"); }
+  else if (provider == "ollama") { native_error(x,provider,500,"server_error","Server error"); }
   else { native_error(x,provider,503,"UNAVAILABLE","Unavailable"); }
  } else if (mode == "bad-json") { ok = false; x.json("{broken"); }
  else if (mode == "disconnect") { ok = false; x.disconnect(); }
@@ -754,7 +764,42 @@ fn gemini_content(x: Exchange) -> void implements Handler {
   }
  }
 }
+@ollama_chat
+fn ollama_chat(x: Exchange) -> void implements Handler {
+ record(x);
+ if (native_allowed(x,"ollama")) {
+  let b = json_parse(x.body()); let c = json_parse(config()); let text = "pong";
+  if (c.has("text")) { text = field(c,"text"); }
+  let model = "mock-agent"; if (b.has("model")) { model = field(b,"model"); }
+  let stream = true; if (b.has("stream")) { stream = b.get("stream").as_bool(); }
+  if (stream) {
+   x.set_header("Content-Type","application/x-ndjson");
+   let chunk1 = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":" + json_quote(text) + "},\"done\":false}\n";
+   let chunk2 = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":1000000,\"prompt_eval_count\":2,\"eval_count\":2}\n";
+   x.stream_event(chunk1);
+   x.stream_event(chunk2);
+  } else {
+   x.set_header("Content-Type","application/json");
+   let response = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":" + json_quote(text) + "},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":1000000,\"prompt_eval_count\":2,\"eval_count\":2}";
+   x.send(response);
+  }
+ }
+}
+@ollama_tags
+fn ollama_tags(x: Exchange) -> void implements Handler {
+ if (native_allowed(x,"ollama")) {
+  x.json("{\"models\":[{\"name\":\"mock-agent\",\"model\":\"mock-agent\"}]}");
+ }
+}
+@ollama_version
+fn ollama_version(x: Exchange) -> void implements Handler {
+ x.json("{\"version\":\"0.5.0\"}");
+}
 route("POST","/v1/messages","anthropic_messages");
 route("POST","/v1beta/models/{operation}","gemini_content");
+route("POST","/api/chat","ollama_chat");
+route("POST","/api/generate","ollama_chat");
+route("GET","/api/tags","ollama_tags");
+route("GET","/api/version","ollama_version");
 end _lmcode_
 savedsl(p,ARGV[0]);

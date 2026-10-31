@@ -1,0 +1,63 @@
+# Gemini Content wire handler in lmcode.
+p = _lmcode_ schema="../../examples/schema.json";
+@gemini_operation
+fn gemini_operation(x: Exchange) -> void implements Handler {
+  let cfg = json_parse(config());
+  let selected = cfg.get("selected").as_string();
+  let key = x.header("x-goog-api-key");
+  if (key == "") { key = x.query("key"); }
+  if (selected == "auth-missing" || key == "") {
+    x.status(403);
+    x.set_header("Content-Type", "application/json");
+    x.json("{\"error\":{\"code\":403,\"message\":\"Method doesn't allow unregistered callers\",\"status\":\"PERMISSION_DENIED\"}}");
+  } else if (selected == "auth-invalid" || !secure_equal(key, cfg.get("key").as_string())) {
+    x.status(403);
+    x.set_header("Content-Type", "application/json");
+    x.json("{\"error\":{\"code\":403,\"message\":\"API key not valid\",\"status\":\"PERMISSION_DENIED\"}}");
+  } else {
+    let operation = x.param("operation");
+    let p = x.path();
+    let is_overloaded = str_ends_with(operation, ":overloaded") || str_ends_with(p, ":overloaded") || selected == "rate-limit";
+    if (is_overloaded) {
+      x.status(429);
+      x.set_header("Content-Type", "application/json");
+      x.set_header("Retry-After", "1");
+      x.json("{\"error\":{\"code\":429,\"message\":\"Resource has been exhausted\",\"status\":\"RESOURCE_EXHAUSTED\"}}");
+    } else {
+      let is_stream = str_ends_with(operation, ":streamGenerateContent") || str_ends_with(p, ":streamGenerateContent");
+      let is_generate = str_ends_with(operation, ":generateContent") || str_ends_with(p, ":generateContent");
+      if (!is_stream && !is_generate) {
+        x.status(404);
+        x.set_header("Content-Type", "application/json");
+        x.json("{\"error\":{\"code\":404,\"message\":\"Unsupported model operation\",\"status\":\"NOT_FOUND\"}}");
+      } else {
+        let reply = cfg.get("cases").get(selected);
+        x.status(reply.get("status").as_int());
+        let headers = reply.get("headers");
+        let keys = headers.keys();
+        for (i in range(0, keys.len())) {
+          x.set_header(keys.at(i), headers.get(keys.at(i)).as_string());
+        }
+        if (is_stream && reply.get("status").as_int() == 200) {
+          x.set_header("Content-Type", "text/event-stream");
+          let events = reply.get("events");
+          for (i in range(0, events.len())) {
+            x.stream_event(events.at(i).as_string());
+          }
+        } else {
+          if (reply.get("headers").has("content-type") && reply.get("headers").get("content-type").as_string() == "text/plain") {
+            x.send("pong plain text");
+          } else {
+            x.json(reply.get("body").to_json());
+          }
+        }
+      }
+    }
+  }
+}
+route("POST", "/v1beta/models/{operation}", "gemini_operation");
+route("POST", "/v1beta/models/fixture-gemini:generateContent", "gemini_operation");
+route("POST", "/v1beta/models/fixture-gemini:streamGenerateContent", "gemini_operation");
+route("POST", "/v1beta/models/fixture-gemini:overloaded", "gemini_operation");
+end _lmcode_
+savedsl(p, ARGV[0]);

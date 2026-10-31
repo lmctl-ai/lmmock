@@ -1,0 +1,67 @@
+# Anthropic Messages wire handler in lmcode.
+p = _lmcode_ schema="../../examples/schema.json";
+@anthropic_messages
+fn anthropic_messages(x: Exchange) -> void implements Handler {
+  let cfg = json_parse(config());
+  let selected = cfg.get("selected").as_string();
+  let key = x.header("x-api-key");
+  let version = x.header("anthropic-version");
+  if (selected == "auth-missing" || key == "") {
+    x.status(401);
+    x.set_header("Content-Type", "application/json");
+    x.json("{\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"invalid x-api-key\"}}");
+  } else if (selected == "auth-invalid" || !secure_equal(key, cfg.get("key").as_string())) {
+    x.status(401);
+    x.set_header("Content-Type", "application/json");
+    x.json("{\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"invalid x-api-key\"}}");
+  } else if (selected == "missing-version" || version == "") {
+    x.status(400);
+    x.set_header("Content-Type", "application/json");
+    x.json("{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"anthropic-version is required\"}}");
+  } else {
+    let request = json_parse(x.body());
+    let models = cfg.get("models");
+    let model = "";
+    if (request.has("model")) { model = request.get("model").as_string(); }
+    if (model == "overloaded" || selected == "rate-limit") {
+      x.status(429);
+      x.set_header("Content-Type", "application/json");
+      x.set_header("Retry-After", "1");
+      x.json("{\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"Rate limit exceeded\"}}");
+    } else {
+      let supported = false;
+      for (i in range(0, models.len())) {
+        if (model == models.at(i).as_string()) { supported = true; }
+      }
+      if (!supported) {
+        x.status(404);
+        x.set_header("Content-Type", "application/json");
+        x.json("{\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model not found\"}}");
+      } else {
+        let reply = cfg.get("cases").get(selected);
+        x.status(reply.get("status").as_int());
+        let headers = reply.get("headers");
+        let keys = headers.keys();
+        for (i in range(0, keys.len())) {
+          x.set_header(keys.at(i), headers.get(keys.at(i)).as_string());
+        }
+        if (request.has("stream") && request.get("stream").as_bool() && reply.get("status").as_int() == 200) {
+          x.set_header("Content-Type", "text/event-stream");
+          let events = reply.get("events");
+          for (i in range(0, events.len())) {
+            x.stream_event(events.at(i).as_string());
+          }
+        } else {
+          if (reply.get("headers").has("content-type") && reply.get("headers").get("content-type").as_string() == "text/plain") {
+            x.send("pong plain text");
+          } else {
+            x.json(reply.get("body").to_json());
+          }
+        }
+      }
+    }
+  }
+}
+route("POST", "/v1/messages", "anthropic_messages");
+end _lmcode_
+savedsl(p, ARGV[0]);

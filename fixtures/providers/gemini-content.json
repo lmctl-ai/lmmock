@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "id": "gemini-content",
+  "dialect": {
+    "id": "gemini-content",
+    "version": "v1beta",
+    "transport": "http"
+  },
+  "source": {
+    "kind": "public-spec",
+    "reference": "https://ai.google.dev/api/rest/v1beta/models/generateContent",
+    "version": "v1beta",
+    "retrieved": "2026-10-31",
+    "note": "Gemini REST generateContent and SSE streamGenerateContent"
+  },
+  "server": {
+    "kind": "http",
+    "handler": "fixtures/gemini/handler.lms",
+    "config": "fixtures/gemini/wire.json",
+    "url_env": "LMMOCK_URL"
+  },
+  "models": [
+    { "id": "fixture-gemini", "family": "gemini-2.5", "capabilities": ["chat", "tools", "stream"] },
+    { "id": "gemini-2.5-flash", "family": "gemini-2.5", "capabilities": ["chat", "tools", "stream"] },
+    { "id": "gemini-1.5-pro", "family": "gemini-1.5", "capabilities": ["chat", "tools", "stream"] },
+    { "id": "gemini-1.5-flash", "family": "gemini-1.5", "capabilities": ["chat", "tools", "stream"] }
+  ],
+  "routes": [
+    { "id": "generate-content", "method": "POST", "path": "/v1beta/models/fixture-gemini:generateContent", "annotation": "gemini_operation", "sam": "Handler", "content_types": ["application/json"] },
+    { "id": "stream-generate-content", "method": "POST", "path": "/v1beta/models/fixture-gemini:streamGenerateContent", "annotation": "gemini_operation", "sam": "Handler", "content_types": ["application/json"] },
+    { "id": "overloaded", "method": "POST", "path": "/v1beta/models/fixture-gemini:overloaded", "annotation": "gemini_operation", "sam": "Handler", "content_types": ["application/json"] }
+  ],
+  "cases": [
+    {
+      "id": "gemini-success-usage",
+      "kind": "usage",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1beta/models/fixture-gemini:generateContent",
+        "headers": {
+          "x-goog-api-key": "fixture-gemini-key"
+        },
+        "body": {
+          "contents": [{ "parts": [{ "text": "ping" }] }]
+        }
+      },
+      "expect": {
+        "status": 200,
+        "json": {
+          "candidates.0.content.parts.0.text": "pong",
+          "candidates.0.finishReason": "STOP",
+          "usageMetadata.promptTokenCount": 10,
+          "usageMetadata.candidatesTokenCount": 2,
+          "usageMetadata.totalTokenCount": 12
+        }
+      }
+    },
+    {
+      "id": "gemini-auth-missing",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1beta/models/fixture-gemini:generateContent",
+        "body": {
+          "contents": [{ "parts": [{ "text": "ping" }] }]
+        }
+      },
+      "expect": {
+        "status": 403,
+        "json": {
+          "error.status": "PERMISSION_DENIED"
+        }
+      },
+      "faults": ["auth-missing"]
+    },
+    {
+      "id": "gemini-auth-invalid",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1beta/models/fixture-gemini:generateContent",
+        "headers": {
+          "x-goog-api-key": "wrong-key"
+        },
+        "body": {
+          "contents": [{ "parts": [{ "text": "ping" }] }]
+        }
+      },
+      "expect": {
+        "status": 403,
+        "json": {
+          "error.status": "PERMISSION_DENIED"
+        }
+      },
+      "faults": ["auth-invalid"]
+    },
+    {
+      "id": "gemini-rate-limit",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1beta/models/fixture-gemini:overloaded",
+        "headers": {
+          "x-goog-api-key": "fixture-gemini-key"
+        },
+        "body": {
+          "contents": [{ "parts": [{ "text": "ping" }] }]
+        }
+      },
+      "expect": {
+        "status": 429,
+        "headers": {
+          "retry-after": "1"
+        },
+        "json": {
+          "error.status": "RESOURCE_EXHAUSTED"
+        }
+      },
+      "faults": ["rate-limit"]
+    },
+    {
+      "id": "gemini-stream-events",
+      "kind": "stream",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1beta/models/fixture-gemini:streamGenerateContent",
+        "headers": {
+          "x-goog-api-key": "fixture-gemini-key"
+        },
+        "body": {
+          "contents": [{ "parts": [{ "text": "ping" }] }]
+        }
+      },
+      "expect": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/event-stream"
+        },
+        "events": [
+          "candidates",
+          "STOP"
+        ]
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "auth-missing",
+      "surface": "http",
+      "trigger": { "case_id": "gemini-auth-missing" },
+      "description": "Missing API key returns Google 403 PERMISSION_DENIED"
+    },
+    {
+      "id": "auth-invalid",
+      "surface": "http",
+      "trigger": { "case_id": "gemini-auth-invalid" },
+      "description": "Invalid API key returns Google 403 PERMISSION_DENIED without leaking the key"
+    },
+    {
+      "id": "rate-limit",
+      "surface": "http",
+      "trigger": { "case_id": "gemini-rate-limit" },
+      "description": "Rate-limit returns 429 RESOURCE_EXHAUSTED"
+    }
+  ]
+}

@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "id": "anthropic-messages",
+  "dialect": {
+    "id": "anthropic-messages",
+    "version": "2023-06-01",
+    "transport": "http"
+  },
+  "source": {
+    "kind": "public-spec",
+    "reference": "https://docs.anthropic.com/en/api/messages",
+    "version": "2023-06-01",
+    "retrieved": "2026-10-31",
+    "note": "Anthropic Messages protocol with sync and SSE streaming"
+  },
+  "server": {
+    "kind": "http",
+    "handler": "fixtures/anthropic/handler.lms",
+    "config": "fixtures/anthropic/wire.json",
+    "url_env": "LMMOCK_URL"
+  },
+  "models": [
+    { "id": "fixture-claude", "family": "claude-3-5", "capabilities": ["chat", "tools", "stream"] },
+    { "id": "claude-3-5-sonnet", "family": "claude-3-5", "capabilities": ["chat", "tools", "stream"] },
+    { "id": "claude-3-opus", "family": "claude-3", "capabilities": ["chat", "tools", "stream"] },
+    { "id": "claude-3-haiku", "family": "claude-3", "capabilities": ["chat", "tools", "stream"] },
+    { "id": "overloaded", "family": "claude-3", "capabilities": ["chat"] }
+  ],
+  "routes": [
+    { "id": "messages", "method": "POST", "path": "/v1/messages", "annotation": "anthropic_messages", "sam": "Handler", "content_types": ["application/json"] }
+  ],
+  "cases": [
+    {
+      "id": "anthropic-success-usage",
+      "kind": "usage",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/messages",
+        "headers": {
+          "x-api-key": "fixture-anthropic-key",
+          "anthropic-version": "2023-06-01"
+        },
+        "body": {
+          "model": "fixture-claude",
+          "messages": [{ "role": "user", "content": "ping" }],
+          "max_tokens": 10
+        }
+      },
+      "expect": {
+        "status": 200,
+        "model": "fixture-claude",
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2
+        },
+        "json": {
+          "content.0.text": "pong",
+          "stop_reason": "end_turn"
+        }
+      }
+    },
+    {
+      "id": "anthropic-auth-missing",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/messages",
+        "headers": {
+          "anthropic-version": "2023-06-01"
+        },
+        "body": {
+          "model": "fixture-claude",
+          "messages": [{ "role": "user", "content": "ping" }],
+          "max_tokens": 10
+        }
+      },
+      "expect": {
+        "status": 401,
+        "json": {
+          "error.type": "authentication_error"
+        }
+      },
+      "faults": ["auth-missing"]
+    },
+    {
+      "id": "anthropic-auth-invalid",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/messages",
+        "headers": {
+          "x-api-key": "wrong-key",
+          "anthropic-version": "2023-06-01"
+        },
+        "body": {
+          "model": "fixture-claude",
+          "messages": [{ "role": "user", "content": "ping" }],
+          "max_tokens": 10
+        }
+      },
+      "expect": {
+        "status": 401,
+        "json": {
+          "error.type": "authentication_error"
+        }
+      },
+      "faults": ["auth-invalid"]
+    },
+    {
+      "id": "anthropic-unknown-model",
+      "kind": "model",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/messages",
+        "headers": {
+          "x-api-key": "fixture-anthropic-key",
+          "anthropic-version": "2023-06-01"
+        },
+        "body": {
+          "model": "unsupported-model",
+          "messages": [{ "role": "user", "content": "ping" }],
+          "max_tokens": 10
+        }
+      },
+      "expect": {
+        "status": 404,
+        "json": {
+          "error.type": "not_found_error"
+        }
+      },
+      "faults": ["unknown-model"]
+    },
+    {
+      "id": "anthropic-rate-limit",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/messages",
+        "headers": {
+          "x-api-key": "fixture-anthropic-key",
+          "anthropic-version": "2023-06-01"
+        },
+        "body": {
+          "model": "overloaded",
+          "messages": [{ "role": "user", "content": "ping" }],
+          "max_tokens": 10
+        }
+      },
+      "expect": {
+        "status": 429,
+        "headers": {
+          "retry-after": "1"
+        },
+        "json": {
+          "error.type": "rate_limit_error"
+        }
+      },
+      "faults": ["rate-limit"]
+    },
+    {
+      "id": "anthropic-stream-events",
+      "kind": "stream",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/messages",
+        "headers": {
+          "x-api-key": "fixture-anthropic-key",
+          "anthropic-version": "2023-06-01"
+        },
+        "body": {
+          "model": "fixture-claude",
+          "messages": [{ "role": "user", "content": "ping" }],
+          "max_tokens": 10,
+          "stream": true
+        }
+      },
+      "expect": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/event-stream"
+        },
+        "events": [
+          "message_start",
+          "content_block_start",
+          "content_block_delta",
+          "content_block_stop",
+          "message_delta",
+          "message_stop"
+        ]
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "auth-missing",
+      "surface": "http",
+      "trigger": { "case_id": "anthropic-auth-missing" },
+      "description": "Missing x-api-key header; expect vendor-shaped 401"
+    },
+    {
+      "id": "auth-invalid",
+      "surface": "http",
+      "trigger": { "case_id": "anthropic-auth-invalid" },
+      "description": "Invalid x-api-key header; expect vendor-shaped 401 without echoing the key"
+    },
+    {
+      "id": "unknown-model",
+      "surface": "http",
+      "trigger": { "case_id": "anthropic-unknown-model", "model": "unsupported-model" },
+      "description": "Unrecognized Claude model name returns 404"
+    },
+    {
+      "id": "rate-limit",
+      "surface": "http",
+      "trigger": { "case_id": "anthropic-rate-limit", "model": "overloaded" },
+      "description": "Rate-limit returns 429 with retry-after header"
+    }
+  ]
+}
