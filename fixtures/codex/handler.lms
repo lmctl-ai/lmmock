@@ -1,0 +1,84 @@
+# Codex app-server methods are RPCHandler entries. Wire events and models are data.
+p = _lmcode_ schema="../../internal/rpcstdio/presets/schema.json";
+fn field(j: Json, k: string) -> string { let s = ""; if (j.has(k)) { s = j.get(k).as_string(); } return s; }
+fn cfg() -> Json { return json_parse(config()); }
+fn sid() -> string { return cfg().get("session").as_string(); }
+fn model() -> string { return field(cfg(), "model"); }
+fn allowed(p: Json) -> bool {
+ let yes = true;
+ if (p.has("model") && cfg().has("models")) {
+  yes = false; let models = cfg().get("models");
+  for (i in range(0, models.len())) { if (models.at(i).as_string() == field(p,"model")) { yes = true; } }
+ }
+ return yes;
+}
+fn cell(x: RPC) -> Json {
+ let cells = cfg().get("cells"); let n = x.next("turn"); let found = json_parse("{}"); let hits = 0;
+ for (i in range(0,cells.len())) { let c = cells.at(i); if (c.get("alias").as_string()==x.alias() && c.get("turn").as_int()==n) { found=c; hits=hits+1; } }
+ if (hits!=1) { x.abort("unscripted or duplicate Codex cell"); }
+ if (found.has("delay") || found.has("delayMs") || found.has("timeout") || found.has("hang")) { x.abort("timing faults are not supported"); }
+ if (found.has("expect") && !str_contains(x.params(),found.get("expect").as_string())) { x.abort("Codex prompt expectation failed"); }
+ return found;
+}
+fn thread_reply(x: RPC, id: string) -> void {
+ x.set("thread",id); x.set("phase","open");
+ x.reply("{\"thread\":{\"id\":"+json_quote(id)+",\"turns\":[]},\"model\":"+json_quote(model())+"}");
+}
+@initialize fn initialize(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());
+ if (x.get("phase")!="") { x.error(-32600,"initialize already received"); }
+ else { if (!p.has("clientInfo")) { x.error(-32602,"initialize requires clientInfo"); }
+ else { let info=p.get("clientInfo"); if (field(info,"name")=="" || field(info,"version")=="") { x.error(-32602,"clientInfo requires name and version"); }
+ else { x.set("phase","initialized"); x.reply("{\"userAgent\":\"lmmock-codex-fixture\"}"); } } }
+}
+@initialized fn initialized(x: RPC) -> void implements RPCHandler {
+ if (x.get("phase")!="initialized") { x.abort("initialize must precede initialized"); }
+ x.set("phase","ready");
+}
+@thread fn thread(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());
+ if (x.get("phase")!="ready" && x.get("phase")!="open") { x.error(-32600,"initialize must precede thread open"); }
+ else { if (x.get("active")!="") { x.error(-32600,"turn still active"); }
+ else { if (!allowed(p)) { x.error(-32602,"unknown fixture model"); }
+ else { if (x.method()=="thread/start") { thread_reply(x,sid()); }
+ else { let id=field(p,"threadId"); let fork=field(cfg(),"forkSession");
+ if (id!=sid() && (fork=="" || id!=fork)) { x.error(-32002,"unknown fixture thread"); }
+ else { if (x.method()=="thread/fork") { if (fork=="") { x.error(-32602,"fork fixture not configured"); } else { thread_reply(x,fork); } }
+ else { thread_reply(x,id); } } } } } }
+}
+@turn fn turn(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());
+ if (x.get("phase")!="open" || field(p,"threadId")!=x.get("thread")) { x.error(-32602,"turn requires opened thread"); }
+ else { if (x.get("active")!="") { x.error(-32600,"turn still active"); }
+ else { if (!allowed(p)) { x.error(-32602,"unknown fixture model"); }
+ else { let c=cell(x);
+ if (c.has("error")) { let code=-32000; if(c.has("rpc_code")){code=c.get("rpc_code").as_int();} x.error(code,c.get("error").as_string()); }
+ else { let id=field(c,"turn_id"); if(id==""){id="turn-fixture";} x.set("active",id);
+ x.reply("{\"turn\":{\"id\":"+json_quote(id)+",\"status\":\"inProgress\"}}");
+ if(c.has("events")) {
+  let events=c.get("events");
+  for(i in range(0,events.len())) { let e=events.at(i); let method=e.get("method").as_string(); let params=e.get("params"); x.notify(method,params.to_json());
+   if(method=="turn/completed" && field(params.get("turn"),"id")==id) { x.set("active",""); }
+  }
+ } else {
+  let base="{\"threadId\":"+json_quote(x.get("thread"))+",\"turnId\":"+json_quote(id);
+  x.notify("turn/started","{\"threadId\":"+json_quote(x.get("thread"))+",\"turn\":{\"id\":"+json_quote(id)+"}}");
+  x.notify("item/started",base+",\"item\":{\"id\":\"message-fixture\",\"type\":\"agentMessage\",\"phase\":\"final_answer\",\"text\":\"\"}}");
+  x.notify("item/agentMessage/delta",base+",\"itemId\":\"message-fixture\",\"delta\":"+json_quote(c.get("text").as_string())+"}");
+  x.notify("item/completed",base+",\"item\":{\"id\":\"message-fixture\",\"type\":\"agentMessage\",\"phase\":\"final_answer\",\"text\":"+json_quote(c.get("text").as_string())+"}}");
+  x.notify("turn/completed","{\"threadId\":"+json_quote(x.get("thread"))+",\"turn\":{\"id\":"+json_quote(id)+",\"status\":\"completed\",\"error\":null}}"); x.set("active","");
+ }
+ if(c.has("close") && c.get("close").as_bool()){x.close();}
+ else { if(x.get("active")!="" && !c.has("wait_for_interrupt")){x.abort("Codex cell needs terminal event, explicit close or interrupt rendezvous");} }
+ } } } }
+}
+@interrupt fn interrupt(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params()); let id=x.get("active");
+ if(id=="" || field(p,"threadId")!=x.get("thread") || field(p,"turnId")!=id){x.error(-32602,"interrupt requires active thread and turn");}
+ else { x.reply("{}"); x.notify("turn/completed","{\"threadId\":"+json_quote(x.get("thread"))+",\"turn\":{\"id\":"+json_quote(id)+",\"status\":\"interrupted\",\"error\":null}}"); x.set("active",""); }
+}
+bind("initialize","initialize");bind("initialized","initialized");
+bind("thread/start","thread");bind("thread/resume","thread");bind("thread/fork","thread");
+bind("turn/start","turn");bind("turn/interrupt","interrupt");
+end _lmcode_
+savedsl(p,ARGV[0]);

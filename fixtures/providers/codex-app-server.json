@@ -1,0 +1,422 @@
+{
+  "schema_version": 1,
+  "id": "codex-app-server",
+  "dialect": {
+    "id": "codex-app-server",
+    "version": "lmctl-0.2.448",
+    "transport": "json-rpc"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "https://developers.openai.com/codex/app-server",
+    "version": "lmctl-0.2.448; mono584fee2a adapter",
+    "retrieved": "2026-10-31",
+    "note": "Synthetic stdio only. Exact tested client is published npm0.2.448. Foreign turn events are ignored; malformed usage remains provider success with unavailable accounting. Specialized protocol/usage error classes are NOT claimed; strict client controls record this unmet requirement."
+  },
+  "server": {
+    "kind": "stdio",
+    "handler": "fixtures/codex/handler.lms",
+    "config": "fixtures/codex/wire.json",
+    "binary": "codex"
+  },
+  "models": [
+    {
+      "id": "gpt-5.6-sol",
+      "family": "codex-gpt",
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "stream"
+      ]
+    },
+    {
+      "id": "o3",
+      "family": "codex-o-series",
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "stream"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "initialize",
+      "method": "RPC",
+      "path": "/initialize",
+      "annotation": "initialize",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "initialized",
+      "method": "RPC",
+      "path": "/initialized",
+      "annotation": "initialized",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "thread-start",
+      "method": "RPC",
+      "path": "/thread/start",
+      "annotation": "thread",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "thread-resume",
+      "method": "RPC",
+      "path": "/thread/resume",
+      "annotation": "thread",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "thread-fork",
+      "method": "RPC",
+      "path": "/thread/fork",
+      "annotation": "thread",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "turn-start",
+      "method": "RPC",
+      "path": "/turn/start",
+      "annotation": "turn",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "turn-interrupt",
+      "method": "RPC",
+      "path": "/turn/interrupt",
+      "annotation": "interrupt",
+      "sam": "RPCHandler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "success",
+      "kind": "usage",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "success",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "ok",
+          "row_count": 1
+        },
+        "stdout_contains": "pong",
+        "usage": {
+          "input_tokens": 100,
+          "cached_input_tokens": 30,
+          "output_tokens": 12,
+          "reasoning_output_tokens": 4
+        }
+      }
+    },
+    {
+      "id": "reasoning-model",
+      "kind": "model",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "success",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "o3"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "ok",
+          "row_count": 1
+        },
+        "stdout_contains": "pong",
+        "usage": {
+          "input_tokens": 100,
+          "cached_input_tokens": 30,
+          "output_tokens": 12,
+          "reasoning_output_tokens": 4
+        }
+      }
+    },
+    {
+      "id": "resume",
+      "kind": "success",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "success",
+          "LMMOCK_CODEX_MODE": "resume",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "ok",
+          "row_count": 1
+        },
+        "stdout_contains": "pong",
+        "usage": {
+          "input_tokens": 100,
+          "cached_input_tokens": 30,
+          "output_tokens": 12,
+          "reasoning_output_tokens": 4
+        }
+      }
+    },
+    {
+      "id": "persistent",
+      "kind": "success",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "success",
+          "LMMOCK_CODEX_MODE": "batch",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "ok",
+          "row_count": 2
+        },
+        "stdout_contains": "pong",
+        "usage": {
+          "input_tokens": 100,
+          "cached_input_tokens": 30,
+          "output_tokens": 12,
+          "reasoning_output_tokens": 4
+        }
+      }
+    },
+    {
+      "id": "app-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "app-error",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "error",
+          "row_count": 1
+        },
+        "error_class": "unknown"
+      }
+    },
+    {
+      "id": "rpc-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "rpc-error",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "error",
+          "row_count": 1
+        },
+        "error_class": "unknown"
+      }
+    },
+    {
+      "id": "wrong-turn-id",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "wrong-turn-id",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "error",
+          "row_count": 1
+        },
+        "error_class": "unknown"
+      },
+      "faults": [
+        "event-order"
+      ]
+    },
+    {
+      "id": "missing-terminal",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "missing-terminal",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "error",
+          "row_count": 1
+        },
+        "error_class": "unknown"
+      },
+      "faults": [
+        "missing-terminal"
+      ]
+    },
+    {
+      "id": "foreign-event",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "foreign-event",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "ok",
+          "row_count": 1
+        },
+        "stdout_contains": "pong",
+        "usage": {
+          "input_tokens": 100,
+          "cached_input_tokens": 30,
+          "output_tokens": 12,
+          "reasoning_output_tokens": 4
+        }
+      }
+    },
+    {
+      "id": "malformed-usage",
+      "kind": "usage",
+      "request": {
+        "kind": "process",
+        "executable": "codex",
+        "argv": [
+          "app-server",
+          "--listen",
+          "stdio://"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "malformed-usage",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "ok",
+          "row_count": 1,
+          "usage_reason": "counter_not_exposed",
+          "cost_reason": "usage_unavailable"
+        },
+        "stdout_contains": "pong"
+      },
+      "faults": [
+        "malformed-usage"
+      ]
+    }
+  ],
+  "faults": [
+    {
+      "id": "event-order",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "wrong-turn-id"
+      },
+      "description": "Only terminal event has a foreign turn ID; close the process without completing the active turn."
+    },
+    {
+      "id": "missing-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "missing-terminal"
+      },
+      "description": "Close after the valid prefix without a terminal turn event."
+    },
+    {
+      "id": "malformed-usage",
+      "surface": "process",
+      "trigger": {
+        "case_id": "malformed-usage"
+      },
+      "description": "Emit inputTokens as a string; current client marks accounting unavailable but does not fail the turn."
+    }
+  ]
+}
