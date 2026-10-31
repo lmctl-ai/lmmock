@@ -3,7 +3,8 @@
 Run inside lmmock exec, with LMMOCK_URL pointing at examples/copilot.lms.
 Raw output exists only in a private temporary directory and is never printed.
 """
-import json,os,pathlib,socket,subprocess,sys,tempfile,urllib.request
+import json,os,pathlib,subprocess,sys,tempfile,urllib.request
+from capture_listener import wait_listener
 root=pathlib.Path(__file__).resolve().parents[2]
 mock=str(root/'build/lmmock');inspect=os.environ['LMINSPECT_BIN']
 target=os.environ['LMMOCK_URL']
@@ -17,19 +18,13 @@ requests=[('GET','/models',None),('GET','/v1/models',None),('POST','/auto',{}),
  ('GET','/models',None)]
 with tempfile.TemporaryDirectory(prefix='lmmock-private-capture-') as temp:
  raw=pathlib.Path(temp)/'raw.jsonl'
- with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
- child=subprocess.Popen([inspect,'run','--listen',f'127.0.0.1:{port}','--mode','reverse:'+target,'--record',str(raw)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+ child=subprocess.Popen([inspect,'run','--listen','127.0.0.1:0','--mode','reverse:'+target,'--record',str(raw)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
  try:
   while True:
    line=child.stderr.readline()
    if b'proxy listening' in line:break
    if not line:raise RuntimeError('capture proxy failed to start')
-  # Socket readiness, no replay sleeps or timing model.
-  while True:
-   try:
-    with socket.create_connection(('127.0.0.1',port)):break
-   except ConnectionRefusedError:
-    if child.poll() is not None:raise RuntimeError('proxy exited before readiness')
+  host,port=wait_listener(child)
   opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
   for i,(method,path,body) in enumerate(requests):
    headers={'Authorization':'Bearer '+('copilot-test-key' if i<len(requests)-1 else 'fake-invalid-credential'),'Content-Type':'application/json'}
