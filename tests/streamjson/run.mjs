@@ -78,14 +78,14 @@ export async function runProvider({manifestFile,binary,code=path.join(ROOT,'fixt
    assert.equal(raw.status,profile.stderr?1:0,'native fake exit');assert.deepEqual(raw.stdout.trim().split('\n').filter(Boolean).map(JSON.parse),[...rawConfig.init.events,...rawConfig.turns[0].events],'exact ordered wire events');
    if(profile.stderr)assert.match(raw.stderr,/Invalid API key/);else assert.equal(raw.stderr,'','clean native stderr');
    if(original.id==='complete'){
-    const verbose=runClient(pkg,'lmctl',['prompt',team,'Worker','ping','--json','--verbose'],env,workspace);
-    assert.equal(verbose.status,0,verbose.stdout+verbose.stderr);assert.match(verbose.stderr,/fixture_lookup/,'real adapter tool progress');assert.ok(verbose.stderr.indexOf('tool_use')<verbose.stderr.indexOf('tool_result'),'interleaved tool ordering');assert.doesNotMatch(verbose.stderr,/fixture reasoning/,'thinking text remains private');
+    const verbose=runClient(pkg,'lmctl',['prompt',path.relative(workspace,team),'Worker','ping','--json','--verbose'],env,workspace);
+    assert.equal(verbose.status,0,'verbose prompt: '+verbose.stdout+verbose.stderr);assert.match(verbose.stderr,/fixture_lookup/,'real adapter tool progress');assert.ok(verbose.stderr.indexOf('tool_use')<verbose.stderr.indexOf('tool_result'),'interleaved tool ordering');assert.doesNotMatch(verbose.stderr,/fixture reasoning/,'thinking text remains private');
     const first=structuredClone(config.turns[0]),second=structuredClone(config.turns[0]);first.close=false;second.expect='again';
     for(const event of second.events)if(event.type==='result'){event.uuid='terminal-2';event.total_cost_usd=0.002;}
     config.turns=[first,second];fs.writeFileSync(scenario,JSON.stringify(materialize(config,vars)));
     const before=fs.readFileSync(audit,'utf8').trim().split('\n').length;
     const prompts=path.join(dir,'prompts.txt');fs.writeFileSync(prompts,'ping\n\nagain\n');
-    const batch=runClient(pkg,'lmctl',['batch',team,'Worker',prompts],env,workspace);assert.equal(batch.status,0,batch.stdout+batch.stderr);assert.equal((batch.stdout.match(/pong/g)||[]).length,2,'two bundle replies');
+    const batch=runClient(pkg,'lmctl',['batch',path.relative(workspace,team),'Worker',path.relative(workspace,prompts)],env,workspace);assert.equal(batch.status,0,'persistent batch: '+batch.stdout+batch.stderr);assert.equal((batch.stdout.match(/pong/g)||[]).length,2,'two bundle replies');
     const added=fs.readFileSync(audit,'utf8').trim().split('\n').slice(before).map(JSON.parse);assert.equal(added.length,3,'one process startup and two JSONL turns');assert.ok(added[0].argv);assert.match(added[1].message.content,/ping/);assert.match(added[2].message.content,/again/);
    }
    console.log(`PASS ${manifest.id}/${original.id}`);passed++;
