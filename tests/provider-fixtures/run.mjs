@@ -105,7 +105,7 @@ function eventsOf(text) {
   return text.split(/\r?\n/).filter(Boolean);
 }
 
-function expand(value, vars) {
+export function expand(value, vars) {
   return value.replace(/\{\{([a-z_]+)\}\}/g, (_match, name) => {
     if (!Object.hasOwn(vars, name)) throw new Error(`unknown fixture variable {{${name}}}`);
     return vars[name];
@@ -257,7 +257,7 @@ export async function runFixture(manifestPath, binary, root = defaultRoot) {
     try { ready = await server.ready; }
     catch (error) { throw new Error(`${loaded.manifest.id}: ${error instanceof Error ? error.message : String(error)}`); }
     if (typeof ready.url !== 'string') throw new Error('lmmock readiness did not include url');
-    const vars = {base_url: ready.url, lmmock_url: ready.url, repo_root: root, tmpdir: tempDir, server_url_env: loaded.manifest.server.url_env ?? ''};
+    const vars = {base_url: ready.url, lmmock_url: ready.url, repo_root: root, tmpdir: tempDir, node_binary: process.execPath, server_url_env: loaded.manifest.server.url_env ?? ''};
     const failed = [];
     for (const testCase of loaded.manifest.cases) {
       try {
