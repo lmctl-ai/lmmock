@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "id": "openai-responses-native",
+  "dialect": {
+    "id": "openai-responses",
+    "version": "synthetic-2026-10-31",
+    "transport": "http"
+  },
+  "source": {
+    "kind": "public-spec",
+    "reference": "https://developers.openai.com/api/reference/resources/responses/streaming-events",
+    "version": "retrieved-2026-10-31",
+    "retrieved": "2026-10-31",
+    "note": "Synthetic fixtures, not vendor captures. HTTP expect fields assert wire data; SDK and published lmctl error classes are asserted in tests/openai. Miniplayer eb4089de and lmctl 0.2.448 use JSON only."
+  },
+  "server": {
+    "kind": "http",
+    "handler": "fixtures/openai/handler.lms",
+    "config": "fixtures/openai/wire.json",
+    "url_env": "LMMOCK_URL"
+  },
+  "models": [
+    {
+      "id": "fixture-gpt",
+      "family": "synthetic-gpt",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream",
+        "json"
+      ]
+    },
+    {
+      "id": "fixture-reasoning",
+      "family": "synthetic-reasoning",
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "tools",
+        "stream"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "responses",
+      "method": "POST",
+      "path": "/v1/responses",
+      "annotation": "responses",
+      "sam": "Handler",
+      "content_types": [
+        "application/json",
+        "text/event-stream"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "success",
+      "kind": "usage",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/responses",
+        "headers": {
+          "Authorization": "Bearer fixture-responses-key",
+          "X-Lmmock-Case": "success"
+        },
+        "body": {
+          "model": "fixture-gpt",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
+          "input": "ping"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "model": "fixture-gpt",
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2,
+          "total_tokens": 12,
+          "input_tokens_details": {
+            "cached_tokens": 3
+          },
+          "output_tokens_details": {
+            "reasoning_tokens": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "bad-usage",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/responses",
+        "headers": {
+          "Authorization": "Bearer fixture-responses-key",
+          "X-Lmmock-Case": "bad-usage"
+        },
+        "body": {
+          "model": "fixture-gpt",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
+          "input": "ping"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "json": {
+          "usage.input_tokens": "not-an-integer"
+        }
+      }
+    },
+    {
+      "id": "tools",
+      "kind": "tool",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/responses",
+        "headers": {
+          "Authorization": "Bearer fixture-responses-key",
+          "X-Lmmock-Case": "tools"
+        },
+        "body": {
+          "model": "fixture-gpt",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
+          "input": "ping"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "json": {
+          "output.0.name": "weather"
+        }
+      }
+    },
+    {
+      "id": "rate-limit",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/responses",
+        "headers": {
+          "Authorization": "Bearer fixture-responses-key",
+          "X-Lmmock-Case": "rate-limit"
+        },
+        "body": {
+          "model": "fixture-gpt",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
+          "input": "ping"
+        }
+      },
+      "expect": {
+        "status": 429,
+        "headers": {
+          "retry-after": "0",
+          "x-ratelimit-remaining-requests": "0",
+          "x-request-id": "fixture-request"
+        }
+      }
+    },
+    {
+      "id": "server-error",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/responses",
+        "headers": {
+          "Authorization": "Bearer fixture-responses-key",
+          "X-Lmmock-Case": "server-error"
+        },
+        "body": {
+          "model": "fixture-gpt",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
+          "input": "ping"
+        }
+      },
+      "expect": {
+        "status": 503
+      }
+    },
+    {
+      "id": "auth-error",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/responses",
+        "headers": {
+          "Authorization": "Bearer fixture-responses-key",
+          "X-Lmmock-Case": "auth-error"
+        },
+        "body": {
+          "model": "fixture-gpt",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
+          "input": "ping"
+        }
+      },
+      "expect": {
+        "status": 401
+      }
+    },
+    {
+      "id": "missing-terminal",
+      "kind": "stream",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/responses",
+        "headers": {
+          "Authorization": "Bearer fixture-responses-key",
+          "X-Lmmock-Case": "missing-terminal"
+        },
+        "body": {
+          "model": "fixture-gpt",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
+          "input": "ping",
+          "stream": true
+        }
+      },
+      "expect": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/event-stream"
+        },
+        "events": [
+          "pong"
+        ]
+      }
+    },
+    {
+      "id": "bad-terminal",
+      "kind": "stream",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/responses",
+        "headers": {
+          "Authorization": "Bearer fixture-responses-key",
+          "X-Lmmock-Case": "bad-terminal"
+        },
+        "body": {
+          "model": "fixture-gpt",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
+          "input": "ping",
+          "stream": true
+        }
+      },
+      "expect": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/event-stream"
+        },
+        "events": [
+          "pong"
+        ]
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "bad-usage",
+      "surface": "http",
+      "trigger": {
+        "case_id": "bad-usage"
+      },
+      "description": "Select deterministic bad-usage through X-Lmmock-Case; no timing behavior."
+    },
+    {
+      "id": "bad-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "bad-terminal"
+      },
+      "description": "Select deterministic bad-terminal through X-Lmmock-Case; no timing behavior."
+    },
+    {
+      "id": "missing-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "missing-terminal"
+      },
+      "description": "Select deterministic missing-terminal through X-Lmmock-Case; no timing behavior."
+    },
+    {
+      "id": "rate-limit",
+      "surface": "http",
+      "trigger": {
+        "case_id": "rate-limit"
+      },
+      "description": "Select deterministic rate-limit through X-Lmmock-Case; no timing behavior."
+    },
+    {
+      "id": "auth-error",
+      "surface": "http",
+      "trigger": {
+        "case_id": "auth-error"
+      },
+      "description": "Select deterministic auth-error through X-Lmmock-Case; no timing behavior."
+    }
+  ]
+}

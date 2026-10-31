@@ -694,3 +694,11 @@ CLI/schema functions are stateless clients. The tested npm package contains no
 lmbee/mcp entrypoint, mcp-client is marked private in mono, and no public lmbee
 release was available during this work. MCP-through-lmbee is therefore not claimed;
 the standalone mock client/server proof does not substitute for that service gate.
+
+### OpenAI HTTP fixture qualification
+
+[OpenAI Chat and Responses fixtures](fixtures/openai/README.md) provide
+route-specific synthetic auth, JSON and ordered event SSE, tool-call items,
+usage and deterministic HTTP/parser faults. Normal native tests exercise the
+SDK; the OpenAI HTTP published-client job also drives real npm lmctl through
+pinned Miniplayer on loopback and checks session/token/error telemetry.
