@@ -1,0 +1,43 @@
+# Event order, not wall-clock delays. Each flush occurs before the next VM step.
+p = _lmcode_ schema="schema.json";
+@tokens
+fn tokens(x: Exchange) -> void implements Handler {
+  x.set_header("Content-Type", "text/event-stream");
+  x.set("stream-stage", "one");
+  x.stream_event("data: one\n\n");
+  x.set("stream-stage", "two");
+  x.stream_event("data: two\n\n");
+  x.set("stream-stage", "done");
+}
+@chunks
+fn chunks(x: Exchange) -> void implements Handler {
+  x.set_header("Content-Type", "application/octet-stream");
+  x.stream_event("alpha");
+  x.stream_event("beta");
+}
+@fault
+fn fault(x: Exchange) -> void implements Handler {
+  x.set_header("Content-Type", "text/event-stream");
+  x.stream_event("data: prefix\n\n");
+  x.stream_fault(x.param("kind"));
+}
+@badfault
+fn badfault(x: Exchange) -> void implements Handler { x.stream_fault("unknown"); }
+@committed_error
+fn committed_error(x: Exchange) -> void implements Handler {
+  x.stream_event("prefix");
+  x.status(500);
+}
+@requests
+fn requests(x: Exchange) -> void implements Handler { x.json(x.request_log()); }
+@reset
+fn reset(x: Exchange) -> void implements Handler { x.reset(); x.json("{\"ok\":true}"); }
+route("GET", "/__requests", "requests");
+route("POST", "/__reset", "reset");
+route("GET", "/chunks", "chunks");
+route("GET", "/fault/{kind}", "fault");
+route("GET", "/bad-fault", "badfault");
+route("GET", "/committed-error", "committed_error");
+route("GET", "/tokens", "tokens");
+end _lmcode_
+savedsl(p, ARGV[0]);

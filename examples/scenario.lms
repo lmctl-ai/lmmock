@@ -36,12 +36,18 @@ fn replay(x: Exchange) -> void implements Handler {
     else { x.send(""); }
   }
 }
+@scenario_requests
+fn requests(x: Exchange) -> void implements Handler { x.json(x.request_log()); }
+@scenario_reset
+fn reset(x: Exchange) -> void implements Handler { x.reset(); x.json("{\"ok\":true}"); }
+route("GET", "/__requests", "scenario_requests");
+route("POST", "/__reset", "scenario_reset");
 route("GET", "/{rest...}", "scenario");
 route("POST", "/{rest...}", "scenario");
 route("PUT", "/{rest...}", "scenario");
 route("PATCH", "/{rest...}", "scenario");
 route("DELETE", "/{rest...}", "scenario");
-route("HEAD", "/{rest...}", "scenario");
+# GET already handles HEAD; a separate HEAD catch-all conflicts with the GET admin route.
 route("OPTIONS", "/{rest...}", "scenario");
 end _lmcode_
 savedsl(p, ARGV[0]);

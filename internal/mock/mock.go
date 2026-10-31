@@ -8,8 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -25,14 +25,18 @@ var Schema []byte
 //go:embed schema-v1.json
 var legacySchema []byte
 
+//go:embed schema-v3.json
+var schemaV3 []byte
+
 type route struct {
 	method, path, annotation string
 	entry                    int
 }
 type store struct {
 	sync.Mutex
-	values map[string]string
-	counts map[string]int64
+	values  map[string]string
+	counts  map[string]int64
+	history *requestHistory
 }
 type Engine struct {
 	options   Options
@@ -50,7 +54,7 @@ type exchange struct {
 	status  int
 	headers http.Header
 	output  string
-	events  []string
+	stream  *responseStream
 	delay   time.Duration
 	drop    bool
 	state   *store
@@ -61,6 +65,9 @@ func New(code []byte) (*Engine, error) { return NewWithOptions(code, Options{}) 
 
 func NewWithOptions(code []byte, options Options) (*Engine, error) {
 	e := &Engine{options: options, code: append([]byte(nil), code...), state: &store{values: map[string]string{}, counts: map[string]int64{}}, mux: http.NewServeMux()}
+	if options.RequestLog || options.RequestLogBodies {
+		e.state.history = &requestHistory{bodies: options.RequestLogBodies}
+	}
 	var err error
 	if options.Upstream != "" {
 		e.forwarder, err = newForwarder(options)
@@ -83,8 +90,11 @@ func NewWithOptions(code []byte, options Options) (*Engine, error) {
 	e.schema = Schema
 	p, err := lmcode.Load(e.code, e.schema, reg)
 	if err != nil {
-		if old, oldErr := lmcode.Load(e.code, legacySchema, reg); oldErr == nil {
-			p, err, e.schema = old, nil, legacySchema
+		for _, schema := range [][]byte{schemaV3, legacySchema} {
+			if old, oldErr := lmcode.Load(e.code, schema, reg); oldErr == nil {
+				p, err, e.schema = old, nil, schema
+				break
+			}
 		}
 	}
 	if err != nil {
@@ -129,6 +139,8 @@ func (e *Engine) register(r route) (err error) {
 	return nil
 }
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w, record := e.beginRequestLog(w, r)
+	defer record()
 	start := time.Now()
 	_, pattern := e.mux.Handler(r)
 	kind, upstream, failure := "mocked", "", ""
@@ -164,16 +176,19 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 	limitWriter := w
-	if audited, ok := w.(*auditResponse); ok {
-		// MaxBytesReader needs the native writer's private requestTooLarge hook.
-		limitWriter = audited.ResponseWriter
+	for {
+		wrapper, ok := limitWriter.(interface{ Unwrap() http.ResponseWriter })
+		if !ok {
+			break
+		}
+		limitWriter = wrapper.Unwrap()
 	}
 	body, err := io.ReadAll(http.MaxBytesReader(limitWriter, r.Body, 1<<20))
 	if err != nil {
 		http.Error(w, "request body exceeds 1 MiB or cannot be read", http.StatusRequestEntityTooLarge)
 		return
 	}
-	x := &exchange{request: r, body: string(body), status: 200, headers: make(http.Header), state: e.state}
+	x := &exchange{request: r, body: string(body), status: 200, headers: make(http.Header), state: e.state, stream: &responseStream{writer: w}}
 	// A fresh registry isolates VM arenas and execution locks between concurrent requests.
 	reg := registry(e.options, e.state, func(string, string, string) error { return errors.New("route() is only available during startup") })
 	p, err := lmcode.Load(e.code, e.schema, reg)
@@ -181,7 +196,20 @@ func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 		_, err = p.Call(route.entry, lmcode.NewContext(), reg, []lmcode.Value{lmcode.Object("Exchange", x)})
 	}
 	if err != nil {
+		if x.stream.committed {
+			markStreamFailure(w, "lmcode handler failed after stream commit")
+			if !x.stream.closed {
+				panic(http.ErrAbortHandler)
+			}
+			return
+		}
 		http.Error(w, "lmcode handler error: "+err.Error(), 500)
+		return
+	}
+	if x.stream.closed {
+		return
+	}
+	if x.stream.committed && !x.drop {
 		return
 	}
 	if x.delay > 0 {
@@ -194,6 +222,7 @@ func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if x.drop {
+		markStreamFailure(w, "disconnect")
 		c, _, err := http.NewResponseController(w).Hijack()
 		if err == nil {
 			_ = c.Close()
@@ -205,21 +234,7 @@ func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 	for k, vs := range x.headers {
 		w.Header()[k] = vs
 	}
-	if len(x.events) > 0 {
-		w.Header().Del("Content-Length")
-	}
 	w.WriteHeader(x.status)
-	if len(x.events) > 0 {
-		for _, event := range x.events {
-			if _, err := io.WriteString(w, event); err != nil {
-				return
-			}
-			if err := http.NewResponseController(w).Flush(); err != nil {
-				return
-			}
-		}
-		return
-	}
 	_, _ = io.WriteString(w, x.output)
 }
 func registry(options Options, _ *store, add func(string, string, string) error) *lmcode.Registry {
@@ -266,6 +281,9 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 	})
 	text("body", nil, func(x *exchange, _ []lmcode.Value) string { return x.body })
 	method("status", []string{"int"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		if x.stream != nil && x.stream.committed {
+			return lmcode.None(), errors.New("response already streaming")
+		}
 		if a[0].Int < 200 || a[0].Int > 599 {
 			return lmcode.None(), errors.New("status must be 200..599")
 		}
@@ -273,20 +291,23 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		return lmcode.None(), nil
 	})
 	method("set_header", []string{"string", "string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		if x.stream != nil && x.stream.committed {
+			return lmcode.None(), errors.New("response already streaming")
+		}
 		if a[0].Str == "" || strings.ContainsAny(a[0].Str, "\r\n :\t") || strings.ContainsAny(a[1].Str, "\r\n") {
 			return lmcode.None(), errors.New("invalid response header")
 		}
 		x.headers.Set(a[0].Str, a[1].Str)
 		return lmcode.None(), nil
 	})
-	method("stream_event", []string{"string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
-		x.events = append(x.events, a[0].Str)
-		return lmcode.None(), nil
-	})
+	streamMethods(method)
+	observabilityMethods(method)
 	for _, name := range []string{"send", "json"} {
 		method(name, []string{"string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+			if x.stream != nil && x.stream.committed {
+				return lmcode.None(), errors.New("response already streaming")
+			}
 			x.output = a[0].Str
-			x.events = nil
 			if name == "json" {
 				x.headers.Set("Content-Type", "application/json")
 			}
@@ -294,6 +315,9 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		})
 	}
 	method("delay", []string{"int"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		if x.stream != nil && x.stream.committed {
+			return lmcode.None(), errors.New("response already streaming")
+		}
 		if a[0].Int < 0 || a[0].Int > 60000 {
 			return lmcode.None(), errors.New("delay must be 0..60000 milliseconds")
 		}
@@ -330,41 +354,36 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 
 // Server owns a real loopback listener, including port 0 allocation.
 type Server struct {
-	URL  string
-	http *http.Server
-	done chan error
+	URL         string
+	CACert      string
+	caDirectory string
+	closeOnce   sync.Once
+	closeError  error
+	http        *http.Server
+	done        chan error
 }
 
 func Start(e *Engine, address string) (*Server, error) {
-	host, _, err := net.SplitHostPort(address)
+	listener, err := listenLoopback(address)
 	if err != nil {
 		return nil, err
 	}
-	ip := net.ParseIP(host)
-	if ip == nil || !ip.IsLoopback() {
-		return nil, errors.New("listen address must be a loopback IP (127.0.0.1 or ::1)")
-	}
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		return nil, err
-	}
-	s := &Server{URL: "http://" + listener.Addr().String(), http: &http.Server{Handler: e, DisableGeneralOptionsHandler: e.forwarder != nil, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second}, done: make(chan error, 1)}
-	go func() {
-		err := s.http.Serve(listener)
-		if errors.Is(err, http.ErrServerClosed) {
-			err = nil
-		}
-		s.done <- err
-	}()
-	return s, nil
+	return serveListener(e, listener, "http"), nil
 }
 func (s *Server) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	err := s.http.Shutdown(ctx)
-	if err != nil {
-		_ = s.http.Close()
-	}
-	<-s.done
-	return err
+	s.closeOnce.Do(func() {
+		defer func() {
+			if s.caDirectory != "" {
+				_ = os.RemoveAll(s.caDirectory)
+			}
+		}()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		s.closeError = s.http.Shutdown(ctx)
+		if s.closeError != nil {
+			_ = s.http.Close()
+		}
+		<-s.done
+	})
+	return s.closeError
 }

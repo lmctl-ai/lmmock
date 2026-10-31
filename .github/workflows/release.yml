@@ -13,6 +13,7 @@ env:
   SAMPLE_VERSION: 0.1.${{ github.run_number }}
 jobs:
   build:
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

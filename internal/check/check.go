@@ -88,7 +88,12 @@ func Run(ctx context.Context, base string, s Suite) (int, error) {
 		return 0, fmt.Errorf("suite must contain at least one step")
 	}
 	vars := map[string]string{}
-	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	transport, err := clientTransport()
+	if err != nil {
+		return 0, err
+	}
+	defer transport.CloseIdleConnections()
+	client := &http.Client{Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	for i, step := range s.Steps {
 		fail := func(reason string) (int, error) { return i, fmt.Errorf("step %d (%s): %s", i+1, step.Name, reason) }
 		method := step.Method

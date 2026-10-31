@@ -18,6 +18,8 @@ import (
 // Options holds trusted script configuration and optional HTTP fallback settings.
 type Options struct {
 	ConfigFile       string
+	RequestLog       bool
+	RequestLogBodies bool
 	Upstream         string
 	UpstreamTimeout  time.Duration
 	UpstreamReadOnly bool

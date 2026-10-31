@@ -6,6 +6,14 @@
 # - Models catalog (/models, /v1/models) and auto-routing (/auto)
 # - Copilot platform endpoints (telemetry, mcp, copilot_internal)
 p = _lmcode_ schema="schema.json";
+fn emit_sse(x: Exchange, text: string) -> void {
+ let records = str_split(text, "\n\n");
+ for (i in range(0, records.len())) {
+  if (i + 1 < records.len()) { x.stream_event(records.at(i) + "\n\n"); }
+  else if (records.at(i) != "") { x.stream_event(records.at(i)); }
+ }
+}
+
 
 fn field(j: Json, key: string) -> string {
     let value = "";
@@ -88,10 +96,10 @@ fn chat(x: Exchange) -> void implements Handler {
             if (do_tool) {
                 let call_args = "{\"command\":\"echo tool-executed\",\"description\":\"Run verification\"}";
                 let delta = "{\"role\":\"assistant\",\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"bash\",\"arguments\":" + json_quote(call_args) + "}}]}";
-                x.send("data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"delta\":" + delta + ",\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n");
+                emit_sse(x, "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"delta\":" + delta + ",\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n");
             } else {
                 let delta = "{\"role\":\"assistant\",\"content\":" + json_quote(text) + "}";
-                x.send("data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"delta\":" + delta + ",\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n");
+                emit_sse(x, "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"delta\":" + delta + ",\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n");
             }
         } else {
             if (do_tool) {
@@ -147,7 +155,7 @@ fn responses(x: Exchange) -> void implements Handler {
             let arg_done = "event: response.function_call_arguments.done\ndata: {\"type\":\"response.function_call_arguments.done\",\"sequence_number\":5,\"arguments\":" + json_quote(call_args) + ",\"item_id\":\"call_1\",\"output_index\":0}\n\n";
             let item_done = "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"sequence_number\":6,\"item\":{\"id\":\"call_1\",\"type\":\"function_call\",\"name\":\"bash\",\"call_id\":\"call_1\",\"arguments\":" + json_quote(call_args) + ",\"status\":\"completed\"},\"output_index\":0}\n\n";
             let finish = "event: response.completed\ndata: {\"type\":\"response.completed\",\"sequence_number\":7,\"response\":{\"id\":\"resp_mock\",\"status\":\"completed\",\"output\":[{\"id\":\"call_1\",\"type\":\"function_call\",\"name\":\"bash\",\"call_id\":\"call_1\",\"arguments\":" + json_quote(call_args) + ",\"status\":\"completed\"}],\"usage\":{\"input_tokens\":10,\"output_tokens\":10,\"total_tokens\":20}}}\n\n";
-            x.send(start + in_prog + item_added + arg_delta + arg_done + item_done + finish);
+            emit_sse(x, start + in_prog + item_added + arg_delta + arg_done + item_done + finish);
         } else {
             let item_added = "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"sequence_number\":3,\"item\":{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"phase\":\"final_answer\",\"status\":\"in_progress\"},\"output_index\":0}\n\n";
             let part_added = "event: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"sequence_number\":4,\"part\":{\"type\":\"output_text\",\"text\":\"\"},\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n";
@@ -156,7 +164,7 @@ fn responses(x: Exchange) -> void implements Handler {
             let part_done = "event: response.content_part.done\ndata: {\"type\":\"response.content_part.done\",\"sequence_number\":7,\"part\":{\"type\":\"output_text\",\"text\":" + json_quote(text) + "},\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n";
             let item_done = "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"sequence_number\":8,\"item\":{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":" + json_quote(text) + "}],\"phase\":\"final_answer\",\"status\":\"completed\"},\"output_index\":0}\n\n";
             let finish = "event: response.completed\ndata: {\"type\":\"response.completed\",\"sequence_number\":9,\"response\":{\"id\":\"resp_mock\",\"status\":\"completed\",\"output\":[{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":" + json_quote(text) + "}],\"phase\":\"final_answer\",\"status\":\"completed\"}],\"usage\":{\"input_tokens\":10,\"output_tokens\":10,\"total_tokens\":20}}}\n\n";
-            x.send(start + in_prog + item_added + part_added + delta + done + part_done + item_done + finish);
+            emit_sse(x, start + in_prog + item_added + part_added + delta + done + part_done + item_done + finish);
         }
     }
 }
@@ -206,14 +214,14 @@ fn messages(x: Exchange) -> void implements Handler {
             let blk_stop = "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n";
             let msg_delta = "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":12}}\n\n";
             let msg_stop = "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n";
-            x.send(start + blk_start + blk_delta + blk_stop + msg_delta + msg_stop);
+            emit_sse(x, start + blk_start + blk_delta + blk_stop + msg_delta + msg_stop);
         } else {
             let blk_start = "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n";
             let blk_delta = "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":" + json_quote(text) + "}}\n\n";
             let blk_stop = "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n";
             let msg_delta = "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":10}}\n\n";
             let msg_stop = "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n";
-            x.send(start + blk_start + blk_delta + blk_stop + msg_delta + msg_stop);
+            emit_sse(x, start + blk_start + blk_delta + blk_stop + msg_delta + msg_stop);
         }
     }
 }

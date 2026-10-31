@@ -437,6 +437,14 @@ for (name in ["chat_response", "responses_response", "anthropic_message", "gemin
 }
 
 p = _lmcode_ schema="schema.json";
+fn emit_sse(x: Exchange, text: string) -> void {
+ let records = str_split(text, "\n\n");
+ for (i in range(0, records.len())) {
+  if (i + 1 < records.len()) { x.stream_event(records.at(i) + "\n\n"); }
+  else if (records.at(i) != "") { x.stream_event(records.at(i)); }
+ }
+}
+
 fn fixture(name: string) -> Json { return json_parse(${json_stringify(responses)}).get(name); }
 
 fn response_template(name: string) -> string { return json_parse(${json_stringify(response_templates)}).get(name).as_string(); }
@@ -496,7 +504,7 @@ fn completion(x: Exchange) -> void implements Handler {
    chunk = json_with(chunk,"/choices/0/delta",json_parse(delta));
    let finish = with_text(fixture("chat_finish"),"/choices/0/finish_reason",reason);
    let usage = with_text(fixture("chat_usage"),"/model",model);
-   x.send("data: " + chunk.to_json() + "\n\ndata: " + finish.to_json() + "\n\ndata: " + usage.to_json() + "\n\ndata: [DONE]\n\n");
+   emit_sse(x, "data: " + chunk.to_json() + "\n\ndata: " + finish.to_json() + "\n\ndata: " + usage.to_json() + "\n\ndata: [DONE]\n\n");
   } else { x.json(render_response("chat_response",model,json_parse(message),reason)); }
   break;
  }
@@ -591,7 +599,7 @@ fn responses(x: Exchange) -> void implements Handler {
    }
    events = events + event("response.output_item.done",json_with(fixture("response_output_item_done"),"/item",json_parse(item)).to_json());
    events = events + event("response.completed",json_with(fixture("response_completed"),"/response",json_parse(response)).to_json());
-   x.send(events);
+   emit_sse(x, events);
   }
  }
 }
@@ -686,7 +694,7 @@ fn anthropic_messages(x: Exchange) -> void implements Handler {
    events = events + event("content_block_stop",fixture("content_block_stop").to_json());
    events = events + event("message_delta",json_with(fixture("message_delta"),"/delta/stop_reason",json_text(reason)).to_json());
    events = events + event("message_stop",fixture("message_stop").to_json());
-   x.send(events);
+   emit_sse(x, events);
   }
  }
 }
@@ -741,7 +749,7 @@ fn gemini_content(x: Exchange) -> void implements Handler {
    if (tool_name != "") { part = json_with(fixture("gemini_function"),"/functionCall/name",json_text(tool_name)).to_json(); }
    let response = render_response("gemini_response","",json_parse(part),"");
    if (str_ends_with(operation,":streamGenerateContent")) {
-    x.set_header("Content-Type","text/event-stream"); x.send("data: " + response + "\n\n");
+    x.set_header("Content-Type","text/event-stream"); emit_sse(x, "data: " + response + "\n\n");
    } else { x.json(response); }
   }
  }

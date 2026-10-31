@@ -1,5 +1,13 @@
 # Deterministic OpenAI-compatible chat and tool-call fixture; no model or paid API.
 p = _lmcode_ schema="schema.json";
+fn emit_sse(x: Exchange, text: string) -> void {
+ let records = str_split(text, "\n\n");
+ for (i in range(0, records.len())) {
+  if (i + 1 < records.len()) { x.stream_event(records.at(i) + "\n\n"); }
+  else if (records.at(i) != "") { x.stream_event(records.at(i)); }
+ }
+}
+
 fn field(j: Json, key: string) -> string { let value = ""; if (j.has(key)) { value = j.get(key).as_string(); } return value; }
 @chat
 fn completion(x: Exchange) -> void implements Handler {
@@ -34,7 +42,7 @@ fn completion(x: Exchange) -> void implements Handler {
    x.set_header("Content-Type","text/event-stream");
    let delta = "{\"role\":\"assistant\",\"content\":" + json_quote(content) + "}";
    if (tool) { let name = field(request.get("tools").at(0).get("function"),"name"); delta = "{\"role\":\"assistant\",\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":" + json_quote(name) + ",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\"}}]}"; }
-   x.send("data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"delta\":" + delta + ",\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":" + json_quote(reason) + "}]}\n\ndata: [DONE]\n\n");
+   emit_sse(x, "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"delta\":" + delta + ",\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":" + json_quote(reason) + "}]}\n\ndata: [DONE]\n\n");
   } else { x.json("{\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion\",\"model\":" + json_quote(model) + ",\"choices\":[{\"index\":0,\"message\":" + message + ",\"finish_reason\":" + json_quote(reason) + "}],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":2,\"total_tokens\":4}}"); }
   break;
  }
