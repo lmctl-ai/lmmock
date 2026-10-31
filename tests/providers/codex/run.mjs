@@ -2,14 +2,16 @@
 // These gaps are reported as unmet acceptance, never as specialized-class coverage.
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 import {spawnSync} from 'node:child_process';
 import {root} from './client.mjs';
 import {loadFixture,checkExpectation,executeProcess} from '../../provider-fixtures/run.mjs';
 const {manifest}=await loadFixture('fixtures/providers/codex-app-server.json',root);
-for(const test of manifest.cases){
- const result=await executeProcess(test.request,root,{node_binary:process.execPath,repo_root:root,tmpdir:root,base_url:'',lmmock_url:'',server_url_env:''});
- await checkExpectation(test,result,{tmpdir:root});console.log('PASS published Codex/'+test.id);
-}
+const {runProcessSuite}=await import('../../provider-fixtures/process-suite.mjs');
+const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'codex-manifest-'));
+try{await runProcessSuite({manifest,root},tmp,{executeProcess:async(...args)=>{const result=await executeProcess(...args);if(result.exitCode!==0)process.stderr.write(result.stderr);return result;},checkExpectation});}
+finally{await fs.rm(tmp,{recursive:true,force:true});}
 const auth=manifest.cases.find(c=>c.id==='auth-error');
 const actual=spawnSync(process.execPath,[path.join(root,'tests/providers/codex/case.mjs'),'auth-error'],{cwd:root,env:process.env,encoding:'utf8'});
 assert.equal(actual.status,0,actual.stdout+actual.stderr);
