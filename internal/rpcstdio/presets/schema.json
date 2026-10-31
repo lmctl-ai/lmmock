@@ -181,6 +181,14 @@
             ],
             "returns": "void"
           }
+        ],
+        "make_directory": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
         ]
       }
     }

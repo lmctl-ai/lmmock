@@ -15,9 +15,9 @@ fn rpc(x: Exchange) -> void implements Handler {
   if(cfg.has("malformed") && cfg.get("malformed").as_bool()){x.json("{malformed");break;}
   let sid=data.get("sessionId").as_string();let file=cfg.get("session_root").as_string()+"/"+sid+"/session.jsonl.zstd";
   if(method=="session.create" || method=="session/create"){
-   append_zstd(file,"{\"seq\":0,\"type\":\"session/init\",\"data\":{\"sessionId\":"+quote(sid)+",\"cwd\":"+data.get("cwd").to_json()+"}}\n");
+   append_zstd(file,"{\"seq\":0,\"type\":\"session\",\"version\":0,\"id\":"+quote(sid)+",\"createdAt\":1700000000000,\"cwd\":"+data.get("cwd").to_json()+"}\n");
   }else if(method=="session.selectModel" || method=="session/selectModel"){
-   if(data.get("model").as_string()!=cfg.get("model").as_string()){x.json("{\"result\":{\"ok\":false,\"error\":\"model not supported\"}}");break;}
+   if(data.get("model").as_string()!=cfg.get("model").as_string()){x.json("{\"result\":{\"ok\":false,\"error\":\"model is not supported\"}}");break;}
   }else if(method=="session.prompt" || method=="session/prompt"){
    let previous=read_zstd(file);if(previous==""){x.json("{\"result\":{\"ok\":false,\"error\":\"conversation missing not found\"}}");break;}
    let rows=str_split(previous,"\n");let seq=0;
@@ -33,6 +33,6 @@ fn rpc(x: Exchange) -> void implements Handler {
   x.json("{\"result\":{\"ok\":true,\"value\":{}}}");break;
  }
 }
-route("GET","/","cookie");route("POST","/api/{method}","rpc");
+route("GET","/","cookie");route("POST","/api/{method...}","rpc");
 end _lmcode_
 savedsl(p,ARGV[0]);

@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "id": "agy-process-native",
+  "dialect": {
+    "id": "agy-process",
+    "version": "lmctl-0.2.448",
+    "transport": "custom"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "npm:@lmctl-ai/lmctl@0.2.448",
+    "version": "0.2.448",
+    "retrieved": "2026-10-31",
+    "note": "Synthetic wire/data derived from the published adapter and read-only mono 8e334dda. Does not claim live vendor/model availability; print token counts are unexposed, not zero."
+  },
+  "server": {
+    "kind": "stdio",
+    "handler": "fixtures/providers/lane-e/print.lms",
+    "config": "fixtures/providers/lane-e/wire.json"
+  },
+  "models": [
+    {
+      "id": "fixture-gemini-high",
+      "family": "synthetic-agy",
+      "capabilities": [
+        "chat"
+      ]
+    },
+    {
+      "id": "fixture-claude",
+      "family": "synthetic-cross-vendor",
+      "capabilities": [
+        "chat",
+        "reasoning"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "process",
+      "method": "RPC",
+      "path": "/process",
+      "annotation": "start",
+      "sam": "RPCHandler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "success",
+      "kind": "success",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "agy",
+          "success"
+        ]
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "provider": "agy",
+          "reply": "pong",
+          "tokens_exposed": false
+        },
+        "model": "fixture-gemini-high"
+      }
+    },
+    {
+      "id": "alternate",
+      "kind": "model",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "agy",
+          "alternate"
+        ]
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "provider": "agy",
+          "reply": "pong",
+          "tokens_exposed": false
+        },
+        "model": "fixture-claude"
+      }
+    },
+    {
+      "id": "nonzero",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "agy",
+          "nonzero"
+        ]
+      },
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "status": "error",
+          "provider": "agy"
+        },
+        "error_class": "auth_required"
+      },
+      "faults": [
+        "process-exit"
+      ]
+    }
+  ],
+  "faults": [
+    {
+      "id": "process-exit",
+      "surface": "process",
+      "trigger": {
+        "case_id": "nonzero"
+      },
+      "description": "Deterministic nonzero refused by the actual published lmctl client"
+    }
+  ]
+}

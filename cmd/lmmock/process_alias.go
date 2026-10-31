@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,8 +28,16 @@ func processAlias(args []string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = json.Unmarshal(raw, &manifest); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err = decoder.Decode(&manifest); err != nil {
 		return nil, errors.New("invalid process bindings")
+	}
+	if decoder.Decode(new(any)) != io.EOF {
+		return nil, errors.New("invalid trailing process bindings")
+	}
+	if manifest.Version != 1 || !filepath.IsAbs(manifest.Directory) || manifest.Aliases == nil {
+		return nil, errors.New("invalid process binding metadata")
 	}
 	exe, err := os.Executable()
 	if err != nil {

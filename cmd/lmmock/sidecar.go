@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/lmctl-ai/lmmock/internal/mock"
@@ -53,18 +51,8 @@ func sidecarCommand(ctx context.Context, args []string) int {
 	if err = process.Start(map[string]any{"argv": flags.Args(), "cwd": cwd, "url": server.URL, "pid": os.Getpid()}); err != nil {
 		return fail(err)
 	}
-	if process.ExitCode() != 0 {
+	if process.Stopped() {
 		return process.ExitCode()
-	}
-	// A fixture can explicitly decline to stay alive after its startup output.
-	var cfg struct {
-		ExitAfterBoot bool `json:"exit_after_boot"`
-	}
-	if err = json.Unmarshal(raw, &cfg); err != nil {
-		return fail(fmt.Errorf("invalid sidecar config"))
-	}
-	if cfg.ExitAfterBoot {
-		return 0
 	}
 	<-ctx.Done()
 	return 0
