@@ -18,7 +18,7 @@ try {
  fs.writeFileSync(env.MINIPLAYER_CATALOG,JSON.stringify({schema_version:1,records:[]}));
  for(const [dialect,provider] of [['chat','deepseek'],['responses','openai']]) {
   fs.writeFileSync(env.MINIPLAYER_CONFIG,JSON.stringify({provider:{[provider]:{apiKey:original.keys[dialect],baseURL:process.env.LMMOCK_URL+'/v1'}}}));
-  for(const selected of ['success','bad-usage','auth-error']) {
+  for(const selected of ['success','bad-usage','auth-error','rate-limit','server-error']) {
    fs.writeFileSync(config,JSON.stringify({...original,selected}));
    const sessions=path.join(env.MINIPLAYER_HOME,'sessions');
    const before=new Set(fs.existsSync(sessions)?fs.readdirSync(sessions):[]);
@@ -37,7 +37,7 @@ try {
     assert.deepEqual(turn.usage,{inputTokens:10,outputTokens:2,totalTokens:12,reasoningTokens:1,cachedInputTokens:3});
    } else {
     assert.equal(result.status,'error');assert.equal(result.reply,'');
-    assert.match(result.error,selected==='bad-usage'?/ACP RPC error: Invalid JSON response/:/ACP RPC error: fixture auth-error/);
+    assert.match(result.error,selected==='bad-usage'?/ACP RPC error: Invalid JSON response/:new RegExp('ACP RPC error: fixture '+selected));
     assert.equal(turn.status,'failed');assert.equal(turn.output,undefined);assert.equal(turn.usage,undefined,'failed parse must not fabricate token facts');
     const logdir=path.join(home,'.lmctl');
     const logs=fs.readdirSync(logdir).filter(f=>f.endsWith('.log')).flatMap(f=>fs.readFileSync(path.join(logdir,f),'utf8').trim().split('\n').filter(Boolean).map(l=>JSON.parse(l)));
