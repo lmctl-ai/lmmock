@@ -26,7 +26,13 @@ fn gemini_operation(x: Exchange) -> void implements Handler {
     } else {
       let is_stream = str_ends_with(operation, ":streamGenerateContent") || str_ends_with(p, ":streamGenerateContent");
       let is_generate = str_ends_with(operation, ":generateContent") || str_ends_with(p, ":generateContent");
-      if (!is_stream && !is_generate) {
+      let supported = false;
+      let models = cfg.get("models");
+      for (i in range(0, models.len())) {
+        let name = models.at(i).as_string();
+        if (operation == name + ":generateContent" || operation == name + ":streamGenerateContent" || p == "/v1beta/models/" + name + ":generateContent" || p == "/v1beta/models/" + name + ":streamGenerateContent") { supported = true; }
+      }
+      if ((!is_stream && !is_generate) || !supported) {
         x.status(404);
         x.set_header("Content-Type", "application/json");
         x.json("{\"error\":{\"code\":404,\"message\":\"Unsupported model operation\",\"status\":\"NOT_FOUND\"}}");

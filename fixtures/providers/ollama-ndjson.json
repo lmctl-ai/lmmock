@@ -20,16 +20,82 @@
     "url_env": "LMMOCK_URL"
   },
   "models": [
-    { "id": "fixture-ollama", "family": "llama3.2", "capabilities": ["chat", "stream"] },
-    { "id": "llama3.2", "family": "llama3.2", "capabilities": ["chat", "stream"] },
-    { "id": "llama3.1", "family": "llama3.1", "capabilities": ["chat", "stream"] },
-    { "id": "qwen2.5", "family": "qwen2.5", "capabilities": ["chat", "stream"] }
+    {
+      "id": "fixture-ollama",
+      "family": "llama3.2",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    },
+    {
+      "id": "llama3.2",
+      "family": "llama3.2",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    },
+    {
+      "id": "llama3.1",
+      "family": "llama3.1",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    },
+    {
+      "id": "qwen2.5",
+      "family": "qwen2.5",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    }
   ],
   "routes": [
-    { "id": "chat", "method": "POST", "path": "/api/chat", "annotation": "ollama_chat", "sam": "Handler", "content_types": ["application/json", "application/x-ndjson"] },
-    { "id": "generate", "method": "POST", "path": "/api/generate", "annotation": "ollama_chat", "sam": "Handler", "content_types": ["application/json", "application/x-ndjson"] },
-    { "id": "tags", "method": "GET", "path": "/api/tags", "annotation": "ollama_tags", "sam": "Handler", "content_types": ["application/json"] },
-    { "id": "version", "method": "GET", "path": "/api/version", "annotation": "ollama_version", "sam": "Handler", "content_types": ["application/json"] }
+    {
+      "id": "chat",
+      "method": "POST",
+      "path": "/api/chat",
+      "annotation": "ollama_chat",
+      "sam": "Handler",
+      "content_types": [
+        "application/json",
+        "application/x-ndjson"
+      ]
+    },
+    {
+      "id": "generate",
+      "method": "POST",
+      "path": "/api/generate",
+      "annotation": "ollama_chat",
+      "sam": "Handler",
+      "content_types": [
+        "application/json",
+        "application/x-ndjson"
+      ]
+    },
+    {
+      "id": "tags",
+      "method": "GET",
+      "path": "/api/tags",
+      "annotation": "ollama_tags",
+      "sam": "Handler",
+      "content_types": [
+        "application/json"
+      ]
+    },
+    {
+      "id": "version",
+      "method": "GET",
+      "path": "/api/version",
+      "annotation": "ollama_version",
+      "sam": "Handler",
+      "content_types": [
+        "application/json"
+      ]
+    }
   ],
   "cases": [
     {
@@ -41,7 +107,12 @@
         "path": "/api/chat",
         "body": {
           "model": "fixture-ollama",
-          "messages": [{ "role": "user", "content": "ping" }],
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
           "stream": false
         }
       },
@@ -65,7 +136,12 @@
         "path": "/api/chat",
         "body": {
           "model": "fixture-ollama",
-          "messages": [{ "role": "user", "content": "ping" }],
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
           "stream": true
         }
       },
@@ -89,7 +165,12 @@
         "path": "/api/chat",
         "body": {
           "model": "unknown-model",
-          "messages": [{ "role": "user", "content": "ping" }],
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
           "stream": false
         }
       },
@@ -97,14 +178,63 @@
         "status": 404,
         "body_contains": "not found"
       },
-      "faults": ["unknown-model"]
+      "faults": [
+        "unknown-model"
+      ]
+    },
+    {
+      "id": "ollama-generate-json",
+      "kind": "success",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/generate",
+        "body": {
+          "model": "fixture-ollama",
+          "prompt": "ping",
+          "stream": false
+        }
+      },
+      "expect": {
+        "status": 200,
+        "json": {
+          "response": "pong",
+          "done": true,
+          "prompt_eval_count": 10,
+          "eval_count": 2
+        }
+      }
+    },
+    {
+      "id": "ollama-generate-stream",
+      "kind": "stream",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/generate",
+        "body": {
+          "model": "fixture-ollama",
+          "prompt": "ping",
+          "stream": true
+        }
+      },
+      "expect": {
+        "status": 200,
+        "events": [
+          "\"response\":\"pong\"",
+          "\"done\":true"
+        ]
+      }
     }
   ],
   "faults": [
     {
       "id": "unknown-model",
       "surface": "http",
-      "trigger": { "case_id": "ollama-unknown-model", "model": "unknown-model" },
+      "trigger": {
+        "case_id": "ollama-unknown-model",
+        "model": "unknown-model"
+      },
       "description": "Unknown model returns 404 with model not found diagnostic"
     }
   ]

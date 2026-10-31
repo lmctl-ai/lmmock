@@ -40,9 +40,10 @@ fn ollama_chat(x: Exchange) -> void implements Handler {
       if (!supported) {
         x.status(404);
         x.set_header("Content-Type", "application/json");
-        x.json("{\"error\":\"model '" + model + "' not found\"}");
+        x.json("{\"error\":" + json_quote("model '" + model + "' not found") + "}");
       } else {
         let reply = cfg.get("cases").get(selected);
+        if (x.path() == "/api/generate" && cfg.has("generate_cases")) { reply = cfg.get("generate_cases").get(selected); }
         x.status(reply.get("status").as_int());
         let headers = reply.get("headers");
         let keys = headers.keys();

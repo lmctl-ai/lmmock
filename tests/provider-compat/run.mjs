@@ -76,6 +76,13 @@ try {
       if (r.status !== 0) throw new Error(`Failing controls failed for ${d.name}: ${r.status}`);
     }
 
+    for (const name of ['gemini', 'ollama']) {
+      const d = dialects.find(d => d.name === name);
+      const r = spawnSync(binary, ['exec', '--lmcode', d.dslb, '--config', d.wire, '--', process.execPath, 'tests/provider-compat/regressions.mjs'], {stdio: 'inherit', env: {...process.env, DIALECT: name}});
+      if (r.error) throw r.error;
+      if (r.status !== 0) throw new Error(`Native dialect regressions failed: ${name}`);
+    }
+
     // 3. Run mutations driver
     console.log('--- Running handler mutations ---');
     const m = spawnSync(process.execPath, ['tests/provider-compat/mutations.mjs', binary], {
