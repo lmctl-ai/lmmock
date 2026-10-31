@@ -8,10 +8,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import {spawnSync} from 'node:child_process';
+import {resolveLmscriptCommand} from './lmscript-command.mjs';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lmmock-mutations-'));
 const binary = path.resolve(process.argv[2] || 'build/lmmock');
 const lmscriptBin = process.env.LMSCRIPT_BIN || 'lmscript';
+const lmscript = resolveLmscriptCommand(lmscriptBin);
 const schemaPath = JSON.stringify(path.resolve('examples/schema.json').replaceAll('\\', '/'));
 
 const handlers = [
@@ -56,10 +58,7 @@ try {
     const baseScript = path.join(dir, `${h.family}-base.lms`);
     const baseBin = path.join(dir, `${h.family}-base.bin`);
     fs.writeFileSync(baseScript, sourceWithSchema);
-    const compileBase = spawnSync('bash', ['-c', '"$LMSCRIPT_BIN" --no-preflight "$1" "$2"', 'compile', baseScript, baseBin], {
-      encoding: 'utf8',
-      env: { ...process.env, LMSCRIPT_BIN: lmscriptBin }
-    });
+    const compileBase = spawnSync(lmscript.command, [...lmscript.args, '--no-preflight', baseScript, baseBin], {encoding: 'utf8'});
     assert.equal(compileBase.status, 0, `Baseline compile failed for ${h.family}: ${compileBase.stderr}`);
 
     const runBase = spawnSync(binary, ['exec', '--lmcode', baseBin, '--config', tempConfig, '--', process.execPath, 'tests/provider-compat/failing-controls.mjs'], {
@@ -75,10 +74,7 @@ try {
     const mutantScript = path.join(dir, `${h.family}-mutant.lms`);
     const mutantBin = path.join(dir, `${h.family}-mutant.bin`);
     fs.writeFileSync(mutantScript, mutatedSource);
-    const compileMutant = spawnSync('bash', ['-c', '"$LMSCRIPT_BIN" --no-preflight "$1" "$2"', 'compile', mutantScript, mutantBin], {
-      encoding: 'utf8',
-      env: { ...process.env, LMSCRIPT_BIN: lmscriptBin }
-    });
+    const compileMutant = spawnSync(lmscript.command, [...lmscript.args, '--no-preflight', mutantScript, mutantBin], {encoding: 'utf8'});
     assert.equal(compileMutant.status, 0, `Mutant compile failed for ${h.family}: ${compileMutant.stderr}`);
 
     // Re-copy fresh config for the mutant run

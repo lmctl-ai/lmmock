@@ -44,7 +44,7 @@ step(["node", "tests/provider-fixtures/run.mjs", "fixtures/providers/openai-resp
 # Provider fixture contract runner
 
 # Anthropic Messages, Gemini content, Ollama NDJSON and Miniplayer compatibility
-step(["bash", "tests/provider-compat/compile.sh"]);
+step(["node", "tests/provider-compat/lmscript-command.test.mjs"]);
 step(["node", "tests/provider-compat/run.mjs", "build/lmmock" + ext]);
 # Stream-json policies run as native fake CLIs, not HTTP handlers.
 step(["node", "tests/streamjson/process.mjs", "build/lmmock" + ext]);
