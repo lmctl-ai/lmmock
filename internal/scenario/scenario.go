@@ -241,6 +241,50 @@ func Import(input io.Reader, exact bool) (Scenario, []Flow, error) {
 			n.secrets = append(n.secrets, s)
 		}
 	}
+	// Discover named credentials before scrubbing, including echoes in earlier flows.
+	for _, f := range flows {
+		if u, err := url.ParseRequestURI(f.Request.Path); err == nil {
+			for key, values := range u.Query() {
+				if logSensitive(key) {
+					for _, value := range values {
+						add(value)
+						add(url.QueryEscape(value))
+					}
+				}
+			}
+		}
+		for _, part := range []struct {
+			body    []byte
+			headers map[string][]string
+		}{{f.Request.Content, f.Request.Headers}, {f.Response.Content, f.Response.Headers}} {
+			plain := normalizer{exact: true}
+			body, err := plain.body(part.body, part.headers)
+			if err != nil {
+				return Scenario{}, nil, err
+			}
+			var tree any
+			if decodeJSON(body, &tree) == nil {
+				var discover func(any, bool)
+				discover = func(v any, named bool) {
+					switch x := v.(type) {
+					case string:
+						if named {
+							add(x)
+						}
+					case []any:
+						for _, value := range x {
+							discover(value, named)
+						}
+					case map[string]any:
+						for key, value := range x {
+							discover(value, named || logSensitive(key))
+						}
+					}
+				}
+				discover(tree, false)
+			}
+		}
+	}
 	// Gather first, scrub second: a secret in an earlier response may first appear
 	// in a later request header. Values are never included in diagnostics.
 	for _, f := range flows {

@@ -170,3 +170,22 @@ func TestCopilotCaseStudyContract(t *testing.T) {
 		}
 	}
 }
+
+func TestScrubQueryAndBodyCredentialsWithoutHeaders(t *testing.T) {
+	for _, exact := range []bool{false, true} {
+		f := Flow{Request: Request{Method: "POST", Path: "/generate?key=synthetic-query-value&access_token=synthetic-query-token", Headers: map[string][]string{"Content-Type": {"application/json"}}, Content: []byte(`{"api_key":"synthetic-body-value","nested":{"client_secret":"synthetic-client-value"}}`)}, Response: &Response{Status: 200, Content: []byte(`{"echo":"synthetic-query-value synthetic-body-value synthetic-client-value synthetic-query-token"}`)}}
+		raw, _ := json.Marshal(f)
+		result, clean, err := Import(bytes.NewReader(raw), exact)
+		if err != nil {
+			t.Fatal(err)
+		}
+		a, _ := json.Marshal(result)
+		for _, secret := range []string{"synthetic-query-value", "synthetic-query-token", "synthetic-body-value", "synthetic-client-value"} {
+			for _, output := range []string{string(a), clean[0].Request.Path, string(clean[0].Request.Content), string(clean[0].Response.Content)} {
+				if strings.Contains(output, secret) {
+					t.Fatalf("query/body credential retained (exact=%v)", exact)
+				}
+			}
+		}
+	}
+}
