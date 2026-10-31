@@ -764,3 +764,37 @@ five-platform tests and a dedicated published-client workflow run them and compi
 handler mutations. Known zero-exit empty-output defects in published lmctl 0.2.448
 are reported explicitly as unqualified client gaps, not successful cases. The lane
 README documents the supported process contracts and the unclaimed native/TUI APIs.
+## WebSocket, HTTP/2 and gRPC handlers
+
+The `wire` family adds `ws`, `http2`, `grpc` and a worked `line` adapter. Go supplies
+protocol framing; annotated lmcode SAM entries implement applications. A new gRPC
+method needs its supplied descriptor and handler, not generated Go application code.
+The runtime remains one CGO-disabled executable; Node is used only for source fixture
+compilation with the repository's published compiler pin.
+
+### Scenario and lifecycle
+
+A scenario selects a compiled program, protocol configuration and arbitrary handler
+data. `lmmock wire exec KIND --config FILE -- CLIENT ARG...` runs the client against
+an ephemeral loopback listener and closes it when the client exits. LMMOCK_URL and
+LMMOCK_ADDR identify that listener. `wire serve` provides readiness JSON for managed
+processes. There are no sleeps or timeouts as mock behavior: handlers use receive,
+send and peer completion to establish order.
+
+### Handlers and extension path
+
+Use `lmmock wire schema KIND` for the exact schema and the raw handlers in
+[examples/wire](examples/wire). WebSocketHandler, HTTP2Handler, GRPCHandler and
+LineHandler receive a Session; `bind` connects method/path keys to annotations.
+See [the protocol extension contract](docs/wire-protocols.md) for compilation,
+descriptor pins, stream semantics, the Session API and a complete line-protocol
+example showing how to add the next listener plus SAM. Protocol/library limitations
+and the separate TLS CLI integration boundary are stated there.
+
+### Client acceptance
+
+Go tests exercise real WebSocket and descriptor-driven gRPC clients, HTTP2 duplex
+streaming and a locally trusted TLS listener. Wrong application/raw frame order,
+descriptor mismatches, bad cardinality and missing flushes are refused. The dedicated
+`lmcode protocol clients` Actions job installs the npm compiler privately and runs
+these clients and production mutation controls; the regular suite includes them too.
