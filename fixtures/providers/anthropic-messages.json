@@ -20,14 +20,61 @@
     "url_env": "LMMOCK_URL"
   },
   "models": [
-    { "id": "fixture-claude", "family": "claude-3-5", "capabilities": ["chat", "tools", "stream"] },
-    { "id": "claude-3-5-sonnet", "family": "claude-3-5", "capabilities": ["chat", "tools", "stream"] },
-    { "id": "claude-3-opus", "family": "claude-3", "capabilities": ["chat", "tools", "stream"] },
-    { "id": "claude-3-haiku", "family": "claude-3", "capabilities": ["chat", "tools", "stream"] },
-    { "id": "overloaded", "family": "claude-3", "capabilities": ["chat"] }
+    {
+      "id": "fixture-claude",
+      "family": "claude-3-5",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ]
+    },
+    {
+      "id": "claude-3-5-sonnet",
+      "family": "claude-3-5",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ]
+    },
+    {
+      "id": "claude-3-opus",
+      "family": "claude-3",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ]
+    },
+    {
+      "id": "claude-3-haiku",
+      "family": "claude-3",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ]
+    },
+    {
+      "id": "overloaded",
+      "family": "claude-3",
+      "capabilities": [
+        "chat"
+      ]
+    }
   ],
   "routes": [
-    { "id": "messages", "method": "POST", "path": "/v1/messages", "annotation": "anthropic_messages", "sam": "Handler", "content_types": ["application/json"] }
+    {
+      "id": "messages",
+      "method": "POST",
+      "path": "/v1/messages",
+      "annotation": "anthropic_messages",
+      "sam": "Handler",
+      "content_types": [
+        "application/json"
+      ]
+    }
   ],
   "cases": [
     {
@@ -43,7 +90,12 @@
         },
         "body": {
           "model": "fixture-claude",
-          "messages": [{ "role": "user", "content": "ping" }],
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
           "max_tokens": 10
         }
       },
@@ -72,7 +124,12 @@
         },
         "body": {
           "model": "fixture-claude",
-          "messages": [{ "role": "user", "content": "ping" }],
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
           "max_tokens": 10
         }
       },
@@ -82,7 +139,9 @@
           "error.type": "authentication_error"
         }
       },
-      "faults": ["auth-missing"]
+      "faults": [
+        "auth-missing"
+      ]
     },
     {
       "id": "anthropic-auth-invalid",
@@ -97,7 +156,12 @@
         },
         "body": {
           "model": "fixture-claude",
-          "messages": [{ "role": "user", "content": "ping" }],
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
           "max_tokens": 10
         }
       },
@@ -107,7 +171,9 @@
           "error.type": "authentication_error"
         }
       },
-      "faults": ["auth-invalid"]
+      "faults": [
+        "auth-invalid"
+      ]
     },
     {
       "id": "anthropic-unknown-model",
@@ -122,7 +188,12 @@
         },
         "body": {
           "model": "unsupported-model",
-          "messages": [{ "role": "user", "content": "ping" }],
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
           "max_tokens": 10
         }
       },
@@ -132,7 +203,9 @@
           "error.type": "not_found_error"
         }
       },
-      "faults": ["unknown-model"]
+      "faults": [
+        "unknown-model"
+      ]
     },
     {
       "id": "anthropic-rate-limit",
@@ -147,7 +220,12 @@
         },
         "body": {
           "model": "overloaded",
-          "messages": [{ "role": "user", "content": "ping" }],
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
           "max_tokens": 10
         }
       },
@@ -160,7 +238,9 @@
           "error.type": "rate_limit_error"
         }
       },
-      "faults": ["rate-limit"]
+      "faults": [
+        "rate-limit"
+      ]
     },
     {
       "id": "anthropic-stream-events",
@@ -175,7 +255,12 @@
         },
         "body": {
           "model": "fixture-claude",
-          "messages": [{ "role": "user", "content": "ping" }],
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
           "max_tokens": 10,
           "stream": true
         }
@@ -192,7 +277,13 @@
           "content_block_stop",
           "message_delta",
           "message_stop"
-        ]
+        ],
+        "stream": {
+          "dialect": "anthropic",
+          "text": "pong",
+          "input_tokens": 10,
+          "output_tokens": 2
+        }
       }
     }
   ],
@@ -200,25 +291,35 @@
     {
       "id": "auth-missing",
       "surface": "http",
-      "trigger": { "case_id": "anthropic-auth-missing" },
+      "trigger": {
+        "case_id": "anthropic-auth-missing"
+      },
       "description": "Missing x-api-key header; expect vendor-shaped 401"
     },
     {
       "id": "auth-invalid",
       "surface": "http",
-      "trigger": { "case_id": "anthropic-auth-invalid" },
+      "trigger": {
+        "case_id": "anthropic-auth-invalid"
+      },
       "description": "Invalid x-api-key header; expect vendor-shaped 401 without echoing the key"
     },
     {
       "id": "unknown-model",
       "surface": "http",
-      "trigger": { "case_id": "anthropic-unknown-model", "model": "unsupported-model" },
+      "trigger": {
+        "case_id": "anthropic-unknown-model",
+        "model": "unsupported-model"
+      },
       "description": "Unrecognized Claude model name returns 404"
     },
     {
       "id": "rate-limit",
       "surface": "http",
-      "trigger": { "case_id": "anthropic-rate-limit", "model": "overloaded" },
+      "trigger": {
+        "case_id": "anthropic-rate-limit",
+        "model": "overloaded"
+      },
       "description": "Rate-limit returns 429 with retry-after header"
     }
   ]

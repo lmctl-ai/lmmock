@@ -50,3 +50,12 @@ JSONL stdio manifests use the protocol-specific published-client adapter in
 tests/streamjson/run.mjs through the shared loader/expectation checker; no HTTP
 server is started for native CLI fixtures. See fixtures/streamjson/README.md for
 the isolated fake PATH and pinned parser limitations.
+
+Provider text streams can declare `expect.stream` with dialect, text, input_tokens
+and output_tokens. The shared strict wire decoder validates JSON, ordering,
+terminal markers, decoded text and integer usage. It supports the canned text
+streams of Anthropic, Gemini, Ollama and Miniplayer; it is not a general SDK
+implementation. The provider-compat lane separately parses success and malformed
+usage/JSON with the pinned Anthropic, Google and OpenAI-compatible SDKs. Ordering
+and missing-terminal rejection are strict wire checks, not claims about SDK EOF
+enforcement. Ollama uses the documented native JSON/NDJSON contract directly.

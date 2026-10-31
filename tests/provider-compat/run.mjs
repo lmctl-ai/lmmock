@@ -50,6 +50,8 @@ try {
       }
     }
   } else {
+    const contract = spawnSync(process.execPath, ['--test', 'tests/provider-fixtures/stream-contract.test.mjs'], {stdio: 'inherit'});
+    if (contract.status !== 0) throw new Error('Stream contract regressions failed');
     // 1. Run provider-fixtures manifests against SCHEMA.json contract
     console.log('--- Running provider fixture manifests ---');
     for (const d of dialects) {
@@ -81,6 +83,15 @@ try {
       const r = spawnSync(binary, ['exec', '--lmcode', d.dslb, '--config', d.wire, '--', process.execPath, 'tests/provider-compat/regressions.mjs'], {stdio: 'inherit', env: {...process.env, DIALECT: name}});
       if (r.error) throw r.error;
       if (r.status !== 0) throw new Error(`Native dialect regressions failed: ${name}`);
+    }
+
+    for (const name of ['anthropic', 'gemini', 'miniplayer']) {
+      const d = dialects.find(d => d.name === name);
+      const config = join(dir, `${name}-sdk.json`);
+      copyFileSync(d.wire, config);
+      const r = spawnSync(binary, ['exec', '--lmcode', d.dslb, '--config', config, '--', process.execPath, 'tests/provider-compat/sdk-stream.mjs'], {stdio: 'inherit', env: {...process.env, DIALECT: name, MOCK_CONFIG: config}});
+      if (r.error) throw r.error;
+      if (r.status !== 0) throw new Error(`Independent SDK stream failed: ${name}`);
     }
 
     // 3. Run mutations driver

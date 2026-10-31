@@ -153,7 +153,13 @@
         "events": [
           "\"done\":false",
           "\"done\":true"
-        ]
+        ],
+        "stream": {
+          "dialect": "ollama",
+          "text": "pong",
+          "input_tokens": 10,
+          "output_tokens": 2
+        }
       }
     },
     {
@@ -223,7 +229,13 @@
         "events": [
           "\"response\":\"pong\"",
           "\"done\":true"
-        ]
+        ],
+        "stream": {
+          "dialect": "ollama",
+          "text": "pong",
+          "input_tokens": 10,
+          "output_tokens": 2
+        }
       }
     }
   ],

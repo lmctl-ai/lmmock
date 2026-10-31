@@ -82,6 +82,7 @@
         "headers": { "$ref": "#/$defs/stringMap" },
         "json": { "$ref": "#/$defs/jsonMap" },
         "body_contains": { "type": "string" },
+        "stream": {"type": "object", "additionalProperties": false, "required": ["dialect", "text", "input_tokens", "output_tokens"], "properties": {"dialect": {"enum": ["anthropic", "gemini", "ollama", "miniplayer"]}, "text": {"type": "string"}, "input_tokens": {"type": "integer", "minimum": 0}, "output_tokens": {"type": "integer", "minimum": 0}}},
         "events": { "type": "array", "items": { "type": "string" } },
         "exit_code": { "type": "integer" },
         "stdout_contains": { "type": "string" },
