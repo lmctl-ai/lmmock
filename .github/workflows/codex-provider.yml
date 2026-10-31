@@ -7,7 +7,14 @@ permissions:
   contents: read
 jobs:
   published:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2022]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -26,7 +33,9 @@ jobs:
           git diff --exit-code -- internal/rpcstdio/presets
           go test ./internal/rpcstdio -run TestCodex -count=1
           mkdir -p build
-          go build -o build/codex-fixture ./tests/providers/codex/fakecli
+          ext=''
+          if [[ "$RUNNER_OS" == Windows ]]; then ext='.exe'; fi
+          go build -o "build/codex-fixture$ext" ./tests/providers/codex/fakecli
       - name: Real adapter, exact token/session facts and explicit client gaps
         run: |
           python3 tests/providers/codex/generate.py --check
