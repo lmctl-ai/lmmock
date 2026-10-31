@@ -36,6 +36,12 @@ jobs:
           ext=''
           if [[ "$RUNNER_OS" == Windows ]]; then ext='.exe'; fi
           go build -o "build/codex-fixture$ext" ./tests/providers/codex/fakecli
+      - name: Native single-turn lifecycle
+        run: node tests/providers/codex/case.mjs success
+      - name: Native dependent-turn lifecycle
+        run: node tests/providers/codex/case.mjs persistent
+      - name: Native interruption lifecycle
+        run: node tests/providers/codex/interrupt.mjs
       - name: Real adapter, exact token/session facts and explicit client gaps
         run: |
           python3 tests/providers/codex/generate.py --check
