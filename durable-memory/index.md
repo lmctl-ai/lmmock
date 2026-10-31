@@ -37,3 +37,4 @@ Go HTTP mock host backed by lmcode-go v0.6.38. Public repo lmctl-ai/lmmock, MIT.
   do not silently label a standalone SDK stream test as an lmctl stream test.
 
 - [Print and sidecar provider fixtures](provider-lane-e.md): shared P0 manifests, actual published Agy/Pi/lmplayer/DSH/Muse adapters, native IO/exit/model facts, zstd/MSP session resume, compiled controls and explicit unqualified empty-output client defects.
+- [WebSocket, HTTP/2 and descriptor-driven gRPC](wire-protocols.md): protocol-only Go adapters, SAM application dispatch, pinned descriptors, real clients, controls and the runnable LF extension.
