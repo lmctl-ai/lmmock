@@ -11,6 +11,6 @@ assert_eq(streamed.status(), 200);
 assert_eq(streamed.text(), "pong");
 end _lmcode_
 savedsl(p, "build/lmcurl-client.dslb");
-r = system(["lmcurl", "--dsl", "build/lmcurl-client.dslb"]);
+r = system(["lmcurl", "--lmcode", "build/lmcurl-client.dslb"]);
 assert(r.code == 0, r.stdout + r.stderr);
 println("PASS released lmcurl chat and SSE against lmmock");
