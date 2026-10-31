@@ -28,6 +28,7 @@ try{
  assert.equal(turns[0].params.input[0].text,'ping');
  assert.equal(e.rows[0].message,vars.LMMOCK_CODEX_MODE==='batch'?'ping':'');
  assert.equal(e.rows[0].accounting_only,vars.LMMOCK_CODEX_MODE==='batch'?null:1);
+ if(vars.LMMOCK_CODEX_MODE==='batch')assert.deepEqual(e.rows.map(row=>[row.message,row.response]),[['ping','pong'],['pong','dependent answer']],'ordered batch transcripts');
  const row=e.rows[0];const provider=e.result.result;
  if(provider.status==='ok')assert.equal(e.result.member.sessionid,'11111111-1111-4111-8111-111111111111');
  if(process.argv.includes('--require-error-classes')){

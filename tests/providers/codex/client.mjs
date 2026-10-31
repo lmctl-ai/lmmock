@@ -28,7 +28,7 @@ export function prepareCase(selected,{model='gpt-5.6-sol',resume=false,batch=fal
  let result;try{result=JSON.parse(processResult.stdout.trim().split('\n').at(-1));}catch{}
  const read=name=>fs.existsSync(path.join(trace,name))?fs.readFileSync(path.join(trace,name),'utf8'):'';
  const decode=text=>text.trim()?text.trim().split('\n').map(x=>JSON.parse(x)):[];
- let rows=[];if(fs.existsSync(path.join(dir,'state.db'))){const db=new DatabaseSync(path.join(dir,'state.db'),{readOnly:true});try{rows=db.prepare('SELECT * FROM team_chat_log WHERE attempt_key IS NOT NULL').all();}finally{db.close();}}
+ let rows=[];if(fs.existsSync(path.join(dir,'state.db'))){const db=new DatabaseSync(path.join(dir,'state.db'),{readOnly:true});try{rows=db.prepare('SELECT * FROM team_chat_log WHERE attempt_key IS NOT NULL ORDER BY id').all();}finally{db.close();}}
  const evidence={selected,exit:processResult.status,signal:processResult.signal,stdout:processResult.stdout,stderr:processResult.stderr,result,requests:decode(read('input.jsonl')),events:decode(read('output.jsonl')),argv:read('argv.json')?JSON.parse(read('argv.json')):[],rows,dir};
  // Teardown checks the recorded owned PID independently of protocol success.
  evidence.cleanup=()=>{const pid=Number(read('pid'));if(Number.isSafeInteger(pid)&&pid>0){try{process.kill(pid,0);process.kill(pid,'SIGKILL');throw Error('owned provider survived client exit');}catch(e){if(e.code!=='ESRCH')throw e;}}fs.rmSync(dir,{recursive:true,force:true});};
