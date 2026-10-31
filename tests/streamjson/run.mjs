@@ -80,7 +80,7 @@ export async function runProvider({manifestFile,binary,code=path.join(ROOT,'fixt
    if(original.id==='complete'){
     const verbose=runClient(pkg,'lmctl',['prompt',path.relative(workspace,team),'Worker','ping','--json','--verbose'],env,workspace);
     assert.equal(verbose.status,0,'verbose prompt: '+verbose.stdout+verbose.stderr);assert.match(verbose.stderr,/fixture_lookup/,'real adapter tool progress');assert.ok(verbose.stderr.indexOf('tool_use')<verbose.stderr.indexOf('tool_result'),'interleaved tool ordering');assert.doesNotMatch(verbose.stderr,/fixture reasoning/,'thinking text remains private');
-    const first=structuredClone(config.turns[0]),second=structuredClone(config.turns[0]);first.close=false;second.expect='again';
+    const first=structuredClone(config.turns[0]),second=structuredClone(config.turns[0]);first.close=false;second.close=false;second.expect='again';
     for(const event of second.events)if(event.type==='result'){event.uuid='terminal-2';event.total_cost_usd=0.002;}
     config.turns=[first,second];fs.writeFileSync(scenario,JSON.stringify(materialize(config,vars)));
     const before=fs.readFileSync(audit,'utf8').trim().split('\n').length;

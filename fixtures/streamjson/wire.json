@@ -109,7 +109,7 @@
           }
         }
       ],
-      "close": true,
+      "close": false,
       "record_usage": true
     },
     "missing-terminal": {
@@ -156,7 +156,7 @@
           "session_id": "${SESSION}"
         }
       ],
-      "close": true
+      "close": false
     },
     "duplicate-terminal": {
       "events": [
@@ -275,7 +275,7 @@
           }
         }
       ],
-      "close": true,
+      "close": false,
       "record_usage": true
     },
     "extra-terminal": {
@@ -395,7 +395,7 @@
           }
         }
       ],
-      "close": true,
+      "close": false,
       "record_usage": true
     },
     "malformed-usage": {
@@ -485,7 +485,7 @@
           }
         }
       ],
-      "close": true,
+      "close": false,
       "record_usage": true,
       "malformed_usage": true
     },
