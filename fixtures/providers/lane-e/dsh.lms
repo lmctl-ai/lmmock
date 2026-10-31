@@ -1,0 +1,38 @@
+p = _lmcode_ schema="../../../examples/schema.json";
+fn quote(s: string) -> string { return json_quote(s); }
+@cookie
+fn cookie(x: Exchange) -> void implements Handler {
+ x.set_header("Set-Cookie","fixture-session=synthetic-sidecar-cookie; HttpOnly");x.send("ready");
+}
+@rpc
+fn rpc(x: Exchange) -> void implements Handler {
+ let cfg=json_parse(config());let msg=json_parse(x.body());let method=msg.get("method").as_string();let data=msg.get("payload");
+ let v2=false;if(cfg.has("v2")){v2=cfg.get("v2").as_bool();}
+ if(v2){data=data.get("args").get("request");}
+ file_append(cfg.get("trace").as_string(),"{\"event\":\"rpc\",\"method\":"+quote(method)+",\"payload\":"+data.to_json()+"}\n");
+ while(true){
+  if(v2 && x.header("Cookie")!="fixture-session=synthetic-sidecar-cookie"){x.status(401);x.json("{\"error\":\"Authentication required\"}");break;}
+  if(cfg.has("malformed") && cfg.get("malformed").as_bool()){x.json("{malformed");break;}
+  let sid=data.get("sessionId").as_string();let file=cfg.get("session_root").as_string()+"/"+sid+"/session.jsonl.zstd";
+  if(method=="session.create" || method=="session/create"){
+   append_zstd(file,"{\"seq\":0,\"type\":\"session/init\",\"data\":{\"sessionId\":"+quote(sid)+",\"cwd\":"+data.get("cwd").to_json()+"}}\n");
+  }else if(method=="session.selectModel" || method=="session/selectModel"){
+   if(data.get("model").as_string()!=cfg.get("model").as_string()){x.json("{\"result\":{\"ok\":false,\"error\":\"model not supported\"}}");break;}
+  }else if(method=="session.prompt" || method=="session/prompt"){
+   let previous=read_zstd(file);if(previous==""){x.json("{\"result\":{\"ok\":false,\"error\":\"conversation missing not found\"}}");break;}
+   let rows=str_split(previous,"\n");let seq=0;
+   for(i in range(0,rows.len())){if(rows.at(i)!=""){let record=json_parse(rows.at(i));if(record.has("seq") && record.get("seq").as_int()>seq){seq=record.get("seq").as_int();}}}
+   let turn=seq+1;let text=cfg.get("text").as_string();
+   let transcript="{\"seq\":"+str(seq+1)+",\"type\":\"turn/start\",\"data\":{\"turn\":"+str(turn)+"}}\n";
+   transcript=transcript+"{\"seq\":"+str(seq+2)+",\"type\":\"assistant/message\",\"data\":{\"turn\":"+str(turn)+",\"step\":1,\"message\":{\"id\":"+quote("fixture-"+str(turn))+",\"source\":{\"model\":"+cfg.get("model").to_json()+"},\"content\":[{\"type\":\"reasoning\",\"text\":\"fixture reasoning not an answer\"},{\"type\":\"text\",\"text\":"+quote(text)+"}]},\"usage\":{\"inputTokens\":5,\"cacheReadTokens\":0,\"outputTokens\":2,\"reasoningTokens\":1}}}\n";
+   let reason="{\"kind\":\"completed\"}";
+   if(cfg.has("turn_error")){reason="{\"kind\":\"error\",\"error\":{\"message\":"+cfg.get("turn_error").to_json()+"}}";transcript="{\"seq\":"+str(seq+1)+",\"type\":\"turn/start\",\"data\":{\"turn\":"+str(turn)+"}}\n";}
+   transcript=transcript+"{\"seq\":"+str(seq+3)+",\"type\":\"turn/end\",\"data\":{\"reason\":"+reason+"}}\n";
+   append_zstd(file,transcript);
+  }else{x.status(404);x.json("{\"error\":\"unscripted RPC method\"}");break;}
+  x.json("{\"result\":{\"ok\":true,\"value\":{}}}");break;
+ }
+}
+route("GET","/","cookie");route("POST","/api/{method}","rpc");
+end _lmcode_
+savedsl(p,ARGV[0]);

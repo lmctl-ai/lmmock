@@ -1,6 +1,6 @@
 {
   "dsl.schema": 2,
-  "name": "lmmock_stdio_1",
+  "name": "lmmock_stdio_2",
   "functions": {
     "bind": [
       {
@@ -162,6 +162,22 @@
             "params": [
               "string",
               "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "write_stderr": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "exit": [
+          {
+            "params": [
+              "int"
             ],
             "returns": "void"
           }

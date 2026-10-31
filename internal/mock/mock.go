@@ -28,6 +28,9 @@ var legacySchema []byte
 //go:embed schema-v3.json
 var schemaV3 []byte
 
+//go:embed schema-v4.json
+var schemaV4 []byte
+
 type route struct {
 	method, path, annotation string
 	entry                    int
@@ -90,7 +93,7 @@ func NewWithOptions(code []byte, options Options) (*Engine, error) {
 	e.schema = Schema
 	p, err := lmcode.Load(e.code, e.schema, reg)
 	if err != nil {
-		for _, schema := range [][]byte{schemaV3, legacySchema} {
+		for _, schema := range [][]byte{schemaV4, schemaV3, legacySchema} {
 			if old, oldErr := lmcode.Load(e.code, schema, reg); oldErr == nil {
 				p, err, e.schema = old, nil, schema
 				break

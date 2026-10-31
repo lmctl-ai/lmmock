@@ -1,0 +1,16 @@
+p = _lmcode_ schema="../../../internal/rpcstdio/presets/schema.json";
+@boot
+fn boot(x: RPC) -> void implements RPCHandler {
+ let cfg=json_parse(config());let input=json_parse(x.params());let argv=input.get("argv");
+ if(argv.len()<1 || argv.at(0).as_string()!="web"){x.abort("sidecar requires web argv");}
+ file_append(cfg.get("trace").as_string(),"{\"event\":\"boot\",\"pid\":"+input.get("pid").to_json()+",\"argv\":"+argv.to_json()+"}\n");
+ if(cfg.has("boot_error")){x.write_stderr(cfg.get("boot_error").as_string());x.exit(3);}
+ else {
+  let url=input.get("url").as_string();
+  if(cfg.has("v2") && cfg.get("v2").as_bool()){url=url+"/?token=fixture-sidecar-token";}
+  x.write_text("dsh web: "+url+"\n");
+ }
+}
+bind("$start","boot");
+end _lmcode_
+savedsl(p,ARGV[0]);

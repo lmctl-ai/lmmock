@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-//go:embed presets/schema.json presets/*.dslb
+//go:embed presets/schema*.json presets/*.dslb
 var presets embed.FS
 
 func Schema() []byte                     { b, _ := presets.ReadFile("presets/schema.json"); return b }
@@ -23,10 +23,12 @@ func Preset(name string) ([]byte, error) { return presets.ReadFile("presets/" + 
 type Options struct {
 	Alias, StateDir string
 	Config          []byte
+	Stderr          io.Writer
 }
 type Engine struct {
 	deferred map[string]json.RawMessage
 	stopped  bool
+	exitCode int
 	opts     Options
 	wire     *Wire
 	program  *lmcode.Program
@@ -123,6 +125,22 @@ func New(code []byte, options Options, wire *Wire) (*Engine, error) {
 		return lmcode.None(), nil
 	})
 	method("close", nil, "void", func(*exchange, []lmcode.Value) (lmcode.Value, error) { e.stopped = true; return lmcode.None(), nil })
+	method("write_stderr", []string{"string"}, "void", func(_ *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		writer := options.Stderr
+		if writer == nil {
+			writer = io.Discard
+		}
+		_, err := io.WriteString(writer, a[0].Str)
+		return lmcode.None(), err
+	})
+	method("exit", []string{"int"}, "void", func(_ *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		if a[0].Int < 0 || a[0].Int > 255 {
+			return lmcode.None(), errors.New("exit code must be 0..255")
+		}
+		e.exitCode = int(a[0].Int)
+		e.stopped = true
+		return lmcode.None(), nil
+	})
 	method("write_text", []string{"string"}, "void", func(_ *exchange, a []lmcode.Value) (lmcode.Value, error) {
 		return lmcode.None(), wire.writeBytes([]byte(a[0].Str))
 	})
@@ -143,6 +161,15 @@ func New(code []byte, options Options, wire *Wire) (*Engine, error) {
 		return lmcode.Int(e.nextID), err
 	})
 	p, err := lmcode.Load(code, Schema(), r)
+	if err != nil {
+		for _, name := range []string{"presets/schema-acp-v1.json", "presets/schema-v1.json"} {
+			old, _ := presets.ReadFile(name)
+			if previous, loadErr := lmcode.Load(code, old, r); loadErr == nil {
+				p, err = previous, nil
+				break
+			}
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +200,7 @@ func New(code []byte, options Options, wire *Wire) (*Engine, error) {
 	}
 	return e, nil
 }
+func (e *Engine) ExitCode() int { return e.exitCode }
 func (e *Engine) write(v any) error {
 	b, err := json.Marshal(v)
 	if err != nil {

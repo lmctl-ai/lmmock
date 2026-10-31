@@ -1,0 +1,20 @@
+p = _lmcode_ schema="../../../internal/rpcstdio/presets/schema.json";
+@start
+fn start(x: RPC) -> void implements RPCHandler {
+ let cfg=json_parse(config());let input=json_parse(x.params());let argv=input.get("argv");
+ let trace="{\"argv\":"+argv.to_json()+",\"cwd\":"+json_quote(input.get("cwd").as_string())+"}\n";
+ file_append(cfg.get("trace").as_string(),trace);
+ let expect=cfg.get("request");let keys=expect.keys();
+ for (i in range(0,keys.len())) {
+  let key=keys.at(i);let found=false;
+  for (j in range(0,argv.len()-1)) {if(argv.at(j).as_string()==key && argv.at(j+1).as_string()==expect.get(key).as_string()){found=true;}}
+  if(!found){x.abort("fixture argv mismatch: "+key);}
+ }
+ let response=cfg.get("response");
+ x.write_text(response.get("stdout").as_string());
+ x.write_stderr(response.get("stderr").as_string());
+ x.exit(response.get("exit").as_int());
+}
+bind("$start","start");
+end _lmcode_
+savedsl(p,ARGV[0]);
