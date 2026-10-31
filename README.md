@@ -226,7 +226,7 @@ command in one step; no background shell process or fixed port is needed:
 ```
 
 This repository's workflow builds and tests Linux x64/arm64, macOS x64/arm64 and
-Windows x64. Every successful main push publishes the tested native binaries,
+Windows x64. Pushes to main validate the native binaries; a successful manual workflow dispatch publishes the tested native binaries,
 example scripts, licenses and SHA256SUMS. Pull requests validate without publishing.
 All binaries use CGO_ENABLED=0. Linux x64 also runs the Go race detector.
 
@@ -798,3 +798,10 @@ streaming and a locally trusted TLS listener. Wrong application/raw frame order,
 descriptor mismatches, bad cardinality and missing flushes are refused. The dedicated
 `lmcode protocol clients` Actions job installs the npm compiler privately and runs
 these clients and production mutation controls; the regular suite includes them too.
+
+The optional lminspect v0.1.0 recapture job runs on Linux: that release logs the
+requested address before binding and does not report an allocated port. Its
+Python harness requests port zero and discovers the actual listener through the
+owned child PID's procfs socket descriptors. It never releases a reserved port or
+accepts an unrelated process's listener as readiness. This Linux capture-job
+restriction does not affect the native mock or provider fixtures on macOS/Windows.
