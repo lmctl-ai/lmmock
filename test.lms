@@ -7,6 +7,7 @@ fn step(command) {
 mkdir("build");
 set_env("CGO_ENABLED", "0");
 step(["go", "mod", "verify"]);
+step(["node", "--test", "tests/provider-fixtures/process-suite.test.mjs"]);
 step(["python3", "tests/providers/codex/generate.py", "--check"]);
 step(["bash", "scripts/compile-examples.sh"]);
 step(["bash", "scripts/compile-stdio.sh"]);
