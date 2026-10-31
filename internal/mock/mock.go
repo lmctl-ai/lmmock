@@ -50,6 +50,7 @@ type exchange struct {
 	status  int
 	headers http.Header
 	output  string
+	events  []string
 	delay   time.Duration
 	drop    bool
 	state   *store
@@ -204,7 +205,21 @@ func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 	for k, vs := range x.headers {
 		w.Header()[k] = vs
 	}
+	if len(x.events) > 0 {
+		w.Header().Del("Content-Length")
+	}
 	w.WriteHeader(x.status)
+	if len(x.events) > 0 {
+		for _, event := range x.events {
+			if _, err := io.WriteString(w, event); err != nil {
+				return
+			}
+			if err := http.NewResponseController(w).Flush(); err != nil {
+				return
+			}
+		}
+		return
+	}
 	_, _ = io.WriteString(w, x.output)
 }
 func registry(options Options, _ *store, add func(string, string, string) error) *lmcode.Registry {
@@ -264,9 +279,14 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		x.headers.Set(a[0].Str, a[1].Str)
 		return lmcode.None(), nil
 	})
+	method("stream_event", []string{"string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		x.events = append(x.events, a[0].Str)
+		return lmcode.None(), nil
+	})
 	for _, name := range []string{"send", "json"} {
 		method(name, []string{"string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
 			x.output = a[0].Str
+			x.events = nil
 			if name == "json" {
 				x.headers.Set("Content-Type", "application/json")
 			}

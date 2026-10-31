@@ -131,6 +131,14 @@
             "params": [],
             "returns": "string"
           }
+        ],
+        "stream_event": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
         ]
       }
     }
