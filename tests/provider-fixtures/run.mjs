@@ -251,10 +251,6 @@ export async function runFixture(manifestPath, binary, root = defaultRoot) {
   const loaded = await loadFixture(manifestPath, root);
   if (loaded.manifest.server.kind !== 'http') throw new Error(`${loaded.manifest.id}: ${loaded.manifest.server.kind} lifecycle must use its protocol-owned process runner`);
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'lmmock-provider-fixture-'));
-  if(loaded.manifest.server.kind==='stdio'){
-    try { const {runProcessSuite}=await import('./process-suite.mjs');return await runProcessSuite(loaded,tempDir); }
-    finally {await fs.rm(tempDir,{recursive:true,force:true});}
-  }
   const server = startServer(path.resolve(root, binary), loaded, tempDir);
   try {
     let ready;

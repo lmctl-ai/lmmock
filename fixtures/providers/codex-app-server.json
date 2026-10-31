@@ -96,11 +96,9 @@
       "kind": "usage",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "success",
@@ -128,11 +126,9 @@
       "kind": "model",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "success",
@@ -160,11 +156,9 @@
       "kind": "success",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "success",
@@ -192,11 +186,9 @@
       "kind": "success",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "success",
@@ -224,11 +216,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "app-error",
@@ -250,11 +240,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "rpc-error",
@@ -276,11 +264,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "wrong-turn-id",
@@ -305,11 +291,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "missing-terminal",
@@ -334,11 +318,9 @@
       "kind": "stream",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "foreign-event",
@@ -366,11 +348,9 @@
       "kind": "usage",
       "request": {
         "kind": "process",
-        "executable": "codex",
+        "executable": "node",
         "argv": [
-          "app-server",
-          "--listen",
-          "stdio://"
+          "tests/providers/codex/manifest.mjs"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "malformed-usage",

@@ -1,6 +1,6 @@
 {
   "profile": "opencode",
-  "model": "fixture-opencode-configured-provider-model",
+  "model": "fixture-provider/fixture-configured-provider-model",
   "initial_model": "fixture-default",
   "session": "11111111-2222-4333-8444-555555555555",
   "argv": [
@@ -10,7 +10,7 @@
     {
       "method": "session/set_config_option",
       "key": "value",
-      "value": "fixture-opencode-configured-provider-model",
+      "value": "fixture-provider/fixture-configured-provider-model",
       "configId": "model"
     },
     {

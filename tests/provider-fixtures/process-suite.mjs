@@ -1,9 +1,8 @@
 // Process manifests own their stdio peers; never start an HTTP listener for them.
 import path from 'node:path';
 import fs from 'node:fs';
-import {executeProcess,checkExpectation} from './run.mjs';
-export async function runProcessSuite(loaded,tempDir){
- const {manifest,root}=loaded;const vars={repo_root:root,tmpdir:tempDir,base_url:'',lmmock_url:'',server_url_env:''};let passed=0;const failures=[];
+export async function runProcessSuite(loaded,tempDir,{executeProcess,checkExpectation}){
+ const {manifest,root}=loaded;if(manifest.server.kind!=='stdio')throw Error('owned process suite requires stdio manifest');const vars={repo_root:root,tmpdir:tempDir,base_url:'',lmmock_url:'',server_url_env:''};let passed=0;const failures=[];
  for(const testCase of manifest.cases){
   if(testCase.request.kind!=='process')throw Error('stdio manifest requires process cases');
   try{

@@ -21,7 +21,7 @@
   },
   "models": [
     {
-      "id": "fixture-hermes-deepseek",
+      "id": "deepseek:fixture-chat",
       "family": "deepseek",
       "capabilities": [
         "chat",
@@ -31,7 +31,7 @@
       "price_record": null
     },
     {
-      "id": "fixture-hermes-nous",
+      "id": "nous:fixture-chat",
       "family": "nous",
       "capabilities": [
         "chat",
@@ -96,7 +96,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_contains": "pong",
-        "model": "fixture-hermes-deepseek",
+        "model": "deepseek:fixture-chat",
         "json": {
           "usage.source": null,
           "usage.inputUncached": null,
@@ -238,6 +238,25 @@
       "expect": {
         "exit_code": 0,
         "error_class": "model_not_offered"
+      }
+    },
+    {
+      "id": "hermes-mode-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "hermes-mode-error"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/hermes-mode-error.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "auth_required"
       }
     }
   ],

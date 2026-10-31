@@ -10,12 +10,12 @@
     "enabled": true
   },
   "opencode": {
-    "model": "fixture-opencode-configured-provider-model",
+    "model": "fixture-provider/fixture-configured-provider-model",
     "usage_reason": "native_record_missing",
     "enabled": true
   },
   "hermes": {
-    "model": "fixture-hermes-deepseek",
+    "model": "deepseek:fixture-chat",
     "usage_reason": "session_totals_only",
     "enabled": true
   },
@@ -25,7 +25,7 @@
     "enabled": false
   },
   "miniplayer": {
-    "model": "fixture-miniplayer-anthropic",
+    "model": "anthropic/fixture-chat",
     "usage_reason": "native_record_missing",
     "enabled": true
   }

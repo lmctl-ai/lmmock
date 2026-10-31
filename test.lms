@@ -27,6 +27,9 @@ step(["node", "tests/acp-profiles/controls.mjs"]);
 step(["node", "tests/acp-profiles/cancel-client.mjs"]);
 
 step(["build/lmmock" + ext, "exec", "--lmcode", "build/llm.dslb", "--config", "examples/llm-config.json", "--", path_join(Directory, "build/lmmock" + ext), "check", "--suite", "examples/llm-client.json"]);
+step(["go", "build", "-o", "build/codex-fixture" + ext, "./tests/providers/codex/fakecli"]);
+step(["node", "tests/acp-profiles/run.mjs"]);
+step(["node", "tests/providers/codex/manifest-run.mjs"]);
 step(["node", "tests/provider-fixtures/contract.test.mjs", "build/lmmock" + ext]);
 step(["build/lmmock" + ext, "exec", "--lmcode", "build/copilot.dslb", "--config", "examples/copilot-config.json", "--", path_join(Directory, "build/lmmock" + ext), "check", "--suite", "examples/copilot-client.json"]);
 step(["node", "tests/protocols.mjs", "build/lmmock" + ext]);
