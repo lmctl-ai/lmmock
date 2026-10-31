@@ -151,7 +151,7 @@
           "subtype": "error_during_execution",
           "is_error": true,
           "errors": [
-            "Authentication failed. Please run /login"
+            "Invalid API key (synthetic fixture); login required"
           ],
           "session_id": "${SESSION}"
         }
@@ -491,7 +491,7 @@
     },
     "process-error": {
       "events": [],
-      "stderr": "Authentication failed. Please run /login"
+      "stderr": "Invalid API key (synthetic fixture); login required"
     }
   },
   "usage": {
@@ -517,5 +517,6 @@
   "stores": {
     "claude": ".claude/projects/fixture",
     "qwen": ".qwen/projects/fixture/chats"
-  }
+  },
+  "version": "1.0.0 (fixture CLI)"
 }

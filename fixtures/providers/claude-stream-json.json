@@ -9,7 +9,7 @@
   "source": {
     "kind": "synthetic",
     "reference": "lmctl-src/src/providers/transports/stream-json.ts; parsers/stream-json.ts; adapters/claude-adapter.ts",
-    "version": "npm @lmctl-ai/lmctl 0.2.448; read-only mono 584fee2a",
+    "version": "npm @lmctl-ai/lmctl 0.2.448; read-only mono 8e334dda",
     "retrieved": "2026-10-31",
     "note": "Local fake CLI only. Same-identity terminals are deduplicated; malformed usage is not a transport error in this pinned client. No vendor capture or availability claim."
   },
@@ -101,14 +101,14 @@
           "stream-json",
           "--input-format",
           "stream-json",
+          "--verbose",
           "--resume",
           "${SESSION}",
           "--model",
           "${MODEL}",
-          "--verbose",
           "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -145,14 +145,14 @@
           "stream-json",
           "--input-format",
           "stream-json",
+          "--verbose",
           "--resume",
           "${SESSION}",
           "--model",
           "${MODEL}",
-          "--verbose",
           "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -187,14 +187,14 @@
           "stream-json",
           "--input-format",
           "stream-json",
+          "--verbose",
           "--resume",
           "${SESSION}",
           "--model",
           "${MODEL}",
-          "--verbose",
           "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -226,14 +226,14 @@
           "stream-json",
           "--input-format",
           "stream-json",
+          "--verbose",
           "--resume",
           "${SESSION}",
           "--model",
           "${MODEL}",
-          "--verbose",
           "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -273,14 +273,14 @@
           "stream-json",
           "--input-format",
           "stream-json",
+          "--verbose",
           "--resume",
           "${SESSION}",
           "--model",
           "${MODEL}",
-          "--verbose",
           "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -314,14 +314,14 @@
           "stream-json",
           "--input-format",
           "stream-json",
+          "--verbose",
           "--resume",
           "${SESSION}",
           "--model",
           "${MODEL}",
-          "--verbose",
           "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -359,14 +359,14 @@
           "stream-json",
           "--input-format",
           "stream-json",
+          "--verbose",
           "--resume",
           "${SESSION}",
           "--model",
           "${MODEL}",
-          "--verbose",
           "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -396,10 +396,20 @@
         "kind": "process",
         "executable": "claude",
         "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--verbose",
+          "--resume",
+          "${SESSION}",
           "--model",
-          "claude-haiku-4-5-20251001"
+          "claude-haiku-4-5-20251001",
+          "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -418,10 +428,20 @@
         "kind": "process",
         "executable": "claude",
         "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--verbose",
+          "--resume",
+          "${SESSION}",
           "--model",
-          "claude-sonnet-4-5"
+          "claude-sonnet-4-5",
+          "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -440,10 +460,20 @@
         "kind": "process",
         "executable": "claude",
         "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--verbose",
+          "--resume",
+          "${SESSION}",
           "--model",
-          "claude-sonnet-4-5-20250929"
+          "claude-sonnet-4-5-20250929",
+          "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -462,10 +492,20 @@
         "kind": "process",
         "executable": "claude",
         "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--verbose",
+          "--resume",
+          "${SESSION}",
           "--model",
-          "claude-opus-4-1"
+          "claude-opus-4-1",
+          "--dangerously-skip-permissions"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,

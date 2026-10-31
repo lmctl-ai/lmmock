@@ -9,6 +9,7 @@ set_env("CGO_ENABLED", "0");
 step(["go", "mod", "verify"]);
 step(["bash", "scripts/compile-examples.sh"]);
 step(["bash", "scripts/compile-stdio.sh"]);
+step(["bash", "scripts/compile-streamjson.sh"]);
 step(["node", "scripts/fixtures.mjs"]);
 step(["bash", "scripts/compile-fixtures.sh"]);
 step(["go", "test", "./..."]);
@@ -41,7 +42,10 @@ step(["node", "tests/provider-fixtures/run.mjs", "fixtures/providers/openai-chat
 step(["node", "tests/provider-fixtures/run.mjs", "fixtures/providers/openai-responses-native.json", "build/lmmock" + ext]);
 
 # Provider fixture contract runner
-step(["node", "tests/provider-fixtures/contract.test.mjs", "build/lmmock" + ext]);
 
 # Anthropic Messages, Gemini content, Ollama NDJSON and Miniplayer compatibility
 step(["node", "tests/provider-compat/run.mjs", "build/lmmock" + ext]);
+# Stream-json policies run as native fake CLIs, not HTTP handlers.
+step(["node", "tests/streamjson/process.mjs", "build/lmmock" + ext]);
+step(["node", "tests/streamjson/run.mjs", "build/lmmock" + ext]);
+step(["node", "tests/streamjson/controls.mjs", "build/lmmock" + ext]);

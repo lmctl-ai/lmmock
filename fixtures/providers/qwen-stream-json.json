@@ -9,7 +9,7 @@
   "source": {
     "kind": "synthetic",
     "reference": "lmctl-src/src/providers/transports/stream-json.ts; parsers/stream-json.ts; adapters/qwen-adapter.ts",
-    "version": "npm @lmctl-ai/lmctl 0.2.448; read-only mono 584fee2a",
+    "version": "npm @lmctl-ai/lmctl 0.2.448; read-only mono 8e334dda",
     "retrieved": "2026-10-31",
     "note": "Local fake CLI only. Same-identity terminals are deduplicated; malformed usage is not a transport error in this pinned client. No vendor capture or availability claim."
   },
@@ -78,7 +78,7 @@
           "--approval-mode",
           "yolo"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -118,7 +118,7 @@
           "--approval-mode",
           "yolo"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -162,7 +162,7 @@
           "--approval-mode",
           "yolo"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -203,7 +203,7 @@
           "--approval-mode",
           "yolo"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -246,7 +246,7 @@
           "--approval-mode",
           "yolo"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -286,7 +286,7 @@
           "--approval-mode",
           "yolo"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -329,7 +329,7 @@
           "--approval-mode",
           "yolo"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
@@ -361,10 +361,20 @@
         "kind": "process",
         "executable": "qwen",
         "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
           "--model",
-          "qwen3-coder-flash"
+          "qwen3-coder-flash",
+          "--approval-mode",
+          "yolo"
         ],
-        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"--- new prompt (from operator) ---\\nping\"}}\n"
       },
       "expect": {
         "exit_code": 0,
