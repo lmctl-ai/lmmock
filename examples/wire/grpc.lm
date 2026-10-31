@@ -1,0 +1,28 @@
+@unary
+fn unary(s: Session) -> void implements GRPCHandler {
+  if (s.recv()) { s.send(s.body()); }
+}
+@server
+fn server(s: Session) -> void implements GRPCHandler {
+  if (s.recv()) { s.send("{\"text\":\"first\"}"); s.send("{\"text\":\"last\"}"); }
+}
+@client
+fn client(s: Session) -> void implements GRPCHandler {
+  let collected = "";
+  while (s.recv()) { collected = collected + json_parse(s.body()).get("text").as_string(); }
+  s.send("{\"text\":" + json_quote(collected) + "}");
+}
+@bidi
+fn bidi(s: Session) -> void implements GRPCHandler {
+  if (!s.recv() || json_parse(s.body()).get("text").as_string() != "hello") { s.fail(9,"expected hello"); }
+  s.send("{\"text\":\"ready\"}");
+  if (!s.recv() || json_parse(s.body()).get("text").as_string() != "go") { s.fail(9,"expected go"); }
+  s.send("{\"text\":\"done\"}");
+}
+@bad
+fn bad(s: Session) -> void implements GRPCHandler { s.send("{\"notInDescriptor\":1}"); }
+bind("/wiretest.Echo/Unary","unary");
+bind("/wiretest.Echo/ServerStream","server");
+bind("/wiretest.Echo/ClientStream","client");
+bind("/wiretest.Echo/Bidi","bidi");
+bind("/wiretest.Echo/BadReply","bad");

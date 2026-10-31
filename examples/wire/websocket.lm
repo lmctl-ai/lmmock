@@ -1,0 +1,10 @@
+@chat
+fn chat(s: Session) -> void implements WebSocketHandler {
+  if (!s.recv() || s.frame() != "text" || s.body() != "hello") {
+    s.fail(1008, "expected hello");
+  }
+  s.send("ready");
+  if (!s.recv() || s.body() != "go") { s.fail(1008, "expected go"); }
+  s.send("done");
+}
+bind("/chat", "chat");
