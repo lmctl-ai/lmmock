@@ -18,3 +18,7 @@ and reuses its executeProcess/checkExpectation helpers. The shared HTTP runner
 retains its explicit HTTP ownership boundary. The shared process-suite resolves the declared node harness to the actual Node
 executable after checking its real path is under tests/. No bare provider command
 is launched by the manifest runner. Existing HTTP readiness remains unchanged.
+
+The cross-platform cancellation rendezvous observes an owned loopback byte stream
+teed from the native fake. Filesystem append hints were unreliable on macOS/Windows.
+The observer is test-only, refuses non-loopback addresses and adds no timing policy.
