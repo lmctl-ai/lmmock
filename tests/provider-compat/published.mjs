@@ -16,6 +16,14 @@ const original = JSON.parse(fs.readFileSync(config, 'utf8'));
 const home = fs.mkdtempSync(path.join(os.tmpdir(), `lmmock-${dialect}-lmctl-`));
 const quote = s => "'" + s.replaceAll("'", "'\\''") + "'";
 
+function runLmscript(script, env, cwd) {
+  return spawnSync('bash', ['-c', '"$LMSCRIPT_BIN" --no-preflight "$1"', 'run', script], {
+    env: { ...env, LMSCRIPT_BIN: process.env.LMSCRIPT_BIN || 'lmscript' },
+    cwd,
+    encoding: 'utf8'
+  });
+}
+
 try {
   const bin = path.join(home, 'bin');
   fs.mkdirSync(bin);
@@ -61,7 +69,7 @@ try {
         const script = path.join(home, 'case.lms');
         fs.writeFileSync(script, `r = lm_agent({provider:"miniplayer",model:${JSON.stringify(modelId)}}, "ping"); println(json_stringify(r));\n`);
 
-        const r = spawnSync(process.env.LMSCRIPT_BIN || 'lmscript', ['--no-preflight', script], {env, cwd: home, encoding: 'utf8'});
+        const r = runLmscript(script, env, home);
         assert.equal(r.status, 0, `lmscript failed: ${r.stdout}\n${r.stderr}`);
         const result = JSON.parse(r.stdout.trim().split('\n').at(-1));
 
@@ -123,7 +131,7 @@ try {
       const script = path.join(home, 'case.lms');
       fs.writeFileSync(script, `r = lm_agent({provider:"miniplayer",model:${JSON.stringify(modelId)}}, "ping"); println(json_stringify(r));\n`);
 
-      const r = spawnSync(process.env.LMSCRIPT_BIN || 'lmscript', ['--no-preflight', script], {env, cwd: home, encoding: 'utf8'});
+      const r = runLmscript(script, env, home);
       assert.equal(r.status, 0, `lmscript failed: ${r.stdout}\n${r.stderr}`);
       const result = JSON.parse(r.stdout.trim().split('\n').at(-1));
 
@@ -168,7 +176,7 @@ try {
       const script = path.join(home, 'case.lms');
       fs.writeFileSync(script, `r = lm_agent({provider:"miniplayer",model:${JSON.stringify(modelId)}}, "ping"); println(json_stringify(r));\n`);
 
-      const r = spawnSync(process.env.LMSCRIPT_BIN || 'lmscript', ['--no-preflight', script], {env, cwd: home, encoding: 'utf8'});
+      const r = runLmscript(script, env, home);
       assert.equal(r.status, 0, `lmscript failed: ${r.stdout}\n${r.stderr}`);
       const result = JSON.parse(r.stdout.trim().split('\n').at(-1));
 
