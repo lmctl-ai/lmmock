@@ -25,6 +25,7 @@ type Options struct {
 	Config          []byte
 }
 type Engine struct {
+	deferred map[string]json.RawMessage
 	stopped  bool
 	opts     Options
 	wire     *Wire
@@ -38,6 +39,7 @@ type Engine struct {
 	binding  bool
 }
 type exchange struct {
+	deferred  bool
 	forward   string
 	e         *Engine
 	raw       []byte
@@ -56,6 +58,10 @@ func New(code []byte, options Options, wire *Wire) (*Engine, error) {
 	bindings := map[string]string{}
 	r := lmcode.NewRegistry()
 	e.registry = r
+	e.deferred = map[string]json.RawMessage{}
+	if err := e.registerDeferred(); err != nil {
+		return nil, err
+	}
 	must := func(err error) {
 		if err != nil {
 			panic(err)
@@ -175,7 +181,7 @@ func (e *Engine) write(v any) error {
 	return e.wire.Write(b)
 }
 func (x *exchange) respond(key string, value any) error {
-	if len(x.id) == 0 || x.responded {
+	if len(x.id) == 0 || x.responded || x.deferred {
 		return errors.New("cannot reply twice or reply to a notification")
 	}
 	if err := x.e.write(map[string]any{"jsonrpc": "2.0", "id": x.id, key: value}); err != nil {
@@ -208,7 +214,7 @@ func (e *Engine) dispatch(x *exchange) error {
 			target = x.forward
 			continue
 		}
-		if len(x.id) > 0 && !x.responded {
+		if len(x.id) > 0 && !x.responded && !x.deferred {
 			return errors.New("handler did not reply")
 		}
 		return nil
@@ -227,14 +233,14 @@ func (e *Engine) Start(params any) error {
 func (e *Engine) Run() error {
 	for {
 		if e.stopped {
-			if len(e.pending) > 0 {
+			if len(e.pending) > 0 || len(e.deferred) > 0 {
 				return errors.New("closed with pending requests")
 			}
 			return nil
 		}
 		raw, err := e.wire.Read()
 		if err == io.EOF {
-			if len(e.pending) > 0 {
+			if len(e.pending) > 0 || len(e.deferred) > 0 {
 				return errors.New("EOF with pending client request")
 			}
 			return nil
@@ -255,6 +261,13 @@ func (e *Engine) Run() error {
 		id := m["id"]
 		if len(id) > 0 && string(id) != "null" && id[0] != '"' && (id[0] < '0' || id[0] > '9') && id[0] != '-' {
 			return errors.New("invalid RPC id")
+		}
+		if len(id) > 0 {
+			if _, ok := e.deferred[string(id)]; ok {
+				if _, isRequest := m["method"]; isRequest {
+					return errors.New("inbound ID is already deferred")
+				}
+			}
 		}
 		var method string
 		if v, ok := m["method"]; ok {
