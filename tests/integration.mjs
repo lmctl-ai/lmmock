@@ -41,15 +41,15 @@ async function closed(url){const u=new URL(url);await new Promise((resolve,rejec
 try {
  assert.match(run(['--version']).stdout,/^lmmock /);
  assert.deepEqual(JSON.parse(run(['schema']).stdout),JSON.parse(fs.readFileSync('examples/schema.json')));
- assert.notEqual(run(['serve','--dsl','build/api.dslb','--listen','0.0.0.0:0']).status,0);
- assert.notEqual(run(['serve','--dsl','build/api.dslb','--upstream','http://user:pass@localhost']).status,0);
+ assert.notEqual(run(['serve','--lmcode','build/api.dslb','--listen','0.0.0.0:0']).status,0);
+ assert.notEqual(run(['serve','--lmcode','build/api.dslb','--upstream','http://user:pass@localhost']).status,0);
  // Async child keeps this in-process upstream responsive on all platforms.
  const seen=[];
  const upstream=http.createServer((req,res)=>{seen.push(req.url);res.writeHead(418,{'X-Upstream':'yes'});res.end('upstream\x00body');});
  await new Promise(resolve=>upstream.listen(0,'127.0.0.1',resolve));
  try {
   const audit=path.join(scratch,'proxy-audit.jsonl');
-  const child=spawn(binary,['exec','--dsl','build/api.dslb','--upstream',`http://127.0.0.1:${upstream.address().port}/base/`,'--upstream-read-only','--upstream-timeout','5s','--audit-log',audit,'--',process.execPath,import.meta.filename,binary,'client','proxy'],{env:{...process.env,CLIENT_URL_FILE:path.join(scratch,'proxy-url')},stdio:['ignore','pipe','pipe']});
+  const child=spawn(binary,['exec','--lmcode','build/api.dslb','--upstream',`http://127.0.0.1:${upstream.address().port}/base/`,'--upstream-read-only','--upstream-timeout','5s','--audit-log',audit,'--',process.execPath,import.meta.filename,binary,'client','proxy'],{env:{...process.env,CLIENT_URL_FILE:path.join(scratch,'proxy-url')},stdio:['ignore','pipe','pipe']});
   let output='';child.stdout.on('data',b=>{output+=b});child.stderr.on('data',b=>{output+=b});
   const timer=setTimeout(()=>child.kill('SIGKILL'),15000);
   try {assert.equal(await new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',resolve)}),0,output);} finally {clearTimeout(timer);}
@@ -61,7 +61,7 @@ try {
  for(const mode of ['api','faults','stateful','fail']) {
   const urlFile=path.join(scratch,'url');const ready=path.join(scratch,'ready.json');
   const source=mode==='fail'?'api':mode;
-  const r=run(['exec','--dsl',`build/${source}.dslb`,'--ready-file',ready,'--',process.execPath,import.meta.filename,binary,'client',mode],{CLIENT_URL_FILE:urlFile});
+  const r=run(['exec','--lmcode',`build/${source}.dslb`,'--ready-file',ready,'--',process.execPath,import.meta.filename,binary,'client',mode],{CLIENT_URL_FILE:urlFile});
   assert.equal(r.status,mode==='fail'?7:0,r.stdout+r.stderr);assert.equal(fs.existsSync(ready),false);await closed(fs.readFileSync(urlFile,'utf8'));process.stdout.write(r.stdout);
  }
  // Source mode and paths containing spaces exercise npm shim invocation on Windows too.
@@ -70,7 +70,7 @@ try {
  // Standalone readiness and graceful signal handling (Windows uses exec mode above).
  if(process.platform!=='win32') {
   const childURL=path.join(scratch,'interrupted-url');
-  const wrapper=spawn(binary,['exec','--dsl','build/api.dslb','--',process.execPath,'-e',"require('fs').writeFileSync(process.env.CLIENT_URL_FILE,process.env.LMMOCK_URL);setInterval(()=>{},1000)"],{env:{...process.env,CLIENT_URL_FILE:childURL},stdio:'ignore'});
+  const wrapper=spawn(binary,['exec','--lmcode','build/api.dslb','--',process.execPath,'-e',"require('fs').writeFileSync(process.env.CLIENT_URL_FILE,process.env.LMMOCK_URL);setInterval(()=>{},1000)"],{env:{...process.env,CLIENT_URL_FILE:childURL},stdio:'ignore'});
   const stopped=new Promise(resolve=>wrapper.on('exit',code=>resolve(code)));
   try {
    for(let i=0;i<100&&!fs.existsSync(childURL);i++)await new Promise(r=>setTimeout(r,50));
@@ -79,7 +79,7 @@ try {
    await closed(fs.readFileSync(childURL,'utf8'));
   } finally {if(wrapper.exitCode===null)wrapper.kill('SIGKILL');}
   const ready=path.join(scratch,'serve-ready.json');
-  const p=spawn(binary,['serve','--dsl','build/api.dslb','--ready-file',ready],{stdio:['ignore','pipe','pipe']});
+  const p=spawn(binary,['serve','--lmcode','build/api.dslb','--ready-file',ready],{stdio:['ignore','pipe','pipe']});
   const exited=new Promise(resolve=>p.on('exit',(code,signal)=>resolve({code,signal})));
   try {
    for(let i=0;i<100&&!fs.existsSync(ready);i++)await new Promise(r=>setTimeout(r,50));

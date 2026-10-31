@@ -45,7 +45,7 @@ func run(args []string) int {
 			return 0
 		}
 	}
-	if len(args) == 2 && args[0] == "--dsl-schema" && args[1] == "--json" {
+	if len(args) == 2 && args[0] == "--lmcode-schema" && args[1] == "--json" {
 		_, _ = os.Stdout.Write(mock.Schema)
 		return 0
 	}
@@ -56,7 +56,7 @@ func run(args []string) int {
 	mode := args[0]
 	f := flag.NewFlagSet(mode, flag.ContinueOnError)
 	script := f.String("script", "", "trusted .lms source (requires lmscript)")
-	dsl := f.String("dsl", "", "precompiled .dslb file")
+	dsl := f.String("lmcode", "", "precompiled .dslb file")
 	listen := f.String("listen", "127.0.0.1:0", "loopback IP:port; 0 chooses a free port")
 	config := f.String("config", "", "trusted JSON configuration file, read by config()")
 	ready := f.String("ready-file", "", "write readiness JSON and remove it on exit")
@@ -69,7 +69,7 @@ func run(args []string) int {
 	}
 	command := f.Args()
 	if (*script == "") == (*dsl == "") || (mode == "exec" && len(command) == 0) || (mode == "serve" && len(command) > 0) {
-		fmt.Fprintln(os.Stderr, "specify exactly one of --script or --dsl; exec requires -- COMMAND")
+		fmt.Fprintln(os.Stderr, "specify exactly one of --script or --lmcode; exec requires -- COMMAND")
 		return 2
 	}
 	if *script != "" {
@@ -183,7 +183,7 @@ func run(args []string) int {
 func compilerCommand(ctx context.Context, name string, args ...string) (*exec.Cmd, error) {
 	path, err := exec.LookPath(name)
 	if err != nil {
-		return nil, fmt.Errorf("compiler %s: install npm -g @lmctl-ai/lmctl or use --dsl: %w", name, err)
+		return nil, fmt.Errorf("compiler %s: install npm -g @lmctl-ai/lmctl or use --lmcode: %w", name, err)
 	}
 	if runtime.GOOS == "windows" && strings.HasSuffix(strings.ToLower(path), ".cmd") {
 		data, err := os.ReadFile(path)
@@ -204,7 +204,7 @@ func usage() {
   lmmock schema > schema.json
   lmmock serve --script mock.lms [--listen 127.0.0.1:0] [--ready-file ready.json]
   lmmock exec --script mock.lms -- COMMAND [ARG...]
-  lmmock exec --dsl mock.dslb -- COMMAND [ARG...]
+  lmmock exec --lmcode mock.dslb -- COMMAND [ARG...]
   serve/exec: [--upstream http(s)://host/base/] [--upstream-timeout 2m]
               [--upstream-read-only] [--audit-log requests.jsonl]
   lmmock check --suite assertions.json [--url URL]
