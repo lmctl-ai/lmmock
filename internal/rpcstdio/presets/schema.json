@@ -150,6 +150,21 @@
             ],
             "returns": "void"
           }
+        ],
+        "defer_reply": [
+          {
+            "params": [],
+            "returns": "string"
+          }
+        ],
+        "reply_to": [
+          {
+            "params": [
+              "string",
+              "string"
+            ],
+            "returns": "void"
+          }
         ]
       }
     }

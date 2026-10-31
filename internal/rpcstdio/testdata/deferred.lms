@@ -1,0 +1,6 @@
+p = _lmcode_ schema="../presets/schema.json";
+@wait fn wait(x: RPC) -> void implements RPCHandler { x.set("pending",x.defer_reply());x.notify("ready","{}"); }
+@finish fn finish(x: RPC) -> void implements RPCHandler { x.reply_to(x.get("pending"),"{\"done\":true}"); }
+bind("wait","wait");bind("finish","finish");
+end _lmcode_
+savedsl(p,ARGV[0]);
