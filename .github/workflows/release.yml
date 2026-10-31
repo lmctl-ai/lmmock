@@ -37,9 +37,9 @@ jobs:
         with:
           go-version: '1.26'
           cache: false
-      - name: Install compiler
+      - name: Install compiler and tools
         run: |
-          npm install -g @lmctl-ai/lmctl
+          npm install -g @lmctl-ai/lmctl @github/copilot
           npm ci --prefix tests/vercel
       - name: Build and test
         run: |
@@ -47,6 +47,9 @@ jobs:
           [[ "$(build/lmmock --version | tr -d '\r')" == "lmmock $SAMPLE_VERSION" ]]
           mkdir -p dist
           cp 'build/lmmock${{ matrix.ext }}' 'dist/lmmock-${{ matrix.label }}${{ matrix.ext }}'
+      - name: GitHub Copilot CLI integration test
+        run: |
+          build/lmmock${{ matrix.ext }} exec --lmcode build/copilot.dslb --config examples/copilot-config.json -- node tests/copilot.mjs
       - name: Race detector
         if: matrix.label == 'linux-x64'
         env:

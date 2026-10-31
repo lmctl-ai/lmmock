@@ -382,3 +382,13 @@ uses an isolated `@lmctl-ai/lmctl@0.2.426` compiler. Compile the lmmock server w
 the current compiler first; do not replace it with the v5 compiler. Linux CI
 runs this compatibility check against downloaded, checksum-verified lmcurl
 binaries. macOS/Windows run the native lmmock client and protocol suites.
+
+### GitHub Copilot CLI Integration
+
+[examples/copilot.lms](examples/copilot.lms) provides a full mock fixture for `@github/copilot` CLI, supporting OpenAI completions (`/v1/chat/completions`), OpenAI responses (`/v1/responses`, `/responses`), Anthropic messages (`/v1/messages`), models catalog (`/models`), auto routing (`/auto`), platform telemetry, and tool execution round-trips:
+
+```sh
+# Run Copilot CLI against lmmock
+lmmock exec --dsl build/copilot.dslb --config examples/copilot-config.json -- \
+  node tests/copilot.mjs
+```
