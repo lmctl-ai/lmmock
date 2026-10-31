@@ -1,0 +1,47 @@
+# Exact captured-request replay. HTTP policy is an annotated lmcode Handler.
+p = _lmcode_ schema="schema.json";
+@scenario
+fn replay(x: Exchange) -> void implements Handler {
+  let cfg = json_parse(config());
+  let rules = cfg.get("rules");
+  let uri = json_parse(x.request_json()).get("url").as_string();
+  let group = "";
+  let occurrence = 0;
+  let hit = -1;
+  for (i in range(0, rules.len())) {
+    let rule = rules.at(i);
+    let w = rule.get("when");
+    let ok = w.get("method").as_string() == x.method() && w.get("path").as_string() == uri && str_base64_decode(w.get("body_b64").as_string()) == x.body();
+    let auth = w.get("auth").as_string();
+    let h = w.get("auth_header").as_string();
+    if (h == "Authorization") { auth = "Bearer " + auth; }
+    if (h != "") { ok = ok && x.header(h) == auth; }
+    else { ok = ok && x.header("Authorization") == "" && x.header("X-Api-Key") == "" && x.header("Cookie") == ""; }
+    if (ok) {
+      if (group == "") { group = rule.get("group").as_string(); occurrence = x.increment("scenario:" + group); }
+      if (occurrence == rule.get("nth").as_int()) { hit = i; break; }
+    }
+  }
+  if (hit < 0) { x.status(501); x.json("{\"error\":\"lmmock scenario: no rule matched\"}"); }
+  else {
+    let r = rules.at(hit).get("reply");
+    x.status(r.get("status").as_int());
+    let headers = r.get("headers");
+    let keys = headers.keys();
+    for (i in range(0, keys.len())) { x.set_header(keys.at(i), headers.get(keys.at(i)).as_string()); }
+    if (r.has("events")) {
+      let events = r.get("events");
+      for (i in range(0, events.len())) { x.stream_event(events.at(i).as_string()); }
+    } else if (r.has("body_b64")) { x.send(str_base64_decode(r.get("body_b64").as_string())); }
+    else { x.send(""); }
+  }
+}
+route("GET", "/{rest...}", "scenario");
+route("POST", "/{rest...}", "scenario");
+route("PUT", "/{rest...}", "scenario");
+route("PATCH", "/{rest...}", "scenario");
+route("DELETE", "/{rest...}", "scenario");
+route("HEAD", "/{rest...}", "scenario");
+route("OPTIONS", "/{rest...}", "scenario");
+end _lmcode_
+savedsl(p, ARGV[0]);
