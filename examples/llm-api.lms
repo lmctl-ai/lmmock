@@ -452,11 +452,14 @@ fn render_response(name: string, model: string, item: Json, reason: string) -> s
  return json_parse(template_render(response_template(name),context)).to_json();
 }
 
+# Every LLM request is recorded: "last" is the request for /__inspect, "count" is how many requests the mock has served
+# (a retry scenario can then prove the 429 attempt really happened). Both are plain state strings.
+fn record(x: Exchange) -> void { x.set("last",x.request_json()); x.set("count",str(x.increment("llm-requests"))); }
 fn field(j: Json, key: string) -> string { let value = ""; if (j.has(key)) { value = j.get(key).as_string(); } return value; }
 @chat
 fn completion(x: Exchange) -> void implements Handler {
  while (true) {
-  x.set("last",x.request_json());
+  record(x);
   let c = json_parse(config()); let mode = field(c,"mode"); let auth = x.header("Authorization");
   if (mode == "unauthorized" || (c.has("apiKey") && !secure_equal(auth,"Bearer " + field(c,"apiKey")))) { x.status(401); x.json(json_with(fixture("chat_auth_error"),"/error/message",json_text("Invalid API key")).to_json()); break; }
   let retry = false; if (mode == "retry") { retry = x.increment("llm-retry") == 1; }
@@ -498,11 +501,13 @@ fn completion(x: Exchange) -> void implements Handler {
   break;
  }
 }
+@request_count
+fn request_count(x: Exchange) -> void implements Handler { let n = x.get("count"); if (n == "") { n = "0"; } x.json(json_with(fixture("empty_object"),"/count",json_parse(n)).to_json()); }
 @inspect
 fn inspect(x: Exchange) -> void implements Handler { let last = x.get("last"); if (last == "") { last = fixture("empty_object").to_json(); } x.json(last); }
 route("POST","/chat/completions","chat");
 route("POST","/api/v1/chat/completions","chat");
-route("POST","/v1/chat/completions","chat");route("GET","/__inspect","inspect");
+route("POST","/v1/chat/completions","chat");route("GET","/__inspect","inspect");route("GET","/__requests","request_count");
 
 
 # Shared policy for models, embeddings and Responses.
@@ -526,7 +531,7 @@ fn models(x: Exchange) -> void implements Handler {
 }
 @embeddings
 fn embeddings(x: Exchange) -> void implements Handler {
- x.set("last",x.request_json());
+ record(x);
  if (api_allowed(x)) {
   let b = json_parse(x.body()); let count = 1;
   if (str_starts_with(b.get("input").to_json(),"[")) { count = b.get("input").len(); }
@@ -542,7 +547,7 @@ fn embeddings(x: Exchange) -> void implements Handler {
 fn event(kind: string, body: string) -> string { return "event: " + kind + "\ndata: " + body + "\n\n"; }
 @responses
 fn responses(x: Exchange) -> void implements Handler {
- x.set("last",x.request_json());
+ record(x);
  if (api_allowed(x)) {
   let b = json_parse(x.body()); let c = json_parse(config());
   let model = field(b,"model"); let content = "pong";
@@ -632,7 +637,7 @@ fn native_allowed(x: Exchange, provider: string) -> bool {
 }
 @anthropic_messages
 fn anthropic_messages(x: Exchange) -> void implements Handler {
- x.set("last",x.request_json());
+ record(x);
  if (native_allowed(x,"anthropic")) {
   let b = json_parse(x.body()); let c = json_parse(config()); let text = "pong";
   if (c.has("text")) { text = field(c,"text"); }
@@ -686,7 +691,7 @@ fn anthropic_messages(x: Exchange) -> void implements Handler {
 }
 @gemini_content
 fn gemini_content(x: Exchange) -> void implements Handler {
- x.set("last",x.request_json());
+ record(x);
  if (native_allowed(x,"gemini")) {
   let operation = x.param("operation");
   if (str_ends_with(operation,":embedContent")) {

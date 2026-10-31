@@ -26,6 +26,7 @@ and immutable structured updates. See [runtime JSON data flow](runtime-json.md).
 | POST /v1beta/models/{model}:embedContent | Gemini single embedding |
 | POST /v1beta/models/{model}:batchEmbedContents | Gemini batch embeddings |
 | GET /__inspect | Last request for assertions; synthetic test credentials only |
+| GET /__requests | `{"count":N}`: LLM requests served so far (chat, responses, embeddings, Anthropic, Gemini); lets a client prove that a retry-mode 429 attempt happened |
 
 Unprefixed /chat/completions, /responses, /embeddings and /models also work.
 Chat additionally accepts /api/v1/chat/completions.
