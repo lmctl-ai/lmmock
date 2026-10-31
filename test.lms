@@ -31,6 +31,7 @@ step(["node", "tests/stdio/process.mjs", "build/lmmock" + ext]);
 step(["node", "tests/acp-profiles/controls.mjs"]);
 step(["node", "tests/acp-profiles/cancel-client.mjs"]);
 
+step(["node", "tests/providers/lane-e/workspace.test.mjs"]);
 step(["node", "tests/providers/lane-e/run.mjs", "build/lmmock" + ext]);
 step(["node", "tests/providers/lane-e/controls.mjs", "build/lmmock" + ext]);
 
