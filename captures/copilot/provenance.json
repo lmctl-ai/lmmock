@@ -1,0 +1,12 @@
+{
+  "source": "Local stand-in capture, not traffic from GitHub or an actual Copilot CLI process",
+  "case_study": "lmctl-ai/lminspect durable-memory/04-copilot-case-study.md at 15cc4ae",
+  "case_study_client": "@github/copilot v1.0.105 (reported by the case-study author; not run here)",
+  "capture_tool": "lminspect main 15cc4ae",
+  "stand_in": "examples/copilot.lms, models/auto/platform/Responses/Anthropic/chat streams plus 401",
+  "prompts": "Synthetic hello only",
+  "credentials": "Synthetic values replaced with fixture-credential-N; raw capture not committed",
+  "flows": 12,
+  "scenario_format": "lmmock-scenario/1",
+  "flows_sha256": "d81fbf23b72f6cabda914cf53df4d05ed6872aed5746e57ccd7443ded57abcc2"
+}

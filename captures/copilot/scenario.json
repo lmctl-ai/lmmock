@@ -1,0 +1,265 @@
+{
+  "format": "lmmock-scenario/1",
+  "normalized": true,
+  "rules": [
+    {
+      "id": "r1",
+      "group": "g1",
+      "nth": 1,
+      "when": {
+        "method": "GET",
+        "path": "/models",
+        "body_b64": "",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_b64": "eyJvYmplY3QiOiJsaXN0IiwiZGF0YSI6W3siaWQiOiJncHQtNS4zLWNvZGV4IiwibmFtZSI6IkdQVC01LjMtQ29kZXgiLCJ2ZW5kb3IiOiJPcGVuQUkiLCJ2ZXJzaW9uIjoiZ3B0LTUuMy1jb2RleCIsIm9iamVjdCI6Im1vZGVsIiwiaXNfY2hhdF9kZWZhdWx0Ijp0cnVlLCJpc19jaGF0X2ZhbGxiYWNrIjp0cnVlLCJtb2RlbF9waWNrZXJfZW5hYmxlZCI6dHJ1ZSwibW9kZWxfcGlja2VyX2NhdGVnb3J5IjoicG93ZXJmdWwiLCJzdXBwb3J0ZWRfZW5kcG9pbnRzIjpbIi9yZXNwb25zZXMiLCIvY2hhdC9jb21wbGV0aW9ucyJdLCJjYXBhYmlsaXRpZXMiOnsidHlwZSI6ImNoYXQiLCJmYW1pbHkiOiJncHQtNS4zLWNvZGV4IiwidG9rZW5pemVyIjoibzIwMGtfYmFzZSIsImxpbWl0cyI6eyJtYXhfcHJvbXB0X3Rva2VucyI6MjcyMDAwLCJtYXhfb3V0cHV0X3Rva2VucyI6MTI4MDAwLCJtYXhfY29udGV4dF93aW5kb3dfdG9rZW5zIjo0MDAwMDB9LCJzdXBwb3J0cyI6eyJzdHJlYW1pbmciOnRydWUsInRvb2xfY2FsbHMiOnRydWUsInBhcmFsbGVsX3Rvb2xfY2FsbHMiOnRydWV9fX0seyJpZCI6ImdwdC00byIsIm5hbWUiOiJHUFQtNG8iLCJ2ZW5kb3IiOiJBenVyZSBPcGVuQUkiLCJ2ZXJzaW9uIjoiZ3B0LTRvIiwib2JqZWN0IjoibW9kZWwiLCJpc19jaGF0X2RlZmF1bHQiOmZhbHNlLCJpc19jaGF0X2ZhbGxiYWNrIjpmYWxzZSwibW9kZWxfcGlja2VyX2VuYWJsZWQiOnRydWUsIm1vZGVsX3BpY2tlcl9jYXRlZ29yeSI6InZlcnNhdGlsZSIsInN1cHBvcnRlZF9lbmRwb2ludHMiOlsiL3Jlc3BvbnNlcyIsIi9jaGF0L2NvbXBsZXRpb25zIl0sImNhcGFiaWxpdGllcyI6eyJ0eXBlIjoiY2hhdCIsInRva2VuaXplciI6Im8yMDBrX2Jhc2UiLCJsaW1pdHMiOnsibWF4X3Byb21wdF90b2tlbnMiOjY0MDAwLCJtYXhfb3V0cHV0X3Rva2VucyI6NDA5NiwibWF4X2NvbnRleHRfd2luZG93X3Rva2VucyI6MTI4MDAwfSwic3VwcG9ydHMiOnsic3RyZWFtaW5nIjp0cnVlLCJ0b29sX2NhbGxzIjp0cnVlLCJwYXJhbGxlbF90b29sX2NhbGxzIjp0cnVlfX19LHsiaWQiOiJjbGF1ZGUtaGFpa3UtNC41IiwibmFtZSI6IkNsYXVkZSBIYWlrdSA0LjUiLCJ2ZW5kb3IiOiJBbnRocm9waWMiLCJ2ZXJzaW9uIjoiY2xhdWRlLWhhaWt1LTQuNSIsIm9iamVjdCI6Im1vZGVsIiwiaXNfY2hhdF9kZWZhdWx0IjpmYWxzZSwiaXNfY2hhdF9mYWxsYmFjayI6ZmFsc2UsIm1vZGVsX3BpY2tlcl9lbmFibGVkIjp0cnVlLCJtb2RlbF9waWNrZXJfY2F0ZWdvcnkiOiJsaWdodHdlaWdodCIsInN1cHBvcnRlZF9lbmRwb2ludHMiOlsiL2NoYXQvY29tcGxldGlvbnMiLCIvdjEvbWVzc2FnZXMiXSwiY2FwYWJpbGl0aWVzIjp7InR5cGUiOiJjaGF0IiwidG9rZW5pemVyIjoibzIwMGtfYmFzZSIsImxpbWl0cyI6eyJtYXhfcHJvbXB0X3Rva2VucyI6MTI4MDAwLCJtYXhfb3V0cHV0X3Rva2VucyI6MzIwMDAsIm1heF9jb250ZXh0X3dpbmRvd190b2tlbnMiOjE0NDAwMH0sInN1cHBvcnRzIjp7InN0cmVhbWluZyI6dHJ1ZSwidG9vbF9jYWxscyI6dHJ1ZX19fSx7ImlkIjoibW9jay1hZ2VudCIsIm5hbWUiOiJNb2NrIEFnZW50IiwidmVuZG9yIjoibG1tb2NrIiwidmVyc2lvbiI6IjEuMCIsIm9iamVjdCI6Im1vZGVsIiwiaXNfY2hhdF9kZWZhdWx0IjpmYWxzZSwiaXNfY2hhdF9mYWxsYmFjayI6ZmFsc2UsIm1vZGVsX3BpY2tlcl9lbmFibGVkIjp0cnVlLCJzdXBwb3J0ZWRfZW5kcG9pbnRzIjpbIi9yZXNwb25zZXMiLCIvY2hhdC9jb21wbGV0aW9ucyIsIi92MS9tZXNzYWdlcyJdLCJjYXBhYmlsaXRpZXMiOnsidHlwZSI6ImNoYXQiLCJ0b2tlbml6ZXIiOiJvMjAwa19iYXNlIiwibGltaXRzIjp7Im1heF9wcm9tcHRfdG9rZW5zIjo2NDAwMCwibWF4X291dHB1dF90b2tlbnMiOjQwOTYsIm1heF9jb250ZXh0X3dpbmRvd190b2tlbnMiOjEyODAwMH0sInN1cHBvcnRzIjp7InN0cmVhbWluZyI6dHJ1ZSwidG9vbF9jYWxscyI6dHJ1ZX19fV19"
+      }
+    },
+    {
+      "id": "r2",
+      "group": "g2",
+      "nth": 1,
+      "when": {
+        "method": "GET",
+        "path": "/v1/models",
+        "body_b64": "",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_b64": "eyJvYmplY3QiOiJsaXN0IiwiZGF0YSI6W3siaWQiOiJncHQtNS4zLWNvZGV4IiwibmFtZSI6IkdQVC01LjMtQ29kZXgiLCJ2ZW5kb3IiOiJPcGVuQUkiLCJ2ZXJzaW9uIjoiZ3B0LTUuMy1jb2RleCIsIm9iamVjdCI6Im1vZGVsIiwiaXNfY2hhdF9kZWZhdWx0Ijp0cnVlLCJpc19jaGF0X2ZhbGxiYWNrIjp0cnVlLCJtb2RlbF9waWNrZXJfZW5hYmxlZCI6dHJ1ZSwibW9kZWxfcGlja2VyX2NhdGVnb3J5IjoicG93ZXJmdWwiLCJzdXBwb3J0ZWRfZW5kcG9pbnRzIjpbIi9yZXNwb25zZXMiLCIvY2hhdC9jb21wbGV0aW9ucyJdLCJjYXBhYmlsaXRpZXMiOnsidHlwZSI6ImNoYXQiLCJmYW1pbHkiOiJncHQtNS4zLWNvZGV4IiwidG9rZW5pemVyIjoibzIwMGtfYmFzZSIsImxpbWl0cyI6eyJtYXhfcHJvbXB0X3Rva2VucyI6MjcyMDAwLCJtYXhfb3V0cHV0X3Rva2VucyI6MTI4MDAwLCJtYXhfY29udGV4dF93aW5kb3dfdG9rZW5zIjo0MDAwMDB9LCJzdXBwb3J0cyI6eyJzdHJlYW1pbmciOnRydWUsInRvb2xfY2FsbHMiOnRydWUsInBhcmFsbGVsX3Rvb2xfY2FsbHMiOnRydWV9fX0seyJpZCI6ImdwdC00byIsIm5hbWUiOiJHUFQtNG8iLCJ2ZW5kb3IiOiJBenVyZSBPcGVuQUkiLCJ2ZXJzaW9uIjoiZ3B0LTRvIiwib2JqZWN0IjoibW9kZWwiLCJpc19jaGF0X2RlZmF1bHQiOmZhbHNlLCJpc19jaGF0X2ZhbGxiYWNrIjpmYWxzZSwibW9kZWxfcGlja2VyX2VuYWJsZWQiOnRydWUsIm1vZGVsX3BpY2tlcl9jYXRlZ29yeSI6InZlcnNhdGlsZSIsInN1cHBvcnRlZF9lbmRwb2ludHMiOlsiL3Jlc3BvbnNlcyIsIi9jaGF0L2NvbXBsZXRpb25zIl0sImNhcGFiaWxpdGllcyI6eyJ0eXBlIjoiY2hhdCIsInRva2VuaXplciI6Im8yMDBrX2Jhc2UiLCJsaW1pdHMiOnsibWF4X3Byb21wdF90b2tlbnMiOjY0MDAwLCJtYXhfb3V0cHV0X3Rva2VucyI6NDA5NiwibWF4X2NvbnRleHRfd2luZG93X3Rva2VucyI6MTI4MDAwfSwic3VwcG9ydHMiOnsic3RyZWFtaW5nIjp0cnVlLCJ0b29sX2NhbGxzIjp0cnVlLCJwYXJhbGxlbF90b29sX2NhbGxzIjp0cnVlfX19LHsiaWQiOiJjbGF1ZGUtaGFpa3UtNC41IiwibmFtZSI6IkNsYXVkZSBIYWlrdSA0LjUiLCJ2ZW5kb3IiOiJBbnRocm9waWMiLCJ2ZXJzaW9uIjoiY2xhdWRlLWhhaWt1LTQuNSIsIm9iamVjdCI6Im1vZGVsIiwiaXNfY2hhdF9kZWZhdWx0IjpmYWxzZSwiaXNfY2hhdF9mYWxsYmFjayI6ZmFsc2UsIm1vZGVsX3BpY2tlcl9lbmFibGVkIjp0cnVlLCJtb2RlbF9waWNrZXJfY2F0ZWdvcnkiOiJsaWdodHdlaWdodCIsInN1cHBvcnRlZF9lbmRwb2ludHMiOlsiL2NoYXQvY29tcGxldGlvbnMiLCIvdjEvbWVzc2FnZXMiXSwiY2FwYWJpbGl0aWVzIjp7InR5cGUiOiJjaGF0IiwidG9rZW5pemVyIjoibzIwMGtfYmFzZSIsImxpbWl0cyI6eyJtYXhfcHJvbXB0X3Rva2VucyI6MTI4MDAwLCJtYXhfb3V0cHV0X3Rva2VucyI6MzIwMDAsIm1heF9jb250ZXh0X3dpbmRvd190b2tlbnMiOjE0NDAwMH0sInN1cHBvcnRzIjp7InN0cmVhbWluZyI6dHJ1ZSwidG9vbF9jYWxscyI6dHJ1ZX19fSx7ImlkIjoibW9jay1hZ2VudCIsIm5hbWUiOiJNb2NrIEFnZW50IiwidmVuZG9yIjoibG1tb2NrIiwidmVyc2lvbiI6IjEuMCIsIm9iamVjdCI6Im1vZGVsIiwiaXNfY2hhdF9kZWZhdWx0IjpmYWxzZSwiaXNfY2hhdF9mYWxsYmFjayI6ZmFsc2UsIm1vZGVsX3BpY2tlcl9lbmFibGVkIjp0cnVlLCJzdXBwb3J0ZWRfZW5kcG9pbnRzIjpbIi9yZXNwb25zZXMiLCIvY2hhdC9jb21wbGV0aW9ucyIsIi92MS9tZXNzYWdlcyJdLCJjYXBhYmlsaXRpZXMiOnsidHlwZSI6ImNoYXQiLCJ0b2tlbml6ZXIiOiJvMjAwa19iYXNlIiwibGltaXRzIjp7Im1heF9wcm9tcHRfdG9rZW5zIjo2NDAwMCwibWF4X291dHB1dF90b2tlbnMiOjQwOTYsIm1heF9jb250ZXh0X3dpbmRvd190b2tlbnMiOjEyODAwMH0sInN1cHBvcnRzIjp7InN0cmVhbWluZyI6dHJ1ZSwidG9vbF9jYWxscyI6dHJ1ZX19fV19"
+      }
+    },
+    {
+      "id": "r3",
+      "group": "g3",
+      "nth": 1,
+      "when": {
+        "method": "POST",
+        "path": "/auto",
+        "body_b64": "e30=",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_b64": "eyJzZWxlY3RlZF9tb2RlbCI6eyJpZCI6ImdwdC00byIsIm5hbWUiOiJHUFQtNG8iLCJ2ZW5kb3IiOiJBenVyZSBPcGVuQUkiLCJ2ZXJzaW9uIjoiZ3B0LTRvIiwiY2FwYWJpbGl0aWVzIjp7InR5cGUiOiJjaGF0Iiwic3VwcG9ydHMiOnsic3RyZWFtaW5nIjp0cnVlLCJ0b29sX2NhbGxzIjp0cnVlfX19LCJzZWxlY3Rpb25fcmVhc29uIjoiQXV0byBzZWxlY3RlZCBHUFQtNG8gbW9kZWwifQ=="
+      }
+    },
+    {
+      "id": "r4",
+      "group": "g4",
+      "nth": 1,
+      "when": {
+        "method": "GET",
+        "path": "/copilot_internal/team_customizations",
+        "body_b64": "",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_b64": "e30="
+      }
+    },
+    {
+      "id": "r5",
+      "group": "g5",
+      "nth": 1,
+      "when": {
+        "method": "GET",
+        "path": "/copilot_internal/managed_settings",
+        "body_b64": "",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_b64": "e30="
+      }
+    },
+    {
+      "id": "r6",
+      "group": "g6",
+      "nth": 1,
+      "when": {
+        "method": "POST",
+        "path": "/mcp/readonly",
+        "body_b64": "e30=",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_b64": "e30="
+      }
+    },
+    {
+      "id": "r7",
+      "group": "g7",
+      "nth": 1,
+      "when": {
+        "method": "POST",
+        "path": "/telemetry",
+        "body_b64": "e30=",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_b64": "e30="
+      }
+    },
+    {
+      "id": "r8",
+      "group": "g8",
+      "nth": 1,
+      "when": {
+        "method": "POST",
+        "path": "/responses",
+        "body_b64": "eyJtb2RlbCI6ImdwdC01LjMtY29kZXgiLCJpbnB1dCI6W10sInN0cmVhbSI6dHJ1ZX0=",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/event-stream"
+        },
+        "events": [
+          "event: response.created\ndata: {\"type\":\"response.created\",\"sequence_number\":1,\"response\":{\"id\":\"resp_mock\",\"model\":\"gpt-5.3-codex\",\"status\":\"in_progress\"}}\n\n",
+          "event: response.in_progress\ndata: {\"type\":\"response.in_progress\",\"sequence_number\":2,\"response\":{\"id\":\"resp_mock\",\"model\":\"gpt-5.3-codex\",\"status\":\"in_progress\"}}\n\n",
+          "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"sequence_number\":3,\"item\":{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"phase\":\"final_answer\",\"status\":\"in_progress\"},\"output_index\":0}\n\n",
+          "event: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"sequence_number\":4,\"part\":{\"type\":\"output_text\",\"text\":\"\"},\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n",
+          "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"sequence_number\":5,\"delta\":\"Hello from Copilot mock! Integration test verified.\",\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n",
+          "event: response.output_text.done\ndata: {\"type\":\"response.output_text.done\",\"sequence_number\":6,\"text\":\"Hello from Copilot mock! Integration test verified.\",\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n",
+          "event: response.content_part.done\ndata: {\"type\":\"response.content_part.done\",\"sequence_number\":7,\"part\":{\"type\":\"output_text\",\"text\":\"Hello from Copilot mock! Integration test verified.\"},\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n",
+          "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"sequence_number\":8,\"item\":{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Copilot mock! Integration test verified.\"}],\"phase\":\"final_answer\",\"status\":\"completed\"},\"output_index\":0}\n\n",
+          "event: response.completed\ndata: {\"type\":\"response.completed\",\"sequence_number\":9,\"response\":{\"id\":\"resp_mock\",\"status\":\"completed\",\"output\":[{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Copilot mock! Integration test verified.\"}],\"phase\":\"final_answer\",\"status\":\"completed\"}],\"usage\":{\"input_tokens\":10,\"output_tokens\":10,\"total_tokens\":20}}}\n\n"
+        ]
+      }
+    },
+    {
+      "id": "r9",
+      "group": "g9",
+      "nth": 1,
+      "when": {
+        "method": "POST",
+        "path": "/v1/responses",
+        "body_b64": "eyJtb2RlbCI6ImdwdC01LjMtY29kZXgiLCJpbnB1dCI6W10sInN0cmVhbSI6dHJ1ZX0=",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/event-stream"
+        },
+        "events": [
+          "event: response.created\ndata: {\"type\":\"response.created\",\"sequence_number\":1,\"response\":{\"id\":\"resp_mock\",\"model\":\"gpt-5.3-codex\",\"status\":\"in_progress\"}}\n\n",
+          "event: response.in_progress\ndata: {\"type\":\"response.in_progress\",\"sequence_number\":2,\"response\":{\"id\":\"resp_mock\",\"model\":\"gpt-5.3-codex\",\"status\":\"in_progress\"}}\n\n",
+          "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"sequence_number\":3,\"item\":{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"phase\":\"final_answer\",\"status\":\"in_progress\"},\"output_index\":0}\n\n",
+          "event: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"sequence_number\":4,\"part\":{\"type\":\"output_text\",\"text\":\"\"},\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n",
+          "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"sequence_number\":5,\"delta\":\"Hello from Copilot mock! Integration test verified.\",\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n",
+          "event: response.output_text.done\ndata: {\"type\":\"response.output_text.done\",\"sequence_number\":6,\"text\":\"Hello from Copilot mock! Integration test verified.\",\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n",
+          "event: response.content_part.done\ndata: {\"type\":\"response.content_part.done\",\"sequence_number\":7,\"part\":{\"type\":\"output_text\",\"text\":\"Hello from Copilot mock! Integration test verified.\"},\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0}\n\n",
+          "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"sequence_number\":8,\"item\":{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Copilot mock! Integration test verified.\"}],\"phase\":\"final_answer\",\"status\":\"completed\"},\"output_index\":0}\n\n",
+          "event: response.completed\ndata: {\"type\":\"response.completed\",\"sequence_number\":9,\"response\":{\"id\":\"resp_mock\",\"status\":\"completed\",\"output\":[{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Copilot mock! Integration test verified.\"}],\"phase\":\"final_answer\",\"status\":\"completed\"}],\"usage\":{\"input_tokens\":10,\"output_tokens\":10,\"total_tokens\":20}}}\n\n"
+        ]
+      }
+    },
+    {
+      "id": "r10",
+      "group": "g10",
+      "nth": 1,
+      "when": {
+        "method": "POST",
+        "path": "/v1/messages",
+        "body_b64": "eyJtb2RlbCI6ImNsYXVkZS1oYWlrdS00LjUiLCJtZXNzYWdlcyI6W3sicm9sZSI6InVzZXIiLCJjb250ZW50Ijoic3ludGhldGljIGhlbGxvIn1dLCJzdHJlYW0iOnRydWV9",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/event-stream"
+        },
+        "events": [
+          "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_mock\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-haiku-4.5\",\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n",
+          "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n",
+          "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello from Copilot mock! Integration test verified.\"}}\n\n",
+          "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n",
+          "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":10}}\n\n",
+          "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+        ]
+      }
+    },
+    {
+      "id": "r11",
+      "group": "g11",
+      "nth": 1,
+      "when": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "body_b64": "eyJtb2RlbCI6ImdwdC00byIsIm1lc3NhZ2VzIjpbeyJyb2xlIjoidXNlciIsImNvbnRlbnQiOiJzeW50aGV0aWMgaGVsbG8ifV0sInN0cmVhbSI6dHJ1ZX0=",
+        "auth": "fixture-credential-1",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/event-stream"
+        },
+        "events": [
+          "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello from Copilot mock! Integration test verified.\"},\"finish_reason\":null}]}\n\n",
+          "data: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+          "data: [DONE]\n\n"
+        ]
+      }
+    },
+    {
+      "id": "r12",
+      "group": "g12",
+      "nth": 1,
+      "when": {
+        "method": "GET",
+        "path": "/models",
+        "body_b64": "",
+        "auth": "fixture-credential-2",
+        "auth_header": "Authorization"
+      },
+      "reply": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_b64": "eyJlcnJvciI6eyJtZXNzYWdlIjoidW5hdXRob3JpemVkIiwidHlwZSI6ImF1dGhlbnRpY2F0aW9uX2Vycm9yIn19"
+      }
+    }
+  ]
+}
