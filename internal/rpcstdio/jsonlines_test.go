@@ -11,7 +11,7 @@ import (
 
 func jsonLinesEngine(t *testing.T, input string) (*Engine, *bytes.Buffer) {
 	t.Helper()
-	code, err := os.ReadFile("../../tests/streamjson/handler.dslb")
+	code, err := os.ReadFile("../../fixtures/streamjson/handler.dslb")
 	if err != nil {
 		t.Fatal(err)
 	}

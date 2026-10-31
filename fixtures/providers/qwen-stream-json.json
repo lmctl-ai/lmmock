@@ -1,0 +1,422 @@
+{
+  "schema_version": 1,
+  "id": "qwen-stream-json",
+  "dialect": {
+    "id": "qwen-stream-json",
+    "version": "lmctl-0.2.448",
+    "transport": "jsonl"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "lmctl-src/src/providers/transports/stream-json.ts; parsers/stream-json.ts; adapters/qwen-adapter.ts",
+    "version": "npm @lmctl-ai/lmctl 0.2.448; read-only mono 584fee2a",
+    "retrieved": "2026-10-31",
+    "note": "Local fake CLI only. Same-identity terminals are deduplicated; malformed usage is not a transport error in this pinned client. No vendor capture or availability claim."
+  },
+  "server": {
+    "kind": "stdio",
+    "handler": "fixtures/streamjson/handler.lms",
+    "config": "fixtures/streamjson/wire.json",
+    "binary": "qwen"
+  },
+  "models": [
+    {
+      "id": "qwen3-coder-plus",
+      "family": "qwen-coder",
+      "capabilities": [
+        "chat",
+        "stream",
+        "tools",
+        "reasoning"
+      ]
+    },
+    {
+      "id": "qwen3-coder-flash",
+      "family": "qwen-coder",
+      "capabilities": [
+        "chat",
+        "stream",
+        "tools",
+        "reasoning"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "seed",
+      "method": "SEED",
+      "path": "/start",
+      "annotation": "start",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "turn",
+      "method": "USER",
+      "path": "/message",
+      "annotation": "message",
+      "sam": "RPCHandler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "complete",
+      "kind": "usage",
+      "request": {
+        "kind": "process",
+        "executable": "qwen",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--approval-mode",
+          "yolo"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "error_class": null,
+          "reply": "pong",
+          "usage.source": null,
+          "usage.costUsd": null
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ]
+      }
+    },
+    {
+      "id": "missing-terminal",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "qwen",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--approval-mode",
+          "yolo"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "error",
+          "error_class": "unknown",
+          "reply": "",
+          "usage.source": null,
+          "usage.costUsd": null
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ],
+        "error_class": "unknown"
+      },
+      "faults": [
+        "missing-terminal"
+      ]
+    },
+    {
+      "id": "error-result",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "qwen",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--approval-mode",
+          "yolo"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "error",
+          "error_class": "auth_required",
+          "reply": "",
+          "usage.source": null,
+          "usage.costUsd": null
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ],
+        "error_class": "auth_required"
+      }
+    },
+    {
+      "id": "duplicate-terminal",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "qwen",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--approval-mode",
+          "yolo"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "error_class": null,
+          "reply": "pong",
+          "usage.source": null,
+          "usage.costUsd": null
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ]
+      },
+      "faults": [
+        "duplicate-terminal"
+      ]
+    },
+    {
+      "id": "extra-terminal",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "qwen",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--approval-mode",
+          "yolo"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "error_class": null,
+          "reply": "pong\n\n--- additional response (turn 2 of 2; likely an injected mid-call notification) ---\n\nsecond",
+          "usage.source": null,
+          "usage.costUsd": null
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ]
+      }
+    },
+    {
+      "id": "malformed-usage",
+      "kind": "usage",
+      "request": {
+        "kind": "process",
+        "executable": "qwen",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--approval-mode",
+          "yolo"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "error_class": null,
+          "reply": "pong",
+          "usage.source": null,
+          "usage.costUsd": null
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ]
+      },
+      "faults": [
+        "malformed-usage"
+      ]
+    },
+    {
+      "id": "process-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "qwen",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--approval-mode",
+          "yolo"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "error",
+          "error_class": "auth_required",
+          "reply": "",
+          "usage.source": null,
+          "usage.costUsd": null
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ],
+        "error_class": "auth_required"
+      },
+      "faults": [
+        "process-exit",
+        "process-stderr"
+      ]
+    },
+    {
+      "id": "model-qwen3-coder-flash",
+      "kind": "model",
+      "request": {
+        "kind": "process",
+        "executable": "qwen",
+        "argv": [
+          "--model",
+          "qwen3-coder-flash"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "reply": "pong",
+          "error_class": null
+        },
+        "model": "qwen3-coder-flash"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "missing-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "missing-terminal"
+      },
+      "description": "Pinned synthetic missing-terminal behavior; see dialect README for parser limitations."
+    },
+    {
+      "id": "duplicate-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "duplicate-terminal"
+      },
+      "description": "Pinned synthetic duplicate-terminal behavior; see dialect README for parser limitations."
+    },
+    {
+      "id": "malformed-usage",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "malformed-usage"
+      },
+      "description": "Pinned synthetic malformed-usage behavior; see dialect README for parser limitations."
+    },
+    {
+      "id": "process-exit",
+      "surface": "process",
+      "trigger": {
+        "case_id": "process-error"
+      },
+      "description": "Pinned synthetic process-error behavior; see dialect README for parser limitations."
+    },
+    {
+      "id": "process-stderr",
+      "surface": "process",
+      "trigger": {
+        "case_id": "process-error"
+      },
+      "description": "Pinned synthetic process-error behavior; see dialect README for parser limitations."
+    }
+  ]
+}

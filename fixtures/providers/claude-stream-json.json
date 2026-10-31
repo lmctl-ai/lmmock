@@ -1,0 +1,523 @@
+{
+  "schema_version": 1,
+  "id": "claude-stream-json",
+  "dialect": {
+    "id": "claude-stream-json",
+    "version": "lmctl-0.2.448",
+    "transport": "jsonl"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "lmctl-src/src/providers/transports/stream-json.ts; parsers/stream-json.ts; adapters/claude-adapter.ts",
+    "version": "npm @lmctl-ai/lmctl 0.2.448; read-only mono 584fee2a",
+    "retrieved": "2026-10-31",
+    "note": "Local fake CLI only. Same-identity terminals are deduplicated; malformed usage is not a transport error in this pinned client. No vendor capture or availability claim."
+  },
+  "server": {
+    "kind": "stdio",
+    "handler": "fixtures/streamjson/handler.lms",
+    "config": "fixtures/streamjson/wire.json",
+    "binary": "claude"
+  },
+  "models": [
+    {
+      "id": "claude-haiku-4-5",
+      "family": "haiku",
+      "capabilities": [
+        "chat",
+        "stream",
+        "tools",
+        "reasoning"
+      ]
+    },
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "family": "haiku",
+      "capabilities": [
+        "chat",
+        "stream",
+        "tools",
+        "reasoning"
+      ]
+    },
+    {
+      "id": "claude-sonnet-4-5",
+      "family": "sonnet",
+      "capabilities": [
+        "chat",
+        "stream",
+        "tools",
+        "reasoning"
+      ]
+    },
+    {
+      "id": "claude-sonnet-4-5-20250929",
+      "family": "sonnet",
+      "capabilities": [
+        "chat",
+        "stream",
+        "tools",
+        "reasoning"
+      ]
+    },
+    {
+      "id": "claude-opus-4-1",
+      "family": "opus",
+      "capabilities": [
+        "chat",
+        "stream",
+        "tools",
+        "reasoning"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "seed",
+      "method": "SEED",
+      "path": "/start",
+      "annotation": "start",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "turn",
+      "method": "USER",
+      "path": "/message",
+      "annotation": "message",
+      "sam": "RPCHandler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "complete",
+      "kind": "usage",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--verbose",
+          "--dangerously-skip-permissions"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "error_class": null,
+          "reply": "pong",
+          "usage.inputUncached": 7,
+          "usage.cacheRead": 3,
+          "usage.cacheWrite": 5,
+          "usage.output": 11,
+          "usage.reasoning": 4,
+          "usage.modelReported": "${MODEL}"
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ]
+      }
+    },
+    {
+      "id": "missing-terminal",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--verbose",
+          "--dangerously-skip-permissions"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "error",
+          "error_class": "unknown",
+          "reply": ""
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ],
+        "error_class": "unknown"
+      },
+      "faults": [
+        "missing-terminal"
+      ]
+    },
+    {
+      "id": "error-result",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--verbose",
+          "--dangerously-skip-permissions"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "error",
+          "error_class": "auth_required",
+          "reply": ""
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ],
+        "error_class": "auth_required"
+      }
+    },
+    {
+      "id": "duplicate-terminal",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--verbose",
+          "--dangerously-skip-permissions"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "error_class": null,
+          "reply": "pong",
+          "usage.inputUncached": 7,
+          "usage.cacheRead": 3,
+          "usage.cacheWrite": 5,
+          "usage.output": 11,
+          "usage.reasoning": 4,
+          "usage.modelReported": "${MODEL}"
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ]
+      },
+      "faults": [
+        "duplicate-terminal"
+      ]
+    },
+    {
+      "id": "extra-terminal",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--verbose",
+          "--dangerously-skip-permissions"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "error_class": null,
+          "reply": "pong\n\n--- additional response (turn 2 of 2; likely an injected mid-call notification) ---\n\nsecond",
+          "usage.inputUncached": 14,
+          "usage.output": 22,
+          "usage.reasoning": 8
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ]
+      }
+    },
+    {
+      "id": "malformed-usage",
+      "kind": "usage",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--verbose",
+          "--dangerously-skip-permissions"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "error_class": null,
+          "reply": "pong",
+          "usage.inputUncached": null,
+          "usage.reason": "counter_not_exposed",
+          "usage.costUsd": null,
+          "usage.costReason": "usage_unavailable"
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ]
+      },
+      "faults": [
+        "malformed-usage"
+      ]
+    },
+    {
+      "id": "process-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "-p",
+          "",
+          "--output-format",
+          "stream-json",
+          "--input-format",
+          "stream-json",
+          "--resume",
+          "${SESSION}",
+          "--model",
+          "${MODEL}",
+          "--verbose",
+          "--dangerously-skip-permissions"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "error",
+          "error_class": "auth_required",
+          "reply": ""
+        },
+        "effects": [
+          {
+            "path": "${TRANSCRIPT}",
+            "exists": true,
+            "contains": "fixture-cli"
+          }
+        ],
+        "error_class": "auth_required"
+      },
+      "faults": [
+        "process-exit",
+        "process-stderr"
+      ]
+    },
+    {
+      "id": "model-claude-haiku-4-5-20251001",
+      "kind": "model",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "--model",
+          "claude-haiku-4-5-20251001"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "reply": "pong",
+          "error_class": null
+        },
+        "model": "claude-haiku-4-5-20251001"
+      }
+    },
+    {
+      "id": "model-claude-sonnet-4-5",
+      "kind": "model",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "--model",
+          "claude-sonnet-4-5"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "reply": "pong",
+          "error_class": null
+        },
+        "model": "claude-sonnet-4-5"
+      }
+    },
+    {
+      "id": "model-claude-sonnet-4-5-20250929",
+      "kind": "model",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "--model",
+          "claude-sonnet-4-5-20250929"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "reply": "pong",
+          "error_class": null
+        },
+        "model": "claude-sonnet-4-5-20250929"
+      }
+    },
+    {
+      "id": "model-claude-opus-4-1",
+      "kind": "model",
+      "request": {
+        "kind": "process",
+        "executable": "claude",
+        "argv": [
+          "--model",
+          "claude-opus-4-1"
+        ],
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"ping\"}}\n"
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "reply": "pong",
+          "error_class": null
+        },
+        "model": "claude-opus-4-1"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "missing-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "missing-terminal"
+      },
+      "description": "Pinned synthetic missing-terminal behavior; see dialect README for parser limitations."
+    },
+    {
+      "id": "duplicate-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "duplicate-terminal"
+      },
+      "description": "Pinned synthetic duplicate-terminal behavior; see dialect README for parser limitations."
+    },
+    {
+      "id": "malformed-usage",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "malformed-usage"
+      },
+      "description": "Pinned synthetic malformed-usage behavior; see dialect README for parser limitations."
+    },
+    {
+      "id": "process-exit",
+      "surface": "process",
+      "trigger": {
+        "case_id": "process-error"
+      },
+      "description": "Pinned synthetic process-error behavior; see dialect README for parser limitations."
+    },
+    {
+      "id": "process-stderr",
+      "surface": "process",
+      "trigger": {
+        "case_id": "process-error"
+      },
+      "description": "Pinned synthetic process-error behavior; see dialect README for parser limitations."
+    }
+  ]
+}
