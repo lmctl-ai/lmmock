@@ -739,3 +739,12 @@ Active cancellation uses generic deferred JSON-RPC replies; protocol policy stay
 in lmcode. Tests do not use sleeps, provider credentials or vendor traffic. See the
 profile notes for exact expected warnings, conservative error classes and the
 Linux-only native SIGTERM qualification.
+### Codex app-server provider fixtures
+
+The [Codex fixture contract](fixtures/codex/README.md) adds initialize, thread
+start/resume/fork, ordered turn/usage events, interruption and app-server failures
+as annotated lmcode RPCHandler methods. Model families are manifest data. The
+native process fixtures run the privately downloaded lmctl client and assert its
+wire, session and accounting results on all five test platforms. The documented
+strict controls expose published-client classification/accounting gaps; those
+requirements are not claimed as covered merely because the mock can emit them.

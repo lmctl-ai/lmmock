@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -46,6 +47,8 @@ func run() error {
 	if err = os.WriteFile(filepath.Join(directory, "pid"), []byte(strconv.Itoa(os.Getpid())), 0600); err != nil {
 		return err
 	}
+	argv, _ := json.Marshal(os.Args[1:])
+	_ = os.WriteFile(filepath.Join(directory, "argv.json"), argv, 0600)
 	code, err := rpcstdio.Preset("codex")
 	if err != nil {
 		return err

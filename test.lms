@@ -7,6 +7,7 @@ fn step(command) {
 mkdir("build");
 set_env("CGO_ENABLED", "0");
 step(["go", "mod", "verify"]);
+step(["python3", "tests/providers/codex/generate.py", "--check"]);
 step(["bash", "scripts/compile-examples.sh"]);
 step(["bash", "scripts/compile-stdio.sh"]);
 step(["bash", "scripts/compile-streamjson.sh"]);
@@ -19,6 +20,7 @@ step(["python3", "tests/stdio/controls.py"]);
 ext = ""; if (env("RUNNER_OS") == "Windows") { ext = ".exe"; }
 version = env("SAMPLE_VERSION") || "0.1.0";
 step(["go", "build", "-trimpath", "-ldflags=-s -w -X main.version=" + version, "-o", "build/lmmock" + ext, "./cmd/lmmock"]);
+step(["go", "build", "-o", "build/codex-fixture" + ext, "./tests/providers/codex/fakecli"]);
 step(["node", "tests/integration.mjs", "build/lmmock" + ext]);
 step(["node", "tests/stream-tls/run.mjs", "build/lmmock" + ext]);
 step(["python3", "tests/stream-tls/controls.py"]);
@@ -31,6 +33,8 @@ step(["go", "build", "-o", "build/codex-fixture" + ext, "./tests/providers/codex
 step(["node", "tests/acp-profiles/run.mjs"]);
 step(["node", "tests/providers/codex/manifest-run.mjs"]);
 step(["node", "tests/provider-fixtures/contract.test.mjs", "build/lmmock" + ext]);
+step(["node", "tests/providers/codex/run.mjs"]);
+step(["python3", "tests/providers/codex/controls.py"]);
 step(["build/lmmock" + ext, "exec", "--lmcode", "build/copilot.dslb", "--config", "examples/copilot-config.json", "--", path_join(Directory, "build/lmmock" + ext), "check", "--suite", "examples/copilot-client.json"]);
 step(["node", "tests/protocols.mjs", "build/lmmock" + ext]);
 step(["node", "tests/request-count.mjs", "build/lmmock" + ext]);

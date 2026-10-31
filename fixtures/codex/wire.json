@@ -1004,6 +1004,224 @@
           ]
         }
       ]
+    },
+    "reasoning-model": {
+      "cells": [
+        {
+          "alias": "Worker",
+          "turn": 1,
+          "turn_id": "turn-1",
+          "text": "pong",
+          "expect": "ping",
+          "events": [
+            {
+              "method": "turn/started",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turn": {
+                  "id": "turn-1",
+                  "status": "inProgress"
+                }
+              }
+            },
+            {
+              "method": "item/started",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "item": {
+                  "id": "message-turn-1",
+                  "type": "agentMessage",
+                  "phase": "final_answer",
+                  "text": ""
+                }
+              }
+            },
+            {
+              "method": "item/agentMessage/delta",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "itemId": "message-turn-1",
+                "delta": "po"
+              }
+            },
+            {
+              "method": "item/agentMessage/delta",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "itemId": "message-turn-1",
+                "delta": "ng"
+              }
+            },
+            {
+              "method": "item/completed",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "item": {
+                  "id": "message-turn-1",
+                  "type": "agentMessage",
+                  "phase": "final_answer",
+                  "text": "pong"
+                }
+              }
+            },
+            {
+              "method": "thread/tokenUsage/updated",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "model": "o3",
+                "tokenUsage": {
+                  "last": {
+                    "inputTokens": 100,
+                    "cachedInputTokens": 30,
+                    "outputTokens": 12,
+                    "reasoningOutputTokens": 4,
+                    "totalTokens": 112
+                  },
+                  "total": {
+                    "inputTokens": 100,
+                    "cachedInputTokens": 30,
+                    "outputTokens": 12,
+                    "reasoningOutputTokens": 4,
+                    "totalTokens": 112
+                  },
+                  "modelContextWindow": 128000
+                }
+              }
+            },
+            {
+              "method": "turn/completed",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turn": {
+                  "id": "turn-1",
+                  "status": "completed",
+                  "error": null
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "auth-error": {
+      "cells": [
+        {
+          "alias": "Worker",
+          "turn": 1,
+          "error": "Authentication required: fixture login",
+          "rpc_code": -32001
+        }
+      ]
+    },
+    "quota-error": {
+      "cells": [
+        {
+          "alias": "Worker",
+          "turn": 1,
+          "turn_id": "turn-1",
+          "text": "pong",
+          "expect": "ping",
+          "events": [
+            {
+              "method": "turn/started",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turn": {
+                  "id": "turn-1",
+                  "status": "inProgress"
+                }
+              }
+            },
+            {
+              "method": "item/started",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "item": {
+                  "id": "message-turn-1",
+                  "type": "agentMessage",
+                  "phase": "final_answer",
+                  "text": ""
+                }
+              }
+            },
+            {
+              "method": "item/agentMessage/delta",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "itemId": "message-turn-1",
+                "delta": "po"
+              }
+            },
+            {
+              "method": "item/agentMessage/delta",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "itemId": "message-turn-1",
+                "delta": "ng"
+              }
+            },
+            {
+              "method": "item/completed",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "item": {
+                  "id": "message-turn-1",
+                  "type": "agentMessage",
+                  "phase": "final_answer",
+                  "text": "pong"
+                }
+              }
+            },
+            {
+              "method": "thread/tokenUsage/updated",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turnId": "turn-1",
+                "model": "gpt-5.6-sol",
+                "tokenUsage": {
+                  "last": {
+                    "inputTokens": 100,
+                    "cachedInputTokens": 30,
+                    "outputTokens": 12,
+                    "reasoningOutputTokens": 4,
+                    "totalTokens": 112
+                  },
+                  "total": {
+                    "inputTokens": 100,
+                    "cachedInputTokens": 30,
+                    "outputTokens": 12,
+                    "reasoningOutputTokens": 4,
+                    "totalTokens": 112
+                  },
+                  "modelContextWindow": 128000
+                }
+              }
+            },
+            {
+              "method": "turn/completed",
+              "params": {
+                "threadId": "11111111-1111-4111-8111-111111111111",
+                "turn": {
+                  "id": "turn-1",
+                  "status": "failed",
+                  "error": {
+                    "message": "Usage limit reached: fixture quota"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
     }
   },
   "cells": [

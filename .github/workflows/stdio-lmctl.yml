@@ -19,6 +19,7 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
           echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "LMCTL_PACKAGE_ROOT=$RUNNER_TEMP/lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
           "$RUNNER_TEMP/lmctl/node_modules/.bin/lmctl" --version
       - name: Build and verify stdio handlers
         run: |
