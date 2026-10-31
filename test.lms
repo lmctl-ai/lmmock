@@ -34,7 +34,7 @@ step(["node", "tests/vercel/run.mjs", "build/lmmock" + ext]);
 step(["node", "tests/runtime-json.mjs", "build/lmmock" + ext]);
 
 # OpenAI JSON and Responses event SSE use the existing HTTP transport.
-step([env("LMSCRIPT_BIN") || "lmscript", "--no-preflight", "fixtures/openai/handler.lms", "build/openai.dslb"]);
+step(["bash", "tests/openai/compile.sh"]);
 step(["node", "tests/openai/run.mjs", "build/lmmock" + ext]);
 step(["node", "tests/openai/controls.mjs", "build/lmmock" + ext]);
 step(["node", "tests/provider-fixtures/run.mjs", "fixtures/providers/openai-chat-native.json", "build/lmmock" + ext]);
