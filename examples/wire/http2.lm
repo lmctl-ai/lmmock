@@ -1,0 +1,7 @@
+@events
+fn events(s: Session) -> void implements HTTP2Handler {
+  s.set_header("Content-Type", "text/plain");
+  s.send("ready\n");
+  if (s.recv()) { s.send(s.body()); }
+}
+bind("POST /events", "events");

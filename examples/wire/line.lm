@@ -1,0 +1,8 @@
+@commands
+fn commands(s: Session) -> void implements LineHandler {
+  while (s.recv()) {
+    if (s.body() == "PING") { s.send("PONG"); }
+    else { s.send("ERR " + s.body()); }
+  }
+}
+bind("connection", "commands");

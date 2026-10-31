@@ -1,0 +1,49 @@
+name: lmcode protocol clients
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  clients:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2022]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34
+        with:
+          go-version: '1.26'
+          cache: false
+      - name: Published fixture compiler (private prefix)
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
+          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Real WebSocket, HTTP2, gRPC and extension clients
+        run: |
+          go mod verify
+          go test -count=1 ./internal/wire/...
+          go test -count=1 ./cmd/lmmock -run '^TestWire'
+          go build -trimpath -o build/lmmock ./cmd/lmmock
+      - name: Wrong-order and descriptor/flush production controls
+        if: runner.os == 'Linux'
+        run: python3 -B tests/wire/controls.py
+      - name: Race check
+        if: runner.os == 'Linux'
+        env:
+          CGO_ENABLED: '1'
+        run: go test -race ./internal/wire/...
