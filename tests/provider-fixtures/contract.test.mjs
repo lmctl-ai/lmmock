@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {checkExpectation, executeProcess, loadFixture, runFixture} from './run.mjs';
+import {checkExpectation, executeProcess, listFixtures, loadFixture, runFixture} from './run.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const manifestPath = path.join(repo, 'fixtures/providers/openai-chat.json');
@@ -12,10 +12,15 @@ const {manifest} = await loadFixture(manifestPath, repo);
 assert.equal(manifest.dialect.id, 'openai-chat-completions');
 assert.deepEqual(manifest.cases.map(c => c.kind), ['usage', 'error', 'model', 'error', 'tool', 'stream']);
 
-const baseline = await runFixture(manifestPath, binary, repo);
-assert.equal(baseline.failed, 0);
-assert.equal(baseline.passed, manifest.cases.length);
-process.stdout.write(`PASS provider fixture baseline (${baseline.passed} cases)\n`);
+let passed = 0;
+for (const fixturePath of await listFixtures(repo)) {
+  const {manifest: candidate} = await loadFixture(fixturePath, repo);
+  const baseline = await runFixture(fixturePath, binary, repo);
+  assert.equal(baseline.failed, 0);
+  assert.equal(baseline.passed, candidate.cases.length);
+  passed += baseline.passed;
+}
+process.stdout.write(`PASS provider fixture baseline (${passed} cases, all manifests)\n`);
 
 const probeVars = {repo_root: repo, base_url: 'http://127.0.0.1:1', lmmock_url: 'http://127.0.0.1:1', tmpdir: os.tmpdir(), server_url_env: 'FIXTURE_BASE'};
 const processRequest = {kind: 'process', executable: process.execPath, argv: ['-e', 'process.stdout.write(JSON.stringify({error_class:"auth_required", url:process.env.FIXTURE_BASE}))']};
