@@ -1,0 +1,83 @@
+{
+  "steps": [
+    {
+      "name": "check copilot mock health",
+      "method": "GET",
+      "path": "/health",
+      "status": 200,
+      "json": {
+        "status": "ok",
+        "service": "copilot-mock"
+      }
+    },
+    {
+      "name": "fetch copilot models catalog",
+      "method": "GET",
+      "path": "/models",
+      "headers": {
+        "Authorization": "Bearer copilot-test-key"
+      },
+      "status": 200,
+      "json": {
+        "object": "list",
+        "data.0.id": "gpt-5.3-codex",
+        "data.0.is_chat_default": true,
+        "data.1.id": "gpt-4o",
+        "data.2.id": "claude-haiku-4.5"
+      }
+    },
+    {
+      "name": "fetch copilot auto routing selection",
+      "method": "POST",
+      "path": "/auto",
+      "headers": {
+        "Authorization": "Bearer copilot-test-key"
+      },
+      "status": 200,
+      "json": {
+        "selected_model.id": "gpt-4o"
+      }
+    },
+    {
+      "name": "copilot chat completion non-streaming",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "headers": {
+        "Authorization": "Bearer copilot-test-key",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "user",
+            "content": "ping"
+          }
+        ]
+      },
+      "status": 200,
+      "json": {
+        "choices.0.finish_reason": "stop",
+        "choices.0.message.content": "Hello from Copilot mock! Integration test verified."
+      }
+    },
+    {
+      "name": "copilot platform team customizations",
+      "method": "GET",
+      "path": "/copilot_internal/team_customizations",
+      "status": 200
+    },
+    {
+      "name": "copilot platform managed settings",
+      "method": "GET",
+      "path": "/copilot_internal/managed_settings",
+      "status": 200
+    },
+    {
+      "name": "copilot platform telemetry submit",
+      "method": "POST",
+      "path": "/telemetry",
+      "status": 200
+    }
+  ]
+}

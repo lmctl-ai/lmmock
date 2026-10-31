@@ -17,6 +17,8 @@ step(["go", "build", "-trimpath", "-ldflags=-s -w -X main.version=" + version, "
 step(["node", "tests/integration.mjs", "build/lmmock" + ext]);
 
 step(["build/lmmock" + ext, "exec", "--lmcode", "build/llm.dslb", "--config", "examples/llm-config.json", "--", path_join(Directory, "build/lmmock" + ext), "check", "--suite", "examples/llm-client.json"]);
+step(["build/lmmock" + ext, "exec", "--lmcode", "build/copilot.dslb", "--config", "examples/copilot-config.json", "--", path_join(Directory, "build/lmmock" + ext), "check", "--suite", "examples/copilot-client.json"]);
+step(["build/lmmock" + ext, "exec", "--lmcode", "build/copilot.dslb", "--config", "examples/copilot-config.json", "--", "node", "tests/copilot.mjs"]);
 step(["node", "tests/protocols.mjs", "build/lmmock" + ext]);
 
 # Real Vercel AI SDK client; install tests/vercel dependencies with npm ci first.
