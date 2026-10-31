@@ -16,10 +16,11 @@ try{
  assert.equal(e.requests[0].params.clientInfo.version,'0.0.0','published bundle handshake fallback is pinned separately from package identity');
  assert.deepEqual(e.argv,['app-server','--listen','stdio://','-c','model='+JSON.stringify(vars.LMMOCK_CODEX_MODEL)],'real app-server argv and model selection');
  assert.equal(e.requests[1].method,'initialized');
- const open=e.requests[2];assert.equal(open.method,vars.LMMOCK_CODEX_MODE==='agent'?'thread/start':'thread/resume');
+ const open=e.requests[2];assert.equal(open.params.model,vars.LMMOCK_CODEX_MODEL,'thread model override');assert.equal(open.method,vars.LMMOCK_CODEX_MODE==='agent'?'thread/start':'thread/resume');
  if(open.method==='thread/resume')assert.equal(open.params.threadId,'11111111-1111-4111-8111-111111111111');
  const turns=e.requests.filter(r=>r.method==='turn/start');
  assert.equal(turns.length,vars.LMMOCK_CODEX_MODE==='batch'?2:1);
+ for(const turn of turns)assert.equal(turn.params.model,vars.LMMOCK_CODEX_MODEL,'turn model override');
  if(turns.length===2){assert.equal(turns[1].params.input[0].text,'pong','turn2 depends on real turn1 reply');assert.equal(e.result.second.reply,'dependent answer');}
  assert.equal(e.rows.length,turns.length,'one accounting attempt per turn/start request');
  for(const row of e.rows){assert.ok(row.attempt_key);assert.equal(row.provider,'codex');assert.equal(row.native_session_id,['rpc-error','auth-error'].includes(id)?null:'11111111-1111-4111-8111-111111111111','pinned recorded identity (direct RPC rejection loses it)');assert.equal(row.model_requested,vars.LMMOCK_CODEX_MODEL);}
