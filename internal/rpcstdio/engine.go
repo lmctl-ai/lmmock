@@ -125,12 +125,18 @@ func New(code []byte, options Options, wire *Wire) (*Engine, error) {
 		return lmcode.None(), nil
 	})
 	method("close", nil, "void", func(*exchange, []lmcode.Value) (lmcode.Value, error) { e.stopped = true; return lmcode.None(), nil })
+	method("make_directory", []string{"string"}, "void", func(_ *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		return lmcode.None(), os.MkdirAll(a[0].Str, 0700)
+	})
 	method("write_stderr", []string{"string"}, "void", func(_ *exchange, a []lmcode.Value) (lmcode.Value, error) {
 		writer := options.Stderr
 		if writer == nil {
 			writer = io.Discard
 		}
-		_, err := io.WriteString(writer, a[0].Str)
+		n, err := io.WriteString(writer, a[0].Str)
+		if err == nil && n != len(a[0].Str) {
+			err = io.ErrShortWrite
+		}
 		return lmcode.None(), err
 	})
 	method("exit", []string{"int"}, "void", func(_ *exchange, a []lmcode.Value) (lmcode.Value, error) {
@@ -200,6 +206,7 @@ func New(code []byte, options Options, wire *Wire) (*Engine, error) {
 	}
 	return e, nil
 }
+func (e *Engine) Stopped() bool { return e.stopped }
 func (e *Engine) ExitCode() int { return e.exitCode }
 func (e *Engine) write(v any) error {
 	b, err := json.Marshal(v)

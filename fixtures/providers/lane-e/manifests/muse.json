@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "id": "muse-process-native",
+  "dialect": {
+    "id": "muse-process",
+    "version": "lmctl-0.2.448",
+    "transport": "msp"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "npm:@lmctl-ai/lmctl@0.2.448",
+    "version": "0.2.448",
+    "retrieved": "2026-10-31",
+    "note": "Synthetic wire/data derived from the published adapter and read-only mono 8e334dda. Does not claim live vendor/model availability; print token counts are unexposed, not zero."
+  },
+  "server": {
+    "kind": "stdio",
+    "handler": "fixtures/providers/lane-e/muse.lms",
+    "config": "fixtures/providers/lane-e/wire.json"
+  },
+  "models": [
+    {
+      "id": "fixture-muse",
+      "family": "synthetic-muse",
+      "capabilities": [
+        "chat"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "process",
+      "method": "RPC",
+      "path": "/turn/start",
+      "annotation": "turn",
+      "sam": "RPCHandler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "success",
+      "kind": "success",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "muse",
+          "success"
+        ]
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "provider": "muse",
+          "reply": "pong",
+          "tokens_exposed": true
+        },
+        "model": "fixture-muse",
+        "usage": {
+          "input_tokens": 5,
+          "output_tokens": 2,
+          "reasoning_output_tokens": 1
+        }
+      }
+    },
+    {
+      "id": "resume",
+      "kind": "success",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "muse",
+          "resume"
+        ]
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "provider": "muse",
+          "reply": "pong",
+          "tokens_exposed": true,
+          "resumed": true
+        },
+        "model": "fixture-muse",
+        "usage": {
+          "input_tokens": 5,
+          "output_tokens": 2,
+          "reasoning_output_tokens": 1
+        }
+      }
+    },
+    {
+      "id": "bad-terminal",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "muse",
+          "bad-terminal"
+        ]
+      },
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "status": "error",
+          "provider": "muse"
+        },
+        "error_class": "unknown"
+      }
+    },
+    {
+      "id": "missing-terminal",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "muse",
+          "missing-terminal"
+        ]
+      },
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "status": "error",
+          "provider": "muse"
+        },
+        "error_class": "unknown"
+      },
+      "faults": [
+        "missing-terminal"
+      ]
+    }
+  ],
+  "faults": [
+    {
+      "id": "missing-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "missing-terminal"
+      },
+      "description": "Deterministic missing-terminal refused by the actual published lmctl client"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+name: Print and sidecar published adapters
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  published:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34
+        with: {go-version: '1.26'}
+      - name: Download pinned published client and compiler
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
+          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "LMCTL_TEST_PREFIX=$RUNNER_TEMP/lmctl" >> "$GITHUB_ENV"
+      - name: Compile annotated process and HTTP handlers
+        run: |
+          bash scripts/compile-stdio.sh
+          bash scripts/compile-lane-e.sh
+          git diff --exit-code -- internal/rpcstdio/presets internal/rpcstdio/testdata
+          go build -o build/lmmock ./cmd/lmmock
+      - name: Exercise real published provider adapters and native session readers
+        env:
+          LANE_E_EVIDENCE: build/lane-e-evidence.json
+        run: node tests/providers/lane-e/run.mjs build/lmmock
+      - name: Catch compiled handler mutations
+        run: node tests/providers/lane-e/controls.mjs build/lmmock
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: lane-e-published-evidence
+          path: build/lane-e-evidence.json
+          if-no-files-found: error

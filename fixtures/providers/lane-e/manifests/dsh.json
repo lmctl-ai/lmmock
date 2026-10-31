@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "id": "dsh-process-native",
+  "dialect": {
+    "id": "dsh-process",
+    "version": "lmctl-0.2.448",
+    "transport": "custom"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "npm:@lmctl-ai/lmctl@0.2.448",
+    "version": "0.2.448",
+    "retrieved": "2026-10-31",
+    "note": "Synthetic wire/data derived from the published adapter and read-only mono 8e334dda. Does not claim live vendor/model availability; print token counts are unexposed, not zero."
+  },
+  "server": {
+    "kind": "http",
+    "handler": "fixtures/providers/lane-e/dsh.lms",
+    "config": "fixtures/providers/lane-e/wire.json"
+  },
+  "models": [
+    {
+      "id": "fixture-deepseek",
+      "family": "synthetic-dsh",
+      "capabilities": [
+        "chat"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "session-rpc",
+      "method": "POST",
+      "path": "/api/{method...}",
+      "annotation": "rpc",
+      "sam": "Handler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "success",
+      "kind": "success",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "dsh",
+          "success"
+        ]
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "provider": "dsh",
+          "reply": "pong",
+          "tokens_exposed": true
+        },
+        "model": "fixture-deepseek",
+        "usage": {
+          "input_tokens": 5,
+          "output_tokens": 2,
+          "reasoning_output_tokens": 1
+        }
+      }
+    },
+    {
+      "id": "v2",
+      "kind": "success",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "dsh",
+          "v2"
+        ]
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "provider": "dsh",
+          "reply": "pong",
+          "tokens_exposed": true
+        },
+        "model": "fixture-deepseek",
+        "usage": {
+          "input_tokens": 5,
+          "output_tokens": 2,
+          "reasoning_output_tokens": 1
+        }
+      }
+    },
+    {
+      "id": "resume",
+      "kind": "success",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "dsh",
+          "resume"
+        ]
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "status": "ok",
+          "provider": "dsh",
+          "reply": "pong",
+          "tokens_exposed": true,
+          "resumed": true
+        },
+        "model": "fixture-deepseek",
+        "usage": {
+          "input_tokens": 5,
+          "output_tokens": 2,
+          "reasoning_output_tokens": 1
+        }
+      }
+    },
+    {
+      "id": "malformed",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "dsh",
+          "malformed"
+        ]
+      },
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "status": "error",
+          "provider": "dsh"
+        },
+        "error_class": "unknown"
+      },
+      "faults": [
+        "malformed-json"
+      ]
+    },
+    {
+      "id": "boot-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "dsh",
+          "boot-error"
+        ]
+      },
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "status": "error",
+          "provider": "dsh"
+        },
+        "error_class": "auth_required"
+      },
+      "faults": [
+        "process-exit"
+      ]
+    },
+    {
+      "id": "turn-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "{{repo_root}}/tests/providers/lane-e/case.mjs",
+          "dsh",
+          "turn-error"
+        ]
+      },
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "status": "error",
+          "provider": "dsh"
+        },
+        "error_class": "auth_required"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "malformed-json",
+      "surface": "http",
+      "trigger": {
+        "case_id": "malformed"
+      },
+      "description": "Deterministic malformed refused by the actual published lmctl client"
+    },
+    {
+      "id": "process-exit",
+      "surface": "process",
+      "trigger": {
+        "case_id": "boot-error"
+      },
+      "description": "Deterministic boot-error refused by the actual published lmctl client"
+    }
+  ]
+}

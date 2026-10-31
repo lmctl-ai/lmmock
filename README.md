@@ -748,3 +748,19 @@ native process fixtures run the privately downloaded lmctl client and assert its
 wire, session and accounting results on all five test platforms. The documented
 strict controls expose published-client classification/accounting gaps; those
 requirements are not claimed as covered merely because the mock can emit them.
+
+
+## Print and sidecar provider process fixtures
+
+[Lane E profiles](fixtures/providers/lane-e/README.md) exercise published lmctl
+against owned native fake executables for Agy/Pi print, lmplayer run/JSONL, DSH
+sidecar HTTP RPC and Muse MSP. Models are fixture-family data. Annotated lmcode
+handlers own output/events/failures; Go supplies generic process/listener and
+compressed-record framing. The suite checks native stdout/stderr/exit, real
+adapter error classes, model argv, native session resume and token facts.
+
+The shared P0 manifests are under fixtures/providers/lane-e/manifests. Normal
+five-platform tests and a dedicated published-client workflow run them and compiled
+handler mutations. Known zero-exit empty-output defects in published lmctl 0.2.448
+are reported explicitly as unqualified client gaps, not successful cases. The lane
+README documents the supported process contracts and the unclaimed native/TUI APIs.

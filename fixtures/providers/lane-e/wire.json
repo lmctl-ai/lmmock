@@ -1,0 +1,10 @@
+{
+  "client_version": "0.2.448",
+  "families": {
+    "agy": {"model":"fixture-gemini-high","alternate_model":"fixture-claude","stdout":"pong\n"},
+    "pi": {"model":"fixture-pi","stdout":"pong\n"},
+    "lmplayer": {"model":"fixture-player","stdout":"{\"type\":\"text\",\"sessionID\":\"fixture-player-session\",\"part\":{\"text\":\"pong\"}}\n"},
+    "dsh": {"model":"fixture-deepseek","stdout":"pong"},
+    "muse": {"model":"fixture-muse","stdout":"pong"}
+  }
+}

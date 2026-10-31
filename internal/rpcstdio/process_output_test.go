@@ -9,9 +9,9 @@ import (
 )
 
 func TestProcessStdoutStderrAndExit(t *testing.T) {
-	code, err := os.ReadFile("../../build/lane-e-print.dslb")
+	code, err := os.ReadFile("testdata/process-output.dslb")
 	if err != nil {
-		t.Fatal("compile lane E fixtures first", err)
+		t.Fatal("read protocol fixture", err)
 	}
 	var out, stderr bytes.Buffer
 	cfg, _ := json.Marshal(map[string]any{"trace": filepath.Join(t.TempDir(), "trace.jsonl"), "request": map[string]string{}, "response": map[string]any{"stdout": "reply\n", "stderr": "diagnostic\n", "exit": 7}})

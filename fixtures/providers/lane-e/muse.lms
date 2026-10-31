@@ -1,5 +1,10 @@
 p = _lmcode_ schema="../../../internal/rpcstdio/presets/schema.json";
 fn q(s: string) -> string { return json_quote(s); }
+fn native(x: RPC, runid: string, sequence: int, event: string) -> void {
+ let sid=x.get("sid");
+ let row="{\"schema_version\":1,\"id\":"+q(runid+"-"+str(sequence))+",\"stream\":{\"kind\":\"session\",\"id\":"+q(sid)+"},\"sequence\":"+str(sequence)+",\"recorded_at\":1700000000000000,\"payload_type\":\"runtime.session\",\"payload_schema_version\":1,\"payload\":{\"kind\":\"run\",\"run_id\":"+q(runid)+",\"source_run_record_id\":"+q(runid+"-"+str(sequence))+",\"event\":"+event+"}}\n";
+ file_append(x.get("native-file"),row);
+}
 @initialize
 fn initialize(x: RPC) -> void implements RPCHandler {
  let cfg=json_parse(config());file_append(cfg.get("trace").as_string(),x.message()+"\n");
@@ -11,7 +16,15 @@ fn open(x: RPC) -> void implements RPCHandler {
  let p=json_parse(x.params());let cfg=json_parse(config());file_append(cfg.get("trace").as_string(),x.message()+"\n");
  if(x.get("initialized")!="yes"){x.abort("initialized notification missing");}
  let sid=p.get("sessionId").as_string();x.set("sid",sid);
+ let directory=cfg.get("native_root").as_string()+"/"+sid;let file=directory+"/session.jsonl";x.set("native-file",file);
+ if(x.method()=="session/resume" && !file_exists(file)){x.abort("conversation "+sid+" not found");}
+ x.make_directory(directory);
+
  let cwd=cfg.get("cwd").as_string();if(p.has("workspaceRoot")){cwd=p.get("workspaceRoot").as_string();}
+ if(x.method()=="session/start"){
+ let header="{\"schema_version\":1,\"id\":"+q("meta-"+sid)+",\"stream\":{\"kind\":\"session\",\"id\":"+q(sid)+"},\"sequence\":0,\"recorded_at\":1700000000000000,\"payload_type\":\"runtime.session.metadata\",\"payload_schema_version\":1,\"payload\":{\"record\":{\"workspace_root\":"+q(cwd)+",\"model_id\":"+cfg.get("model").to_json()+"}}}\n";
+ file_write(file,header);
+ }
  x.reply("{\"session\":{\"sessionId\":"+q(sid)+",\"workspaceRoot\":"+q(cwd)+",\"status\":\"idle\",\"modelId\":"+cfg.get("model").to_json()+"}}");
 }
 @approval
@@ -29,6 +42,7 @@ fn turn(x: RPC) -> void implements RPCHandler {
  let tid="fixture-turn-"+str(x.next("turn"));let sid=q(x.get("sid"));
  x.reply("{\"commandId\":"+p.get("commandId").to_json()+",\"status\":\"accepted\",\"disposition\":\"started\",\"turnId\":"+q(tid)+"}");
  let owner="{\"sessionId\":"+sid+",\"turnId\":"+q(tid);
+ native(x,tid,1,"{\"kind\":\"started\",\"prompt\":"+p.get("input").at(0).get("text").to_json()+"}");
  x.notify("turn/started",owner+"}");
  x.notify("item/started",owner+",\"item\":{\"itemId\":\"fixture-item\",\"turnId\":"+q(tid)+",\"kind\":\"agentMessage\",\"revision\":1,\"text\":\"\"}}");
  x.notify("item/delta","{\"sessionId\":"+sid+",\"itemId\":\"fixture-item\",\"delta\":"+cfg.get("text").to_json()+"}");
@@ -36,6 +50,9 @@ fn turn(x: RPC) -> void implements RPCHandler {
  if(cfg.has("missing_terminal") && cfg.get("missing_terminal").as_bool()){x.close();}
  else {
  let terminal="completed";if(cfg.has("terminal")){terminal=cfg.get("terminal").as_string();}
+ native(x,tid,2,"{\"kind\":\"model_completed\",\"model\":"+cfg.get("model").to_json()+",\"usage\":{\"input_tokens\":5,\"input_uncached_tokens\":5,\"promptTokens\":5,\"cache_read_tokens\":0,\"cache_write_tokens\":0,\"output_tokens\":2,\"reasoning_tokens\":1}}");
+ native(x,tid,3,"{\"kind\":\"assistant_message_committed\",\"text\":"+cfg.get("text").to_json()+"}");
+ native(x,tid,4,"{\"kind\":\"terminal\",\"terminal\":"+q(terminal)+"}");
  x.notify("turn/completed",owner+",\"terminal\":"+q(terminal)+"}");
  }
  }

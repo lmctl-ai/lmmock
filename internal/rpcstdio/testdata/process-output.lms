@@ -1,0 +1,7 @@
+p = _lmcode_ schema="../presets/schema.json";
+@start fn start(x: RPC) -> void implements RPCHandler {
+ x.write_text("reply\n");x.write_stderr("diagnostic\n");x.exit(7);
+}
+bind("$start","start");
+end _lmcode_
+savedsl(p,ARGV[0]);

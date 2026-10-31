@@ -28,7 +28,7 @@ func jsonLinesProcess(args []string) int {
 		alias = filepath.Base(os.Args[0])
 	}
 	wire := rpcstdio.NewWire(os.Stdin, os.Stdout, "line")
-	engine, err := rpcstdio.New(code, rpcstdio.Options{Config: config, Alias: alias, StateDir: os.Getenv("LMMOCK_JSONLINES_STATE")}, wire)
+	engine, err := rpcstdio.New(code, rpcstdio.Options{Config: config, Stderr: os.Stderr, Alias: alias, StateDir: os.Getenv("LMMOCK_JSONLINES_STATE")}, wire)
 	if err != nil {
 		return fail(err)
 	}
@@ -38,7 +38,7 @@ func jsonLinesProcess(args []string) int {
 	if err = engine.RunJSONLines(); err != nil {
 		return fail(err)
 	}
-	return 0
+	return engine.ExitCode()
 }
 
 func jsonLinesCommand(args []string) int {

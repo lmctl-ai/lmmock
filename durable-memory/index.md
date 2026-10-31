@@ -35,3 +35,5 @@ Go HTTP mock host backed by lmcode-go v0.6.38. Public repo lmctl-ai/lmmock, MIT.
   JSON/SSE usage and tool cases, compiled controls, and pinned published-lmctl
   integration. SDK error names and lmctl error_class are different boundaries;
   do not silently label a standalone SDK stream test as an lmctl stream test.
+
+- [Print and sidecar provider fixtures](provider-lane-e.md): shared P0 manifests, actual published Agy/Pi/lmplayer/DSH/Muse adapters, native IO/exit/model facts, zstd/MSP session resume, compiled controls and explicit unqualified empty-output client defects.
