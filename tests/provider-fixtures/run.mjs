@@ -249,10 +249,13 @@ export async function listFixtures(root = defaultRoot) {
 
 export async function runFixture(manifestPath, binary, root = defaultRoot) {
   const loaded = await loadFixture(manifestPath, root);
+  if (loaded.manifest.server.kind !== 'http') throw new Error(`${loaded.manifest.id}: ${loaded.manifest.server.kind} lifecycle must use its protocol-owned process runner`);
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'lmmock-provider-fixture-'));
   const server = startServer(path.resolve(root, binary), loaded, tempDir);
   try {
-    const ready = await server.ready;
+    let ready;
+    try { ready = await server.ready; }
+    catch (error) { throw new Error(`${loaded.manifest.id}: ${error instanceof Error ? error.message : String(error)}`); }
     if (typeof ready.url !== 'string') throw new Error('lmmock readiness did not include url');
     const vars = {base_url: ready.url, lmmock_url: ready.url, repo_root: root, tmpdir: tempDir, server_url_env: loaded.manifest.server.url_env ?? ''};
     const failed = [];

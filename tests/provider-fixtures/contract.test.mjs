@@ -15,7 +15,10 @@ assert.deepEqual(manifest.cases.map(c => c.kind), ['usage', 'error', 'model', 'e
 let passed = 0;
 for (const fixturePath of await listFixtures(repo)) {
   const {manifest: candidate} = await loadFixture(fixturePath, repo);
-  if (candidate.server?.kind !== 'http') continue;
+  if (candidate.server?.kind !== 'http') {
+    process.stdout.write(`PASS provider fixture schema ${candidate.id} (${candidate.server.kind} lifecycle delegated)\n`);
+    continue;
+  }
   const baseline = await runFixture(fixturePath, binary, repo);
   assert.equal(baseline.failed, 0);
   assert.equal(baseline.passed, candidate.cases.length);
@@ -48,10 +51,10 @@ try {
   const handlerDir = path.join(dir, 'fixtures');
   await fs.mkdir(handlerDir);
   const handlerSource = await fs.readFile(path.join(repo, 'examples/llm.lms'), 'utf8');
-  const brokenHandler = handlerSource.replace('let content = "pong"', 'let content = "mutated"');
+  const canonicalSchema = path.join(repo, 'examples/schema.json').replaceAll('\\', '/');
+  const brokenHandler = handlerSource.replace('schema="schema.json"', `schema="${canonicalSchema}"`).replace('let content = "pong"', 'let content = "mutated"');
   assert.notEqual(brokenHandler, handlerSource, 'handler mutation anchor exists');
   await fs.writeFile(path.join(handlerDir, 'handler.lms'), brokenHandler);
-  await fs.copyFile(path.join(repo, 'examples/schema.json'), path.join(handlerDir, 'schema.json'));
   await fs.copyFile(path.join(repo, 'examples/llm-config.json'), path.join(handlerDir, 'config.json'));
   const handlerMutation = structuredClone(manifest);
   handlerMutation.server.handler = 'fixtures/handler.lms';
