@@ -21,7 +21,10 @@ try{
  watcher=fs.watch(dir,()=>{
   const file=path.join(dir,'trace.jsonl');if(!fs.existsSync(file)||cancelled||!child)return;
   const rows=fs.readFileSync(file,'utf8').split('\n').filter(Boolean).flatMap(line=>{try{return [JSON.parse(line)]}catch{return []}});
-  if(rows.some(row=>row.direction==='server'&&row.line.includes('agent_message_chunk'))){cancelled=true;child.kill('SIGTERM');}
+  const packets=rows.filter(row=>row.line).flatMap(row=>{try{return [{direction:row.direction,message:JSON.parse(row.line)}]}catch{return []}});
+  const prompted=packets.some(p=>p.direction==='client'&&p.message.method==='session/prompt');
+  const partial=packets.some(p=>p.direction==='server'&&p.message.method==='session/update'&&p.message.params?.update?.sessionUpdate==='agent_message_chunk'&&p.message.params.update.content?.text==='po');
+  if(prompted&&partial){cancelled=true;child.kill('SIGTERM');}
  });
  child=spawn(process.execPath,[compiler,'--no-preflight',script],{cwd:dir,env,stdio:['ignore','pipe','pipe']});closed=new Promise(resolve=>child.once('close',(code,signal)=>resolve({code,signal})));child.stdout.on('data',b=>stdout+=b);child.stderr.on('data',b=>stderr+=b);
  const result=await closed;assert.ok(cancelled,'cancel only after the partial update');assert.equal(result.code,143,stdout+stderr);assert.equal(result.signal,null);assert.ok(!stdout.includes('"status":"ok"'));
