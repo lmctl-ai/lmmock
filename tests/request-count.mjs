@@ -13,10 +13,14 @@ if (process.argv[3] !== 'client') {
   const config = path.join(dir, 'llm.json');
   fs.writeFileSync(config, JSON.stringify({ apiKey: 'fixture-key' }));
   try {
-    const r = spawnSync(binary, ['exec', '--lmcode', 'build/llm-api.dslb', '--config', config, '--', process.execPath, import.meta.filename, binary, 'client'],
-      { env: { ...process.env, MOCK_CONFIG: config }, encoding: 'utf8', timeout: 60000 });
-    process.stdout.write(r.stdout); process.stderr.write(r.stderr);
-    process.exitCode = r.status === 0 ? 0 : 1;
+    // One mock per scenario: the retry counter is per mock instance.
+    for (const scenario of ['chat', 'responses']) {
+      fs.writeFileSync(config, JSON.stringify({ apiKey: 'fixture-key' }));
+      const r = spawnSync(binary, ['exec', '--lmcode', 'build/llm-api.dslb', '--config', config, '--', process.execPath, import.meta.filename, binary, 'client', scenario],
+        { env: { ...process.env, MOCK_CONFIG: config }, encoding: 'utf8', timeout: 60000 });
+      process.stdout.write(r.stdout); process.stderr.write(r.stderr);
+      if (r.status !== 0) { process.exitCode = 1; break; }
+    }
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 } else {
 const origin = process.env.LMMOCK_URL;
@@ -31,7 +35,22 @@ const post = (body = {}) => fetch(origin + '/v1/chat/completions', {
   body: JSON.stringify({ model: 'mock-agent', messages: [{ role: 'user', content: 'ping' }], ...body }),
 });
 
+const scenario = process.argv[4];
 assert.equal(await count(), 0, 'a fresh mock has served nothing');
+if (scenario === 'responses') {
+  // miniplayer talks to /v1/responses: retry mode must throttle the first attempt there too.
+  const post = (body) => fetch(origin + '/v1/responses', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer fixture-key', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'mock-agent', input: 'ping', ...body }),
+  });
+  set({ mode: 'retry' });
+  assert.equal((await post()).status, 429, 'first Responses attempt is throttled in retry mode');
+  assert.equal((await post()).status, 200, 'second Responses attempt succeeds');
+  assert.equal(await count(), 2);
+  console.log('PASS responses retry and counter');
+  process.exit(0);
+}
 set({ mode: 'retry' });
 assert.equal((await post()).status, 429);
 assert.equal(await count(), 1);
