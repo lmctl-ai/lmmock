@@ -56,3 +56,8 @@ Protocol sources (read 2026-10-31):
 - https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events
 - https://developers.openai.com/api/reference/resources/responses/streaming-events
 - public Miniplayer src/providers.js and src/acp.js at the pinned revision.
+
+The shared provider-fixtures runner executes both manifests (nine cases each)
+from test.lms. Its fault catalogue names are reused: malformed-usage,
+missing-terminal, auth-invalid, rate-limit and server-error. The manifest runner
+checks raw HTTP evidence; SDK/lmctl assertions above remain the parser oracle.
