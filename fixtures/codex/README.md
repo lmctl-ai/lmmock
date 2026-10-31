@@ -33,7 +33,7 @@ server never supplies an error_class to the test driver.
 
 ## Interrupt
 
-A filesystem notification observes an actual turn/started wire record and sends
+An owned loopback observer receives the actual native turn/started wire record and sends
 SIGINT through a test IPC bootstrap to the published runner's own signal handler.
 The real adapter must send one matching turn/interrupt and receive the interrupted
 terminal event. This works without a sleep, mock deadline or pacing rule. The
