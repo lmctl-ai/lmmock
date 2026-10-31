@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "id": "ollama-ndjson",
+  "dialect": {
+    "id": "ollama-ndjson",
+    "version": "0.5.0",
+    "transport": "ndjson"
+  },
+  "source": {
+    "kind": "public-spec",
+    "reference": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+    "version": "0.5.0",
+    "retrieved": "2026-10-31",
+    "note": "Ollama NDJSON line-delimited chat/generate and tag discovery"
+  },
+  "server": {
+    "kind": "http",
+    "handler": "fixtures/ollama/handler.lms",
+    "config": "fixtures/ollama/wire.json",
+    "url_env": "LMMOCK_URL"
+  },
+  "models": [
+    { "id": "fixture-ollama", "family": "llama3.2", "capabilities": ["chat", "stream"] },
+    { "id": "llama3.2", "family": "llama3.2", "capabilities": ["chat", "stream"] },
+    { "id": "llama3.1", "family": "llama3.1", "capabilities": ["chat", "stream"] },
+    { "id": "qwen2.5", "family": "qwen2.5", "capabilities": ["chat", "stream"] }
+  ],
+  "routes": [
+    { "id": "chat", "method": "POST", "path": "/api/chat", "annotation": "ollama_chat", "sam": "Handler", "content_types": ["application/json", "application/x-ndjson"] },
+    { "id": "generate", "method": "POST", "path": "/api/generate", "annotation": "ollama_chat", "sam": "Handler", "content_types": ["application/json", "application/x-ndjson"] },
+    { "id": "tags", "method": "GET", "path": "/api/tags", "annotation": "ollama_tags", "sam": "Handler", "content_types": ["application/json"] },
+    { "id": "version", "method": "GET", "path": "/api/version", "annotation": "ollama_version", "sam": "Handler", "content_types": ["application/json"] }
+  ],
+  "cases": [
+    {
+      "id": "ollama-keyless-success",
+      "kind": "usage",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/chat",
+        "body": {
+          "model": "fixture-ollama",
+          "messages": [{ "role": "user", "content": "ping" }],
+          "stream": false
+        }
+      },
+      "expect": {
+        "status": 200,
+        "json": {
+          "model": "fixture-ollama",
+          "message.content": "pong",
+          "done": true,
+          "prompt_eval_count": 10,
+          "eval_count": 2
+        }
+      }
+    },
+    {
+      "id": "ollama-stream-ndjson",
+      "kind": "stream",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/chat",
+        "body": {
+          "model": "fixture-ollama",
+          "messages": [{ "role": "user", "content": "ping" }],
+          "stream": true
+        }
+      },
+      "expect": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/x-ndjson"
+        },
+        "events": [
+          "\"done\":false",
+          "\"done\":true"
+        ]
+      }
+    },
+    {
+      "id": "ollama-unknown-model",
+      "kind": "model",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/chat",
+        "body": {
+          "model": "unknown-model",
+          "messages": [{ "role": "user", "content": "ping" }],
+          "stream": false
+        }
+      },
+      "expect": {
+        "status": 404,
+        "body_contains": "not found"
+      },
+      "faults": ["unknown-model"]
+    }
+  ],
+  "faults": [
+    {
+      "id": "unknown-model",
+      "surface": "http",
+      "trigger": { "case_id": "ollama-unknown-model", "model": "unknown-model" },
+      "description": "Unknown model returns 404 with model not found diagnostic"
+    }
+  ]
+}

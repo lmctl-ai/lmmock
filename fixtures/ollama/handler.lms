@@ -1,0 +1,90 @@
+# Ollama NDJSON wire handler in lmcode.
+p = _lmcode_ schema="../../examples/schema.json";
+fn ollama_auth_ok(x: Exchange, cfg: Json, selected: string) -> bool {
+  let ok = true;
+  if (selected == "auth-missing" || selected == "auth-invalid") {
+    ok = false;
+  } else {
+    let mode = "keyless";
+    if (cfg.has("auth_mode")) { mode = cfg.get("auth_mode").as_string(); }
+    if (mode == "bearer") {
+      let auth = x.header("Authorization");
+      ok = secure_equal(auth, "Bearer " + cfg.get("key").as_string());
+    }
+  }
+  return ok;
+}
+@ollama_chat
+fn ollama_chat(x: Exchange) -> void implements Handler {
+  let cfg = json_parse(config());
+  let selected = cfg.get("selected").as_string();
+  if (!ollama_auth_ok(x, cfg, selected)) {
+    x.status(401);
+    x.set_header("Content-Type", "application/json");
+    x.json("{\"error\":\"unauthorized\"}");
+  } else {
+    let request = json_parse(x.body());
+    let models = cfg.get("models");
+    let model = "";
+    if (request.has("model")) { model = request.get("model").as_string(); }
+    if (model == "overloaded" || selected == "rate-limit") {
+      x.status(429);
+      x.set_header("Content-Type", "application/json");
+      x.set_header("Retry-After", "1");
+      x.json("{\"error\":\"rate limit exceeded\"}");
+    } else {
+      let supported = false;
+      for (i in range(0, models.len())) {
+        if (model == models.at(i).as_string()) { supported = true; }
+      }
+      if (!supported) {
+        x.status(404);
+        x.set_header("Content-Type", "application/json");
+        x.json("{\"error\":\"model '" + model + "' not found\"}");
+      } else {
+        let reply = cfg.get("cases").get(selected);
+        x.status(reply.get("status").as_int());
+        let headers = reply.get("headers");
+        let keys = headers.keys();
+        for (i in range(0, keys.len())) {
+          x.set_header(keys.at(i), headers.get(keys.at(i)).as_string());
+        }
+        let stream = true;
+        if (request.has("stream")) { stream = request.get("stream").as_bool(); }
+        if (stream && reply.get("status").as_int() == 200) {
+          x.set_header("Content-Type", "application/x-ndjson");
+          let events = reply.get("events");
+          for (i in range(0, events.len())) {
+            x.stream_event(events.at(i).as_string());
+          }
+        } else {
+          if (reply.get("headers").has("content-type") && reply.get("headers").get("content-type").as_string() == "text/plain") {
+            x.send("pong plain text");
+          } else {
+            x.json(reply.get("body").to_json());
+          }
+        }
+      }
+    }
+  }
+}
+@ollama_tags
+fn ollama_tags(x: Exchange) -> void implements Handler {
+  let cfg = json_parse(config());
+  if (!ollama_auth_ok(x, cfg, cfg.get("selected").as_string())) {
+    x.status(401);
+    x.json("{\"error\":\"unauthorized\"}");
+  } else {
+    x.json("{\"models\":[{\"name\":\"fixture-ollama\",\"model\":\"fixture-ollama\"}]}");
+  }
+}
+@ollama_version
+fn ollama_version(x: Exchange) -> void implements Handler {
+  x.json("{\"version\":\"0.5.0\"}");
+}
+route("POST", "/api/chat", "ollama_chat");
+route("POST", "/api/generate", "ollama_chat");
+route("GET", "/api/tags", "ollama_tags");
+route("GET", "/api/version", "ollama_version");
+end _lmcode_
+savedsl(p, ARGV[0]);

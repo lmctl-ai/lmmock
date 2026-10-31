@@ -1,0 +1,83 @@
+# Miniplayer routed OpenAI-compatible providers in lmcode.
+p = _lmcode_ schema="../../examples/schema.json";
+fn resolve_provider(x: Exchange, cfg: Json, model: string) -> string {
+  let provider = "deepseek";
+  if (cfg.has("provider")) { provider = cfg.get("provider").as_string(); }
+  let header_p = x.header("x-mock-provider");
+  if (header_p != "") { provider = header_p; }
+  let query_p = x.query("provider");
+  if (query_p != "") { provider = query_p; }
+  if (str_starts_with(model, "moonshot") || str_starts_with(model, "kimi")) { provider = "moonshot"; }
+  if (str_starts_with(model, "deepseek")) { provider = "deepseek"; }
+  if (str_starts_with(model, "openrouter")) { provider = "openrouter"; }
+  if (str_starts_with(model, "qwen")) { provider = "qwen"; }
+  if (str_starts_with(model, "ollama")) { provider = "ollama"; }
+  return provider;
+}
+@miniplayer_chat
+fn miniplayer_chat(x: Exchange) -> void implements Handler {
+  let cfg = json_parse(config());
+  let selected = cfg.get("selected").as_string();
+  let request = json_parse(x.body());
+  let model = "";
+  if (request.has("model")) { model = request.get("model").as_string(); }
+  let provider = resolve_provider(x, cfg, model);
+  let auth = x.header("Authorization");
+  let auth_ok = true;
+  if (selected == "auth-error") {
+    auth_ok = false;
+  } else if (provider != "ollama") {
+    auth_ok = secure_equal(auth, "Bearer " + cfg.get("key").as_string());
+  }
+  if (!auth_ok) {
+    let err = cfg.get("provider_errors").get(provider).get("auth");
+    x.status(err.get("status").as_int());
+    x.set_header("Content-Type", "application/json");
+    x.json(err.get("body").to_json());
+  } else if (selected == "rate-limit") {
+    let err = cfg.get("provider_errors").get(provider).get("rate_limit");
+    x.status(err.get("status").as_int());
+    x.set_header("Content-Type", "application/json");
+    x.set_header("Retry-After", "1");
+    x.json(err.get("body").to_json());
+  } else {
+    let models = cfg.get("models");
+    let supported = false;
+    for (i in range(0, models.len())) {
+      if (model == models.at(i).as_string()) { supported = true; }
+    }
+    if (!supported) {
+      x.status(404);
+      x.set_header("Content-Type", "application/json");
+      x.json("{\"error\":{\"message\":\"model not found\",\"code\":\"model_not_found\"}}");
+    } else {
+      let reply = cfg.get("cases").get(selected);
+      x.status(reply.get("status").as_int());
+      let headers = reply.get("headers");
+      let keys = headers.keys();
+      for (i in range(0, keys.len())) {
+        x.set_header(keys.at(i), headers.get(keys.at(i)).as_string());
+      }
+      if (request.has("stream") && request.get("stream").as_bool() && reply.get("status").as_int() == 200) {
+        if (!reply.get("headers").has("content-type")) {
+          x.set_header("Content-Type", "text/event-stream");
+        }
+        let events = reply.get("events");
+        for (i in range(0, events.len())) {
+          x.stream_event(events.at(i).as_string());
+        }
+      } else {
+        if (reply.get("headers").has("content-type") && reply.get("headers").get("content-type").as_string() == "text/plain") {
+          x.send("pong plain text");
+        } else {
+          x.json(reply.get("body").to_json());
+        }
+      }
+    }
+  }
+}
+route("POST", "/v1/chat/completions", "miniplayer_chat");
+route("POST", "/api/v1/chat/completions", "miniplayer_chat");
+route("POST", "/chat/completions", "miniplayer_chat");
+end _lmcode_
+savedsl(p, ARGV[0]);

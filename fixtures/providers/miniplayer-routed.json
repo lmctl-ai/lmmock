@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "id": "miniplayer-routed",
+  "dialect": {
+    "id": "openai-compatible",
+    "version": "v1",
+    "transport": "http"
+  },
+  "source": {
+    "kind": "sdk-types",
+    "reference": "https://github.com/lmctl-ai/miniplayer",
+    "version": "0.1.0",
+    "retrieved": "2026-10-31",
+    "note": "Miniplayer-routed OpenAI-compatible providers: DeepSeek, Moonshot, OpenRouter, Qwen, Ollama"
+  },
+  "server": {
+    "kind": "http",
+    "handler": "fixtures/miniplayer/handler.lms",
+    "config": "fixtures/miniplayer/wire.json",
+    "url_env": "LMMOCK_URL"
+  },
+  "models": [
+    { "id": "fixture-miniplayer", "family": "deepseek", "capabilities": ["chat", "stream"] },
+    { "id": "deepseek-chat", "family": "deepseek", "capabilities": ["chat", "stream"] },
+    { "id": "moonshot-v1-8k", "family": "moonshot", "capabilities": ["chat", "stream"] },
+    { "id": "openrouter/auto", "family": "openrouter", "capabilities": ["chat", "stream"] },
+    { "id": "qwen-plus", "family": "qwen", "capabilities": ["chat", "stream"] },
+    { "id": "llama3.2", "family": "ollama", "capabilities": ["chat", "stream"] }
+  ],
+  "routes": [
+    { "id": "chat", "method": "POST", "path": "/v1/chat/completions", "annotation": "miniplayer_chat", "sam": "Handler", "content_types": ["application/json"] }
+  ],
+  "cases": [
+    {
+      "id": "deepseek-success",
+      "kind": "usage",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "headers": {
+          "Authorization": "Bearer fixture-miniplayer-key",
+          "x-mock-provider": "deepseek"
+        },
+        "body": {
+          "model": "deepseek-chat",
+          "messages": [{ "role": "user", "content": "ping" }]
+        }
+      },
+      "expect": {
+        "status": 200,
+        "json": {
+          "choices.0.message.content": "pong",
+          "usage.total_tokens": 12
+        }
+      }
+    },
+    {
+      "id": "deepseek-auth-error",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "headers": {
+          "Authorization": "Bearer wrong-key",
+          "x-mock-provider": "deepseek"
+        },
+        "body": {
+          "model": "deepseek-chat",
+          "messages": [{ "role": "user", "content": "ping" }]
+        }
+      },
+      "expect": {
+        "status": 401,
+        "json": {
+          "error.code": "invalid_api_key",
+          "error.type": "authentication_error"
+        }
+      },
+      "faults": ["auth-invalid"]
+    },
+    {
+      "id": "moonshot-auth-error",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "headers": {
+          "Authorization": "Bearer wrong-key",
+          "x-mock-provider": "moonshot"
+        },
+        "body": {
+          "model": "moonshot-v1-8k",
+          "messages": [{ "role": "user", "content": "ping" }]
+        }
+      },
+      "expect": {
+        "status": 401,
+        "json": {
+          "error.code": "auth_header_invalid",
+          "error.type": "invalid_request_error"
+        }
+      },
+      "faults": ["auth-invalid"]
+    },
+    {
+      "id": "openrouter-auth-error",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "headers": {
+          "Authorization": "Bearer wrong-key",
+          "x-mock-provider": "openrouter"
+        },
+        "body": {
+          "model": "openrouter/auto",
+          "messages": [{ "role": "user", "content": "ping" }]
+        }
+      },
+      "expect": {
+        "status": 401,
+        "json": {
+          "error.code": 401,
+          "error.message": "User key not found"
+        }
+      },
+      "faults": ["auth-invalid"]
+    },
+    {
+      "id": "qwen-auth-error",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "headers": {
+          "Authorization": "Bearer wrong-key",
+          "x-mock-provider": "qwen"
+        },
+        "body": {
+          "model": "qwen-plus",
+          "messages": [{ "role": "user", "content": "ping" }]
+        }
+      },
+      "expect": {
+        "status": 401,
+        "json": {
+          "code": "InvalidApiKey"
+        }
+      },
+      "faults": ["auth-invalid"]
+    }
+  ],
+  "faults": [
+    {
+      "id": "auth-invalid",
+      "surface": "http",
+      "trigger": { "case_id": "deepseek-auth-error" },
+      "description": "Provider-specific authentication failure without echoing the secret token"
+    }
+  ]
+}
