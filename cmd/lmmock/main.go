@@ -24,6 +24,12 @@ var version = "0.1.0"
 
 func main() { os.Exit(run(os.Args[1:])) }
 func run(args []string) int {
+	if os.Getenv("LMMOCK_JSONLINES_SCENARIO") != "" {
+		return jsonLinesProcess(args)
+	}
+	if len(args) > 0 && args[0] == "jsonlines" {
+		return jsonLinesCommand(args[1:])
+	}
 	if len(args) > 0 && args[0] == "stdio" {
 		return stdioCommand(args[1:])
 	}
