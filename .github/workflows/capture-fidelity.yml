@@ -32,7 +32,7 @@ jobs:
           go build -o build/lmmock ./cmd/lmmock
           lmscript --no-preflight examples/scenario.lms build/scenario.dslb
           lmscript --no-preflight examples/copilot.lms build/copilot.dslb
-          go test ./internal/scenario ./internal/mock -run 'TestScenario|TestScrub|TestSSE|TestGzip|TestEscaped' -count=1
+          go test ./internal/scenario ./internal/mock -run 'TestScenario|TestScrub|TestSSE|TestGzip|TestEscaped|TestCopilot' -count=1
           python3 tests/scenario/controls.py
       - name: Record a local stand-in and compare scrubbed fixtures
         run: |

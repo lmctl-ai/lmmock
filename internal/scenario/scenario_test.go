@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 )
@@ -79,5 +80,93 @@ func TestEscapedSSESecretAndFutureCredential(t *testing.T) {
 	}
 	if data["echo"] == token {
 		t.Fatal("escaped SSE secret leaked")
+	}
+}
+
+func TestCopilotCaseStudyContract(t *testing.T) {
+	file, e := os.Open("../../captures/copilot/flows.jsonl")
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer file.Close()
+	_, flows, e := Import(file, false)
+	if e != nil {
+		t.Fatal(e)
+	}
+	seen := map[string]bool{}
+	for _, f := range flows {
+		if f.Response.Status != 200 {
+			if f.Request.Path != "/models" || f.Response.Status != 401 {
+				t.Fatal("unexpected failure")
+			}
+			continue
+		}
+		seen[f.Request.Path] = true
+		switch f.Request.Path {
+		case "/models":
+			var catalog struct {
+				Data []struct {
+					ID           string
+					Default      bool `json:"is_chat_default"`
+					Fallback     bool `json:"is_chat_fallback"`
+					Picker       bool `json:"model_picker_enabled"`
+					Capabilities struct {
+						Type, Family string
+						Limits       map[string]int
+					}
+					Endpoints []string `json:"supported_endpoints"`
+				}
+			}
+			if e = json.Unmarshal(f.Response.Content, &catalog); e != nil {
+				t.Fatal(e)
+			}
+			models := map[string]bool{}
+			for _, m := range catalog.Data {
+				models[m.ID] = true
+				if m.ID == "gpt-5.3-codex" && (!m.Default || !m.Fallback || !m.Picker || m.Capabilities.Type != "chat" || m.Capabilities.Family != "gpt-5.3-codex" || m.Capabilities.Limits["max_prompt_tokens"] <= 0 || len(m.Endpoints) == 0) {
+					t.Fatal("Copilot startup catalog incomplete")
+				}
+			}
+			for _, id := range []string{"gpt-5.3-codex", "gpt-4o", "claude-haiku-4.5"} {
+				if !models[id] {
+					t.Fatal("missing model", id)
+				}
+			}
+		case "/auto":
+			var selected struct {
+				Model struct{ ID string } `json:"selected_model"`
+			}
+			if json.Unmarshal(f.Response.Content, &selected) != nil || selected.Model.ID == "" {
+				t.Fatal("missing selected_model")
+			}
+		case "/responses", "/v1/responses", "/v1/messages":
+			names := []string{"response.created", "response.in_progress", "response.output_item.added", "response.content_part.added", "response.output_text.delta", "response.output_text.done", "response.content_part.done", "response.output_item.done", "response.completed"}
+			responses := f.Request.Path != "/v1/messages"
+			if !responses {
+				names = []string{"message_start", "content_block_start", "content_block_delta", "content_block_stop", "message_delta", "message_stop"}
+			}
+			events := Events(string(f.Response.Content))
+			if len(events) != len(names) {
+				t.Fatal("event count", f.Request.Path, len(events))
+			}
+			for i, event := range events {
+				lines := strings.Split(event, "\n")
+				if lines[0] != "event: "+names[i] {
+					t.Fatal("event transition", i, lines[0])
+				}
+				var payload struct {
+					Type     string
+					Sequence int `json:"sequence_number"`
+				}
+				if json.Unmarshal([]byte(strings.TrimPrefix(lines[1], "data: ")), &payload) != nil || payload.Type != names[i] || responses && payload.Sequence != i+1 {
+					t.Fatal("event payload/sequence", i)
+				}
+			}
+		}
+	}
+	for _, path := range []string{"/models", "/auto", "/responses", "/v1/messages", "/copilot_internal/team_customizations", "/copilot_internal/managed_settings", "/mcp/readonly", "/telemetry"} {
+		if !seen[path] {
+			t.Fatal("missing handshake pattern", path)
+		}
 	}
 }
