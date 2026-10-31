@@ -552,7 +552,7 @@ committed status and error kind. Body logging is opt-in, limited to the first
 Unconsumed bodies are not invented. Encoded or binary bodies are omitted; use the
 capture converter for byte-faithful recordings.
 
-Credential headers, sensitive query/body keys, known credential echoes and the
+Credential headers, sensitive query/JSON-body keys, known credential echoes and the
 converter's secret patterns are scrubbed. Unknown application secrets still need
 review; these endpoints are for synthetic test traffic. Logging is off by default.
 Admin calls do not log themselves. Reset clears strings, counters, occurrence

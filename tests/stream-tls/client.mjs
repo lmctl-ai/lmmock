@@ -9,17 +9,19 @@ assert.equal(base.protocol,'https:');
 const agent=new https.Agent({keepAlive:false});
 const connect=agent.createConnection.bind(agent);
 agent.createConnection=(options,callback)=>connect({...options,host:'127.0.0.1',port:Number(base.port),servername:'fixed.mock.test'},callback);
+let receivedHeaders;
 const chunks=await new Promise((resolve,reject)=>{
  const got=[];
  const request=https.get('https://fixed.mock.test/tokens',{agent},response=>{
   assert.equal(response.statusCode,200);
-  assert.equal(response.headers['transfer-encoding'],'chunked');
-  assert.equal(response.headers['content-length'],undefined);
+  receivedHeaders=response.headers;
   response.on('data',chunk=>got.push(chunk.toString('utf8')));
   response.on('end',()=>resolve(got));response.on('error',reject);
  });request.on('error',reject);
 });
 assert.deepEqual(chunks,['data: one\n\n','data: two\n\n'],'tokens arrived as one buffered response');
+assert.equal(receivedHeaders['transfer-encoding'],'chunked');
+assert.equal(receivedHeaders['content-length'],undefined);
 if(process.env.LMMOCK_UNTRUSTED_CONTROL==='1')throw Error('HTTPS passed without exported CA');
 assert.ok(fs.existsSync(process.env.LMMOCK_CA_CERT));
 for(const key of ['SSL_CERT_FILE','NODE_EXTRA_CA_CERTS','REQUESTS_CA_BUNDLE','CURL_CA_BUNDLE'])assert.equal(process.env[key],process.env.LMMOCK_CA_CERT);

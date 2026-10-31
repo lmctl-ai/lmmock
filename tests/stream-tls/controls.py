@@ -21,3 +21,20 @@ for name,file,before,after,test,assertion in faults:
   output=result.stdout+result.stderr
   assert result.returncode==1 and '--- FAIL:' in output and assertion in output and 'build failed' not in output and '[build failed]' not in output,(name,output)
   print('CAUGHT',name,'at',assertion)
+
+# The S8 acceptance oracle itself must reject a buffered executable, not just
+# a recorder missing Flush. Keep TLS/CA verification unchanged in this mutant.
+with tempfile.TemporaryDirectory(prefix='lmmock-buffered-client-') as temporary:
+ folder=pathlib.Path(temporary)
+ source=root/'internal/mock/streaming.go';text=source.read_text()
+ needle='return http.NewResponseController(s.writer).Flush()';assert needle in text
+ replacement=folder/'streaming.go';replacement.write_text(text.replace(needle,'return nil'))
+ overlay=folder/'overlay.json';overlay.write_text(json.dumps({'Replace':{str(source):str(replacement)}}))
+ import os
+ binary=folder/('lmmock.exe' if os.name=='nt' else 'lmmock')
+ compiled=subprocess.run(['go','build','-overlay',str(overlay),'-o',str(binary),'./cmd/lmmock'],cwd=root,capture_output=True,text=True)
+ assert compiled.returncode==0,compiled.stdout+compiled.stderr
+ result=subprocess.run(['node','tests/stream-tls/run.mjs',str(binary)],cwd=root,capture_output=True,text=True)
+ output=result.stdout+result.stderr
+ assert result.returncode==1 and 'AssertionError' in output and 'tokens arrived as one buffered response' in output,output
+ print('CAUGHT actual buffered executable at fixed-HTTPS token-by-token arrival assertion')
