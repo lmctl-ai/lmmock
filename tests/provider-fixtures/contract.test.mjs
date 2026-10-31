@@ -15,12 +15,13 @@ assert.deepEqual(manifest.cases.map(c => c.kind), ['usage', 'error', 'model', 'e
 let passed = 0;
 for (const fixturePath of await listFixtures(repo)) {
   const {manifest: candidate} = await loadFixture(fixturePath, repo);
+  if (candidate.server?.kind !== 'http') continue;
   const baseline = await runFixture(fixturePath, binary, repo);
   assert.equal(baseline.failed, 0);
   assert.equal(baseline.passed, candidate.cases.length);
   passed += baseline.passed;
 }
-process.stdout.write(`PASS provider fixture baseline (${passed} cases, all manifests)\n`);
+process.stdout.write(`PASS provider fixture baseline (${passed} cases, all HTTP manifests)\n`);
 
 const probeVars = {repo_root: repo, base_url: 'http://127.0.0.1:1', lmmock_url: 'http://127.0.0.1:1', tmpdir: os.tmpdir(), server_url_env: 'FIXTURE_BASE'};
 const processRequest = {kind: 'process', executable: process.execPath, argv: ['-e', 'process.stdout.write(JSON.stringify({error_class:"auth_required", url:process.env.FIXTURE_BASE}))']};

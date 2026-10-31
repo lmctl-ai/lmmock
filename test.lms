@@ -39,3 +39,9 @@ step(["node", "tests/openai/run.mjs", "build/lmmock" + ext]);
 step(["node", "tests/openai/controls.mjs", "build/lmmock" + ext]);
 step(["node", "tests/provider-fixtures/run.mjs", "fixtures/providers/openai-chat-native.json", "build/lmmock" + ext]);
 step(["node", "tests/provider-fixtures/run.mjs", "fixtures/providers/openai-responses-native.json", "build/lmmock" + ext]);
+
+# Provider fixture contract runner
+step(["node", "tests/provider-fixtures/contract.test.mjs", "build/lmmock" + ext]);
+
+# Anthropic Messages, Gemini content, Ollama NDJSON and Miniplayer compatibility
+step(["node", "tests/provider-compat/run.mjs", "build/lmmock" + ext]);

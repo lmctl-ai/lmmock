@@ -99,7 +99,10 @@ function getPath(value, dotted) {
 }
 
 function eventsOf(text) {
-  return text.split(/\r?\n\r?\n/).filter(Boolean);
+  if (text.includes('\n\n') || text.includes('\r\n\r\n')) {
+    return text.split(/\r?\n\r?\n/).filter(Boolean);
+  }
+  return text.split(/\r?\n/).filter(Boolean);
 }
 
 function expand(value, vars) {
