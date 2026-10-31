@@ -1,0 +1,34 @@
+name: Codex app-server published client
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  published:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34
+        with: {go-version: '1.26'}
+      - name: Private published client and compiler
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
+          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "LMCTL_PACKAGE_ROOT=$RUNNER_TEMP/lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
+      - name: Compile the annotated handler and native owned CLI
+        run: |
+          bash scripts/compile-stdio.sh
+          git diff --exit-code -- internal/rpcstdio/presets
+          go test ./internal/rpcstdio -run TestCodex -count=1
+          mkdir -p build
+          go build -o build/codex-fixture ./tests/providers/codex/fakecli
+      - name: Real adapter, exact token/session facts and explicit client gaps
+        run: |
+          python3 tests/providers/codex/generate.py --check
+          node tests/providers/codex/run.mjs
+          python3 tests/providers/codex/controls.py
