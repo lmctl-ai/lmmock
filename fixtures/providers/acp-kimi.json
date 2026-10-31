@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "id": "acp-kimi",
+  "dialect": {
+    "id": "acp-kimi",
+    "version": "1",
+    "transport": "acp"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "https://agentclientprotocol.com/protocol/v1/prompt-turn",
+    "version": "ACP v1; npm lmctl 0.2.448; mono 8e334dda",
+    "retrieved": "2026-10-31",
+    "note": "Synthetic model families and wire values. Gemini is profile-only: the published adapter is disabled. Usage metadata is not billing usage."
+  },
+  "server": {
+    "kind": "stdio",
+    "handler": "fixtures/acp/handler.lms",
+    "config": "fixtures/acp/kimi-success.json",
+    "binary": "lmmock"
+  },
+  "models": [
+    {
+      "id": "fixture-kimi-kimi-k2",
+      "family": "kimi-k2",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-kimi-kimi-k3",
+      "family": "kimi-k3",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    }
+  ],
+  "routes": [
+    {
+      "id": "initialize",
+      "method": "RPC",
+      "path": "/initialize",
+      "annotation": "initialize",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-new",
+      "method": "RPC",
+      "path": "/session/new",
+      "annotation": "open",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-load",
+      "method": "RPC",
+      "path": "/session/load",
+      "annotation": "open",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-prompt",
+      "method": "RPC",
+      "path": "/session/prompt",
+      "annotation": "prompt",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-cancel",
+      "method": "RPC",
+      "path": "/session/cancel",
+      "annotation": "cancel",
+      "sam": "RPCHandler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "kimi-success",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "kimi-success"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-success.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "model": "fixture-kimi-kimi-k2",
+        "json": {
+          "usage.source": null,
+          "usage.inputUncached": null,
+          "usage.cacheRead": null,
+          "usage.cacheWrite": null,
+          "usage.output": null,
+          "usage.reasoning": null,
+          "usage.costUsd": null,
+          "usage.reason": "native_record_missing"
+        }
+      }
+    },
+    {
+      "id": "kimi-auth",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "kimi-auth"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-auth.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "auth_required",
+        "stdout_contains": "Authentication required"
+      },
+      "faults": [
+        "auth-invalid"
+      ]
+    },
+    {
+      "id": "kimi-cancel",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "kimi-cancel"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-cancel.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "events": [
+            "agent_message_chunk",
+            "cancelled",
+            "end_turn"
+          ]
+        }
+      }
+    },
+    {
+      "id": "kimi-missing",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "kimi-missing"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-missing.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "unknown"
+      },
+      "faults": [
+        "missing-terminal"
+      ]
+    },
+    {
+      "id": "kimi-stale",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "kimi-stale"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-stale.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "stderr_contains": "session/load failed"
+      },
+      "faults": [
+        "session-stale"
+      ]
+    },
+    {
+      "id": "kimi-permission",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "kimi-permission"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-permission.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "permission rejected"
+      }
+    },
+    {
+      "id": "kimi-config",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "kimi-config"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-config.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "stderr_contains": "set_config_option"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "auth-invalid",
+      "surface": "process",
+      "trigger": {
+        "case_id": "kimi-auth"
+      },
+      "description": "Deterministic ACP auth fixture; no delay or vendor contact."
+    },
+    {
+      "id": "missing-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "kimi-missing"
+      },
+      "description": "Deterministic ACP missing fixture; no delay or vendor contact."
+    },
+    {
+      "id": "session-stale",
+      "surface": "session",
+      "trigger": {
+        "case_id": "kimi-stale"
+      },
+      "description": "Deterministic ACP stale fixture; no delay or vendor contact."
+    }
+  ]
+}

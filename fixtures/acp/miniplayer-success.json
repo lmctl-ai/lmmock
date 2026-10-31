@@ -1,0 +1,108 @@
+{
+  "profile": "miniplayer",
+  "model": "fixture-miniplayer-anthropic",
+  "initial_model": "fixture-default",
+  "session": "11111111-2222-4333-8444-555555555555",
+  "argv": [
+    "acp",
+    "-m",
+    "fixture-miniplayer-anthropic"
+  ],
+  "configure": [],
+  "fault": "",
+  "replay": [
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "old replay must not leak"
+      }
+    }
+  ],
+  "cells": [
+    {
+      "alias": "Worker",
+      "turn": 1,
+      "expect": "ping",
+      "events": [
+        {
+          "sessionUpdate": "agent_thought_chunk",
+          "content": {
+            "type": "text",
+            "text": "private fixture reasoning"
+          }
+        },
+        {
+          "sessionUpdate": "tool_call",
+          "toolCallId": "tool-fixture",
+          "title": "Read synthetic note",
+          "kind": "read",
+          "status": "in_progress",
+          "rawInput": {
+            "path": "fixture.txt"
+          }
+        },
+        {
+          "sessionUpdate": "tool_call_update",
+          "toolCallId": "tool-fixture",
+          "status": "completed",
+          "content": [
+            {
+              "type": "content",
+              "content": {
+                "type": "text",
+                "text": "fixture note"
+              }
+            }
+          ]
+        },
+        {
+          "sessionUpdate": "usage_update",
+          "size": 99,
+          "used": 7,
+          "cost": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        },
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "po"
+          }
+        },
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "ng"
+          }
+        }
+      ],
+      "completion": "end_turn"
+    },
+    {
+      "alias": "Worker",
+      "turn": 2,
+      "expect": "ping",
+      "events": [
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "po"
+          }
+        },
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "ng"
+          }
+        }
+      ],
+      "completion": "end_turn"
+    }
+  ]
+}

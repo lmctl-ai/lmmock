@@ -1,0 +1,72 @@
+{
+  "profile": "opencode",
+  "model": "fixture-opencode-configured-provider-model",
+  "initial_model": "fixture-default",
+  "session": "11111111-2222-4333-8444-555555555555",
+  "argv": [
+    "acp"
+  ],
+  "configure": [
+    {
+      "method": "session/set_config_option",
+      "key": "value",
+      "value": "fixture-opencode-configured-provider-model",
+      "configId": "model"
+    },
+    {
+      "method": "session/set_config_option",
+      "key": "value",
+      "value": "high",
+      "configId": "effort"
+    }
+  ],
+  "fault": "",
+  "replay": [
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "old replay must not leak"
+      }
+    }
+  ],
+  "cells": [
+    {
+      "alias": "Worker",
+      "turn": 1,
+      "expect": "ping",
+      "events": [
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "po"
+          }
+        }
+      ],
+      "completion": "missing"
+    },
+    {
+      "alias": "Worker",
+      "turn": 2,
+      "expect": "ping",
+      "events": [
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "po"
+          }
+        },
+        {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "ng"
+          }
+        }
+      ],
+      "completion": "end_turn"
+    }
+  ]
+}

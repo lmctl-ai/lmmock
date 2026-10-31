@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "id": "acp-copilot",
+  "dialect": {
+    "id": "acp-copilot",
+    "version": "1",
+    "transport": "acp"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "https://agentclientprotocol.com/protocol/v1/prompt-turn",
+    "version": "ACP v1; npm lmctl 0.2.448; mono 8e334dda",
+    "retrieved": "2026-10-31",
+    "note": "Synthetic model families and wire values. Gemini is profile-only: the published adapter is disabled. Usage metadata is not billing usage."
+  },
+  "server": {
+    "kind": "stdio",
+    "handler": "fixtures/acp/handler.lms",
+    "config": "fixtures/acp/copilot-success.json",
+    "binary": "lmmock"
+  },
+  "models": [
+    {
+      "id": "fixture-copilot-gpt",
+      "family": "gpt",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-copilot-claude",
+      "family": "claude",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-copilot-gemini",
+      "family": "gemini",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-copilot-grok",
+      "family": "grok",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    }
+  ],
+  "routes": [
+    {
+      "id": "initialize",
+      "method": "RPC",
+      "path": "/initialize",
+      "annotation": "initialize",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-new",
+      "method": "RPC",
+      "path": "/session/new",
+      "annotation": "open",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-load",
+      "method": "RPC",
+      "path": "/session/load",
+      "annotation": "open",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-prompt",
+      "method": "RPC",
+      "path": "/session/prompt",
+      "annotation": "prompt",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-cancel",
+      "method": "RPC",
+      "path": "/session/cancel",
+      "annotation": "cancel",
+      "sam": "RPCHandler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "copilot-success",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "copilot-success"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/copilot-success.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "model": "fixture-copilot-gpt",
+        "json": {
+          "usage.source": null,
+          "usage.inputUncached": null,
+          "usage.cacheRead": null,
+          "usage.cacheWrite": null,
+          "usage.output": null,
+          "usage.reasoning": null,
+          "usage.costUsd": null,
+          "usage.reason": "session_totals_only"
+        }
+      }
+    },
+    {
+      "id": "copilot-auth",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "copilot-auth"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/copilot-auth.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "auth_required",
+        "stdout_contains": "Authentication required"
+      },
+      "faults": [
+        "auth-invalid"
+      ]
+    },
+    {
+      "id": "copilot-cancel",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "copilot-cancel"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/copilot-cancel.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "events": [
+            "agent_message_chunk",
+            "cancelled",
+            "end_turn"
+          ]
+        }
+      }
+    },
+    {
+      "id": "copilot-missing",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "copilot-missing"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/copilot-missing.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "unknown"
+      },
+      "faults": [
+        "missing-terminal"
+      ]
+    },
+    {
+      "id": "copilot-stale",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "copilot-stale"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/copilot-stale.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "stderr_contains": "session/load failed"
+      },
+      "faults": [
+        "session-stale"
+      ]
+    },
+    {
+      "id": "copilot-permission",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "copilot-permission"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/copilot-permission.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "permission rejected"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "auth-invalid",
+      "surface": "process",
+      "trigger": {
+        "case_id": "copilot-auth"
+      },
+      "description": "Deterministic ACP auth fixture; no delay or vendor contact."
+    },
+    {
+      "id": "missing-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "copilot-missing"
+      },
+      "description": "Deterministic ACP missing fixture; no delay or vendor contact."
+    },
+    {
+      "id": "session-stale",
+      "surface": "session",
+      "trigger": {
+        "case_id": "copilot-stale"
+      },
+      "description": "Deterministic ACP stale fixture; no delay or vendor contact."
+    }
+  ]
+}

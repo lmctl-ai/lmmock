@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "id": "acp-miniplayer",
+  "dialect": {
+    "id": "acp-miniplayer",
+    "version": "1",
+    "transport": "acp"
+  },
+  "source": {
+    "kind": "synthetic",
+    "reference": "https://agentclientprotocol.com/protocol/v1/prompt-turn",
+    "version": "ACP v1; npm lmctl 0.2.448; mono 8e334dda",
+    "retrieved": "2026-10-31",
+    "note": "Synthetic model families and wire values. Gemini is profile-only: the published adapter is disabled. Usage metadata is not billing usage."
+  },
+  "server": {
+    "kind": "stdio",
+    "handler": "fixtures/acp/handler.lms",
+    "config": "fixtures/acp/miniplayer-success.json",
+    "binary": "lmmock"
+  },
+  "models": [
+    {
+      "id": "fixture-miniplayer-anthropic",
+      "family": "anthropic",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-miniplayer-openai",
+      "family": "openai",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-miniplayer-google",
+      "family": "google",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-miniplayer-moonshot",
+      "family": "moonshot",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-miniplayer-deepseek",
+      "family": "deepseek",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-miniplayer-ollama",
+      "family": "ollama",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    },
+    {
+      "id": "fixture-miniplayer-openrouter",
+      "family": "openrouter",
+      "capabilities": [
+        "chat",
+        "tools",
+        "stream"
+      ],
+      "price_record": null
+    }
+  ],
+  "routes": [
+    {
+      "id": "initialize",
+      "method": "RPC",
+      "path": "/initialize",
+      "annotation": "initialize",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-new",
+      "method": "RPC",
+      "path": "/session/new",
+      "annotation": "open",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-load",
+      "method": "RPC",
+      "path": "/session/load",
+      "annotation": "open",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-prompt",
+      "method": "RPC",
+      "path": "/session/prompt",
+      "annotation": "prompt",
+      "sam": "RPCHandler"
+    },
+    {
+      "id": "session-cancel",
+      "method": "RPC",
+      "path": "/session/cancel",
+      "annotation": "cancel",
+      "sam": "RPCHandler"
+    }
+  ],
+  "cases": [
+    {
+      "id": "miniplayer-success",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "miniplayer-success"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-success.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "model": "fixture-miniplayer-anthropic",
+        "json": {
+          "usage.source": null,
+          "usage.inputUncached": null,
+          "usage.cacheRead": null,
+          "usage.cacheWrite": null,
+          "usage.output": null,
+          "usage.reasoning": null,
+          "usage.costUsd": null,
+          "usage.reason": "native_record_missing"
+        }
+      }
+    },
+    {
+      "id": "miniplayer-auth",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "miniplayer-auth"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-auth.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "auth_required",
+        "stdout_contains": "Authentication required"
+      },
+      "faults": [
+        "auth-invalid"
+      ]
+    },
+    {
+      "id": "miniplayer-cancel",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "miniplayer-cancel"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-cancel.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "events": [
+            "agent_message_chunk",
+            "cancelled",
+            "end_turn"
+          ]
+        }
+      }
+    },
+    {
+      "id": "miniplayer-missing",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "miniplayer-missing"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-missing.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "unknown"
+      },
+      "faults": [
+        "missing-terminal"
+      ]
+    },
+    {
+      "id": "miniplayer-stale",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "miniplayer-stale"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-stale.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "pong",
+        "stderr_contains": "session/load failed"
+      },
+      "faults": [
+        "session-stale"
+      ]
+    },
+    {
+      "id": "miniplayer-permission",
+      "kind": "stream",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "miniplayer-permission"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/miniplayer-permission.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "stdout_contains": "permission rejected"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "auth-invalid",
+      "surface": "process",
+      "trigger": {
+        "case_id": "miniplayer-auth"
+      },
+      "description": "Deterministic ACP auth fixture; no delay or vendor contact."
+    },
+    {
+      "id": "missing-terminal",
+      "surface": "stream",
+      "trigger": {
+        "case_id": "miniplayer-missing"
+      },
+      "description": "Deterministic ACP missing fixture; no delay or vendor contact."
+    },
+    {
+      "id": "session-stale",
+      "surface": "session",
+      "trigger": {
+        "case_id": "miniplayer-stale"
+      },
+      "description": "Deterministic ACP stale fixture; no delay or vendor contact."
+    }
+  ]
+}
