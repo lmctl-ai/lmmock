@@ -189,3 +189,23 @@ func TestScrubQueryAndBodyCredentialsWithoutHeaders(t *testing.T) {
 		}
 	}
 }
+
+func TestScrubEncodedQueryAndIdempotence(t *testing.T) {
+	f := Flow{Request: Request{Method: "POST", Path: "/x?key=synthetic%2fquery%2bsecret&access_token=second%20secret&public=keep%2Bthis", Content: []byte(`{"api_key":"synthetic-body-secret"}`)}, Response: &Response{Status: 200, Content: []byte(`{"echo":"synthetic/query+secret second secret synthetic-body-secret"}`)}}
+	raw, _ := json.Marshal(f)
+	_, clean, err := Import(bytes.NewReader(raw), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(clean[0].Request.Path, "synthetic") || strings.Contains(clean[0].Request.Path, "second") {
+		t.Fatal("encoded query credential retained")
+	}
+	again, _ := json.Marshal(clean[0])
+	_, second, err := Import(bytes.NewReader(again), false)
+	if err != nil {
+		t.Fatal("scrubbed capture must remain importable:", err)
+	}
+	if !bytes.Equal(clean[0].Request.Content, second[0].Request.Content) {
+		t.Fatal("scrubbing changed an already sanitized body")
+	}
+}

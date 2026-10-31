@@ -242,6 +242,9 @@ func Import(input io.Reader, exact bool) (Scenario, []Flow, error) {
 	n := normalizer{names: map[string]string{}, exact: exact}
 	seen := map[string]bool{}
 	add := func(s string) {
+		if s == "<redacted:credential>" || s == "<redacted:secret>" {
+			return
+		}
 		if s != "" && !regexp.MustCompile(`^(Bearer )?fixture-credential(?:-[0-9]+)?$`).MatchString(s) && !seen[s] {
 			seen[s] = true
 			n.secrets = append(n.secrets, s)
@@ -361,6 +364,23 @@ func Import(input io.Reader, exact bool) (Scenario, []Flow, error) {
 			return Scenario{}, nil, e
 		}
 		rq.Content = body
+		if uri, err := url.ParseRequestURI(rq.Path); err == nil {
+			query := uri.Query()
+			changed := false
+			for key, values := range query {
+				if credentialField(key) {
+					for index := range values {
+						values[index] = "<redacted:credential>"
+					}
+					query[key] = values
+					changed = true
+				}
+			}
+			if changed {
+				uri.RawQuery = query.Encode()
+				rq.Path = uri.String()
+			}
+		}
 		rq.Path = n.text(rq.Path)
 		rq.Scheme = "http"
 		requestHeaders := map[string][]string{}
