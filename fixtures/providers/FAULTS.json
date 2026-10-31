@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "faults": [
+    { "id": "auth-missing", "surface": "http", "effect": "HTTP 401 using the dialect's documented auth error body" },
+    { "id": "auth-invalid", "surface": "http", "effect": "HTTP 401/403 without echoing the synthetic credential" },
+    { "id": "rate-limit", "surface": "http", "effect": "HTTP 429 with deterministic retry metadata; no delay" },
+    { "id": "server-error", "surface": "http", "effect": "HTTP 5xx with documented structured error" },
+    { "id": "unknown-model", "surface": "http", "effect": "Provider-shaped model-not-found response" },
+    { "id": "malformed-json", "surface": "http", "effect": "Successful status with invalid JSON bytes" },
+    { "id": "malformed-usage", "surface": "http", "effect": "Usage field has invalid type or impossible counters" },
+    { "id": "missing-terminal", "surface": "stream", "effect": "Stream ends without its required terminal event" },
+    { "id": "duplicate-terminal", "surface": "stream", "effect": "Terminal event occurs more than once" },
+    { "id": "event-order", "surface": "stream", "effect": "Valid event records arrive in an invalid order" },
+    { "id": "truncated-stream", "surface": "stream", "effect": "Stream ends in an incomplete event/frame" },
+    { "id": "process-exit", "surface": "process", "effect": "Fake provider exits with a selected nonzero code" },
+    { "id": "process-stderr", "surface": "process", "effect": "Fake provider emits a selected diagnostic on stderr" },
+    { "id": "session-missing", "surface": "session", "effect": "Requested session identifier is absent" },
+    { "id": "session-stale", "surface": "session", "effect": "Session exists but resume is rejected as stale" }
+  ]
+}
