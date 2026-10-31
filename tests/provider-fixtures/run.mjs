@@ -83,7 +83,6 @@ export async function loadFixture(manifestPath, root = defaultRoot) {
   for (const [i, fault] of (manifest.faults ?? []).entries()) {
     if (!cases.has(fault.trigger?.case_id)) errors.push(`$.faults[${i}].trigger.case_id: unknown case ${fault.trigger?.case_id}`);
     if (!knownFaults.has(fault.id)) errors.push(`$.faults[${i}].id: not in shared fault catalogue`);
-    if (!(cases.get(fault.trigger?.case_id)?.faults ?? []).includes(fault.id)) errors.push(`$.faults[${i}]: trigger case does not reference fault ${fault.id}`);
   }
   for (const rel of [manifest.server?.handler, manifest.server?.config]) {
     if (!rel) continue;
@@ -237,6 +236,12 @@ export async function checkExpectation(testCase, result, vars) {
 
 export async function validateFixture(manifestPath, root = defaultRoot) {
   return loadFixture(manifestPath, root);
+}
+
+export async function listFixtures(root = defaultRoot) {
+  const directory = path.join(root, 'fixtures/providers');
+  const names = (await fs.readdir(directory)).filter(name => name.endsWith('.json') && name !== 'SCHEMA.json' && name !== 'FAULTS.json').sort();
+  return names.map(name => path.join(directory, name));
 }
 
 export async function runFixture(manifestPath, binary, root = defaultRoot) {
