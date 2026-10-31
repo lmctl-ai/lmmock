@@ -1,3 +1,4 @@
+import {checkProviderStream} from './stream-contract.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -215,6 +216,10 @@ export async function checkExpectation(testCase, result, vars) {
     const source = isHttp ? result.json : (() => { try { return JSON.parse(result.stdout.trim()); } catch { return undefined; } })();
     const actual = source?.error_class ?? source?.error?.class ?? source?.result?.error_class;
     if (actual !== expected.error_class) errors.push(`error_class expected ${expected.error_class}, got ${JSON.stringify(actual)}`);
+  }
+  if (expected.stream !== undefined) {
+    try { checkProviderStream(text, expected.stream, result.headers?.get('content-type')); }
+    catch (error) { errors.push(`stream contract: ${error.message}`); }
   }
   if (expected.events !== undefined) {
     const events = eventsOf(text);

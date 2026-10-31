@@ -59,7 +59,7 @@ fn miniplayer_chat(x: Exchange) -> void implements Handler {
         x.set_header(keys.at(i), headers.get(keys.at(i)).as_string());
       }
       if (request.has("stream") && request.get("stream").as_bool() && reply.get("status").as_int() == 200) {
-        if (!reply.get("headers").has("content-type")) {
+        if (selected != "wrong-content-type") {
           x.set_header("Content-Type", "text/event-stream");
         }
         let events = reply.get("events");

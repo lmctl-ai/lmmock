@@ -20,15 +20,66 @@
     "url_env": "LMMOCK_URL"
   },
   "models": [
-    { "id": "fixture-miniplayer", "family": "deepseek", "capabilities": ["chat", "stream"] },
-    { "id": "deepseek-chat", "family": "deepseek", "capabilities": ["chat", "stream"] },
-    { "id": "moonshot-v1-8k", "family": "moonshot", "capabilities": ["chat", "stream"] },
-    { "id": "openrouter/auto", "family": "openrouter", "capabilities": ["chat", "stream"] },
-    { "id": "qwen-plus", "family": "qwen", "capabilities": ["chat", "stream"] },
-    { "id": "llama3.2", "family": "ollama", "capabilities": ["chat", "stream"] }
+    {
+      "id": "fixture-miniplayer",
+      "family": "deepseek",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    },
+    {
+      "id": "deepseek-chat",
+      "family": "deepseek",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    },
+    {
+      "id": "moonshot-v1-8k",
+      "family": "moonshot",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    },
+    {
+      "id": "openrouter/auto",
+      "family": "openrouter",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    },
+    {
+      "id": "qwen-plus",
+      "family": "qwen",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    },
+    {
+      "id": "llama3.2",
+      "family": "ollama",
+      "capabilities": [
+        "chat",
+        "stream"
+      ]
+    }
   ],
   "routes": [
-    { "id": "chat", "method": "POST", "path": "/v1/chat/completions", "annotation": "miniplayer_chat", "sam": "Handler", "content_types": ["application/json"] }
+    {
+      "id": "chat",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "annotation": "miniplayer_chat",
+      "sam": "Handler",
+      "content_types": [
+        "application/json"
+      ]
+    }
   ],
   "cases": [
     {
@@ -44,14 +95,21 @@
         },
         "body": {
           "model": "deepseek-chat",
-          "messages": [{ "role": "user", "content": "ping" }]
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ]
         }
       },
       "expect": {
         "status": 200,
         "json": {
           "choices.0.message.content": "pong",
-          "usage.total_tokens": 12
+          "usage.total_tokens": 12,
+          "usage.prompt_tokens": 10,
+          "usage.completion_tokens": 2
         }
       }
     },
@@ -68,7 +126,12 @@
         },
         "body": {
           "model": "deepseek-chat",
-          "messages": [{ "role": "user", "content": "ping" }]
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ]
         }
       },
       "expect": {
@@ -78,7 +141,9 @@
           "error.type": "authentication_error"
         }
       },
-      "faults": ["auth-invalid"]
+      "faults": [
+        "auth-invalid"
+      ]
     },
     {
       "id": "moonshot-auth-error",
@@ -93,7 +158,12 @@
         },
         "body": {
           "model": "moonshot-v1-8k",
-          "messages": [{ "role": "user", "content": "ping" }]
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ]
         }
       },
       "expect": {
@@ -103,7 +173,9 @@
           "error.type": "invalid_request_error"
         }
       },
-      "faults": ["auth-invalid"]
+      "faults": [
+        "auth-invalid"
+      ]
     },
     {
       "id": "openrouter-auth-error",
@@ -118,7 +190,12 @@
         },
         "body": {
           "model": "openrouter/auto",
-          "messages": [{ "role": "user", "content": "ping" }]
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ]
         }
       },
       "expect": {
@@ -128,7 +205,9 @@
           "error.message": "User key not found"
         }
       },
-      "faults": ["auth-invalid"]
+      "faults": [
+        "auth-invalid"
+      ]
     },
     {
       "id": "qwen-auth-error",
@@ -143,7 +222,12 @@
         },
         "body": {
           "model": "qwen-plus",
-          "messages": [{ "role": "user", "content": "ping" }]
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ]
         }
       },
       "expect": {
@@ -152,14 +236,50 @@
           "code": "InvalidApiKey"
         }
       },
-      "faults": ["auth-invalid"]
+      "faults": [
+        "auth-invalid"
+      ]
+    },
+    {
+      "id": "deepseek-success-stream",
+      "kind": "stream",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "headers": {
+          "Authorization": "Bearer fixture-miniplayer-key",
+          "x-mock-provider": "deepseek"
+        },
+        "body": {
+          "model": "deepseek-chat",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ],
+          "stream": true
+        }
+      },
+      "expect": {
+        "status": 200,
+        "stream": {
+          "dialect": "miniplayer",
+          "text": "pong",
+          "input_tokens": 10,
+          "output_tokens": 2
+        }
+      }
     }
   ],
   "faults": [
     {
       "id": "auth-invalid",
       "surface": "http",
-      "trigger": { "case_id": "deepseek-auth-error" },
+      "trigger": {
+        "case_id": "deepseek-auth-error"
+      },
       "description": "Provider-specific authentication failure without echoing the secret token"
     }
   ]
