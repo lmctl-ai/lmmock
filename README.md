@@ -311,6 +311,15 @@ lmmock exec --lmcode build/slack.dslb -- lmmock check --suite examples/slack-cli
 
 ## LLM and agent workflow tests
 
+Provider-wire fixtures use the shared versioned contract in
+[`fixtures/providers/README.md`](fixtures/providers/README.md). Each profile pins
+the protocol source/version, model family, lmcode handler and declared routes,
+then exercises success and deterministic adverse cases through the same runner.
+The runner supports HTTP requests and shell-free fake-client processes; it records
+expected model/usage/tool/stream behavior and optional lmctl `error_class`. Fault
+profiles contain no sleeps or test timeout knobs. `test.lms` runs the reference
+OpenAI Chat fixture and its deliberately wrong-usage control on all CI platforms.
+
 For a broader scriptable LLM API with **real Vercel AI SDK client
 acceptance**, use [llm-api.lms](examples/llm-api.lms).
 It supports OpenAI Chat/Responses, native Anthropic Messages and native Gemini
