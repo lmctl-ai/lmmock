@@ -3,9 +3,11 @@ import {tmpdir} from 'node:os';
 import {resolve, join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {runFixture} from '../provider-fixtures/run.mjs';
+import {resolveLmscriptCommand} from './lmscript-command.mjs';
 
 const binary = resolve(process.argv[2] || 'build/lmmock');
 const lmscriptBin = process.env.LMSCRIPT_BIN || 'lmscript';
+const lmscript = resolveLmscriptCommand(lmscriptBin);
 const published = process.argv.includes('--published');
 
 const dialects = [
@@ -17,10 +19,7 @@ const dialects = [
 
 // Compile all handlers
 for (const d of dialects) {
-  const c = spawnSync('bash', ['-c', '"$LMSCRIPT_BIN" --no-preflight "$1" "$2"', 'compile', d.handler, d.dslb], {
-    stdio: 'inherit',
-    env: { ...process.env, LMSCRIPT_BIN: lmscriptBin }
-  });
+  const c = spawnSync(lmscript.command, [...lmscript.args, '--no-preflight', d.handler, d.dslb], { stdio: 'inherit' });
   if (c.error) throw c.error;
   if (c.status !== 0) throw new Error(`Compile failed for ${d.name}: ${c.status}`);
 }
