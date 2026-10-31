@@ -17,7 +17,10 @@ const dialects = [
 
 // Compile all handlers
 for (const d of dialects) {
-  const c = spawnSync(lmscriptBin, ['--no-preflight', d.handler, d.dslb], { stdio: 'inherit' });
+  const c = spawnSync('bash', ['-c', '"$LMSCRIPT_BIN" --no-preflight "$1" "$2"', 'compile', d.handler, d.dslb], {
+    stdio: 'inherit',
+    env: { ...process.env, LMSCRIPT_BIN: lmscriptBin }
+  });
   if (c.error) throw c.error;
   if (c.status !== 0) throw new Error(`Compile failed for ${d.name}: ${c.status}`);
 }
