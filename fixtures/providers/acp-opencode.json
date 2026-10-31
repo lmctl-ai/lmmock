@@ -78,10 +78,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "opencode-success"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-success.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -108,10 +105,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "opencode-auth"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-auth.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -131,10 +125,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "opencode-cancel"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-cancel.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -156,10 +147,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "opencode-missing"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-missing.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -178,10 +166,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "opencode-stale"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-stale.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -201,10 +186,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "opencode-permission"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-permission.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -220,10 +202,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "opencode-config"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/opencode-config.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,

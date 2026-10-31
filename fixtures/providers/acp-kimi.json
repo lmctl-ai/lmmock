@@ -88,10 +88,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "kimi-success"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-success.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -118,10 +115,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "kimi-auth"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-auth.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -141,10 +135,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "kimi-cancel"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-cancel.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -166,10 +157,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "kimi-missing"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-missing.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -188,10 +176,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "kimi-stale"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-stale.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -211,10 +196,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "kimi-permission"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-permission.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -230,10 +212,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "kimi-config"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-config.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -250,10 +229,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "kimi-mode-error"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-mode-error.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,

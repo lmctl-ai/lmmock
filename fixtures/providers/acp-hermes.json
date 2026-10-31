@@ -88,10 +88,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "hermes-success"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/hermes-success.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -118,10 +115,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "hermes-auth"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/hermes-auth.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -141,10 +135,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "hermes-cancel"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/hermes-cancel.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -166,10 +157,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "hermes-missing"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/hermes-missing.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -188,10 +176,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "hermes-stale"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/hermes-stale.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -211,10 +196,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "hermes-permission"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/hermes-permission.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -230,10 +212,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "hermes-config"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/hermes-config.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
@@ -249,10 +228,7 @@
         "argv": [
           "tests/acp-profiles/run-case.mjs",
           "hermes-mode-error"
-        ],
-        "env": {
-          "LMMOCK_ACP_SCENARIO": "fixtures/acp/hermes-mode-error.json"
-        }
+        ]
       },
       "expect": {
         "exit_code": 0,
