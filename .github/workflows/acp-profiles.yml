@@ -1,0 +1,45 @@
+name: ACP provider profiles
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  profiles:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-2022]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34
+        with: {go-version: '1.26'}
+      - name: Download published compiler and adapter
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
+          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/lmctl/node_modules/.bin/lmctl" --version
+      - name: Build protocol and profile fixtures
+        run: |
+          bash scripts/compile-stdio.sh
+          bash tests/acp-profiles/compile.sh
+          git diff --exit-code -- internal/rpcstdio/presets internal/rpcstdio/testdata/deferred.dslb
+          go build -o build/lmmock ./cmd/lmmock
+          if [[ "$RUNNER_OS" == Windows ]]; then mv build/lmmock build/lmmock.exe; fi
+          go test ./internal/rpcstdio -count=1
+      - name: Published profile cases and failing controls
+        run: |
+          node tests/acp-profiles/run.mjs
+          node tests/acp-profiles/controls.mjs
+          node tests/acp-profiles/cancel-client.mjs
+      - name: Deferred reply race checks
+        if: runner.os == 'Linux'
+        run: go test -race ./internal/rpcstdio -count=1
