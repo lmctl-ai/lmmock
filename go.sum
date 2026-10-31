@@ -37,6 +37,8 @@ github.com/lmctl-ai/lmcode-go v0.6.37 h1:QVEGU/GdZL2XHhX9I3MuuxVfvzyTUjAnqDbzDxh
 github.com/lmctl-ai/lmcode-go v0.6.37/go.mod h1:Wfm1dj/9Uek4C4Y6LOkL5kFNRojgFUej7DDRGStSfVc=
 github.com/lmctl-ai/lmcode-go v0.6.38 h1:q/F+Z45tiuIgJpUuotS0zMLg+4lQjmui7N2+PKroF6Q=
 github.com/lmctl-ai/lmcode-go v0.6.38/go.mod h1:Wfm1dj/9Uek4C4Y6LOkL5kFNRojgFUej7DDRGStSfVc=
+github.com/lmctl-ai/lmcode-go v0.6.39-0.20261031113748-65f0ef2275b0 h1:EI9xRa8z5XikrNpy8hne2FJnVCikgJZFyuRA2JBQBeo=
+github.com/lmctl-ai/lmcode-go v0.6.39-0.20261031113748-65f0ef2275b0/go.mod h1:Wfm1dj/9Uek4C4Y6LOkL5kFNRojgFUej7DDRGStSfVc=
 github.com/mochi-mqtt/server/v2 v2.7.9 h1:y0g4vrSLAag7T07l2oCzOa/+nKVLoazKEWAArwqBNYI=
 github.com/mochi-mqtt/server/v2 v2.7.9/go.mod h1:lZD3j35AVNqJL5cezlnSkuG05c0FCHSsfAKSPBOSbqc=
 github.com/pierrec/lz4/v4 v4.1.33 h1:GjG1TJ1V4IzKP8L96muuuDNpTwd7D+l2ccXrjAbe014=

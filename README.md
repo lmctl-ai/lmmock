@@ -34,7 +34,7 @@ The executable can run precompiled bytecode without Node or lmscript installed:
 ```sh
 mkdir -p build
 lmscript examples/api.lms build/api.dslb
-lmmock exec --dsl build/api.dslb -- node examples/client.mjs
+lmmock exec --lmcode build/api.dslb -- node examples/client.mjs
 ```
 
 ## Write handlers in lmcode
@@ -302,7 +302,7 @@ Each preset ships an assertion suite, `examples/<service>-client.json`, run by
 `tests/protocols.mjs`:
 
 ```sh
-lmmock exec --dsl build/slack.dslb -- lmmock check --suite examples/slack-client.json
+lmmock exec --lmcode build/slack.dslb -- lmmock check --suite examples/slack-client.json
 ```
 
 ## LLM and agent workflow tests

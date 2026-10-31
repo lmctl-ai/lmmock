@@ -68,7 +68,7 @@ becomes a constant in that instance of the lmcode program. It is not recomputed
 by lmscript on every HTTP request. Handlers can still fill fields from each
 request and read live configuration through config().
 
-With --dsl, the value was captured when the bytecode was saved. Go loads that
+With --lmcode, the value was captured when the bytecode was saved. Go loads that
 program without lmscript installed. Changing an environment variable after
 saving bytecode does not change its captured data.
 

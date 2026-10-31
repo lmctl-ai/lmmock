@@ -3,7 +3,7 @@ module github.com/lmctl-ai/lmmock
 go 1.26.0
 
 require (
-	github.com/lmctl-ai/lmcode-go v0.6.38
+	github.com/lmctl-ai/lmcode-go v0.6.39-0.20261031113748-65f0ef2275b0
 	github.com/mochi-mqtt/server/v2 v2.7.9
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/tidwall/redcon v1.6.4
