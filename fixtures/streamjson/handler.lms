@@ -1,6 +1,7 @@
 p = _lmcode_ schema="../../internal/rpcstdio/presets/schema.json";
 fn cfg() -> Json {return json_parse(config());}
 fn emit_events(x: RPC, c: Json) -> void {
+ if(c.has("append")){let files=c.get("append");for(i in range(0,files.len())){let f=files.at(i);file_append(f.get("path").as_string(),f.get("text").as_string());}}
  let events=c.get("events");for(i in range(0,events.len())){x.emit(events.at(i).to_json());}
  if(c.has("stderr")){x.abort(c.get("stderr").as_string());}
  if(c.has("close")){if(c.get("close").as_bool()){x.close();}}

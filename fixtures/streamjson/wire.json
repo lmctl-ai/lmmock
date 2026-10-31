@@ -1,0 +1,521 @@
+{
+  "session": "22222222-2222-4222-8222-222222222222",
+  "init": {
+    "events": [
+      {
+        "type": "system",
+        "subtype": "init",
+        "session_id": "${SESSION}",
+        "model": "${MODEL}"
+      }
+    ]
+  },
+  "seed": {
+    "expect": "initial connection only",
+    "events": [
+      {
+        "type": "result",
+        "subtype": "success",
+        "result": "ACK: waiting for explicit lmctl task.",
+        "session_id": "${SESSION}"
+      }
+    ]
+  },
+  "profiles": {
+    "complete": {
+      "events": [
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg-fixture-tool",
+            "role": "assistant",
+            "model": "${MODEL}",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "fixture reasoning",
+                "signature": "fixture-signature"
+              },
+              {
+                "type": "text",
+                "text": "working"
+              },
+              {
+                "type": "tool_use",
+                "id": "tool-1",
+                "name": "fixture_lookup",
+                "input": {
+                  "query": "fixture"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "user",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "tool-1",
+                "content": "fixture tool answer"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg-fixture-final",
+            "role": "assistant",
+            "model": "${MODEL}",
+            "content": [
+              {
+                "type": "text",
+                "text": "pong"
+              }
+            ]
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "uuid": "terminal-1",
+          "session_id": "${SESSION}",
+          "result": "pong",
+          "duration_ms": 12,
+          "num_turns": 1,
+          "total_cost_usd": 0.001,
+          "usage": {
+            "input_tokens": 7,
+            "cache_read_input_tokens": 3,
+            "cache_creation_input_tokens": 5,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 2,
+              "ephemeral_1h_input_tokens": 3
+            },
+            "output_tokens": 11,
+            "output_tokens_details": {
+              "thinking_tokens": 4
+            }
+          },
+          "usageMetadata": {
+            "promptTokenCount": 15,
+            "cachedContentTokenCount": 3,
+            "candidatesTokenCount": 11,
+            "thoughtsTokenCount": 4,
+            "totalTokenCount": 26
+          }
+        }
+      ],
+      "close": true,
+      "record_usage": true
+    },
+    "missing-terminal": {
+      "events": [
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg-fixture-tool",
+            "role": "assistant",
+            "model": "${MODEL}",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "fixture reasoning",
+                "signature": "fixture-signature"
+              },
+              {
+                "type": "text",
+                "text": "working"
+              },
+              {
+                "type": "tool_use",
+                "id": "tool-1",
+                "name": "fixture_lookup",
+                "input": {
+                  "query": "fixture"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "close": true
+    },
+    "error-result": {
+      "events": [
+        {
+          "type": "result",
+          "subtype": "error_during_execution",
+          "is_error": true,
+          "errors": [
+            "Authentication failed. Please run /login"
+          ],
+          "session_id": "${SESSION}"
+        }
+      ],
+      "close": true
+    },
+    "duplicate-terminal": {
+      "events": [
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg-fixture-tool",
+            "role": "assistant",
+            "model": "${MODEL}",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "fixture reasoning",
+                "signature": "fixture-signature"
+              },
+              {
+                "type": "text",
+                "text": "working"
+              },
+              {
+                "type": "tool_use",
+                "id": "tool-1",
+                "name": "fixture_lookup",
+                "input": {
+                  "query": "fixture"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "user",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "tool-1",
+                "content": "fixture tool answer"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg-fixture-final",
+            "role": "assistant",
+            "model": "${MODEL}",
+            "content": [
+              {
+                "type": "text",
+                "text": "pong"
+              }
+            ]
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "uuid": "terminal-1",
+          "session_id": "${SESSION}",
+          "result": "pong",
+          "duration_ms": 12,
+          "num_turns": 1,
+          "total_cost_usd": 0.001,
+          "usage": {
+            "input_tokens": 7,
+            "cache_read_input_tokens": 3,
+            "cache_creation_input_tokens": 5,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 2,
+              "ephemeral_1h_input_tokens": 3
+            },
+            "output_tokens": 11,
+            "output_tokens_details": {
+              "thinking_tokens": 4
+            }
+          },
+          "usageMetadata": {
+            "promptTokenCount": 15,
+            "cachedContentTokenCount": 3,
+            "candidatesTokenCount": 11,
+            "thoughtsTokenCount": 4,
+            "totalTokenCount": 26
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "uuid": "terminal-1",
+          "session_id": "${SESSION}",
+          "result": "pong",
+          "duration_ms": 12,
+          "num_turns": 1,
+          "total_cost_usd": 0.001,
+          "usage": {
+            "input_tokens": 7,
+            "cache_read_input_tokens": 3,
+            "cache_creation_input_tokens": 5,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 2,
+              "ephemeral_1h_input_tokens": 3
+            },
+            "output_tokens": 11,
+            "output_tokens_details": {
+              "thinking_tokens": 4
+            }
+          },
+          "usageMetadata": {
+            "promptTokenCount": 15,
+            "cachedContentTokenCount": 3,
+            "candidatesTokenCount": 11,
+            "thoughtsTokenCount": 4,
+            "totalTokenCount": 26
+          }
+        }
+      ],
+      "close": true,
+      "record_usage": true
+    },
+    "extra-terminal": {
+      "events": [
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg-fixture-tool",
+            "role": "assistant",
+            "model": "${MODEL}",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "fixture reasoning",
+                "signature": "fixture-signature"
+              },
+              {
+                "type": "text",
+                "text": "working"
+              },
+              {
+                "type": "tool_use",
+                "id": "tool-1",
+                "name": "fixture_lookup",
+                "input": {
+                  "query": "fixture"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "user",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "tool-1",
+                "content": "fixture tool answer"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg-fixture-final",
+            "role": "assistant",
+            "model": "${MODEL}",
+            "content": [
+              {
+                "type": "text",
+                "text": "pong"
+              }
+            ]
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "uuid": "terminal-1",
+          "session_id": "${SESSION}",
+          "result": "pong",
+          "duration_ms": 12,
+          "num_turns": 1,
+          "total_cost_usd": 0.001,
+          "usage": {
+            "input_tokens": 7,
+            "cache_read_input_tokens": 3,
+            "cache_creation_input_tokens": 5,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 2,
+              "ephemeral_1h_input_tokens": 3
+            },
+            "output_tokens": 11,
+            "output_tokens_details": {
+              "thinking_tokens": 4
+            }
+          },
+          "usageMetadata": {
+            "promptTokenCount": 15,
+            "cachedContentTokenCount": 3,
+            "candidatesTokenCount": 11,
+            "thoughtsTokenCount": 4,
+            "totalTokenCount": 26
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "uuid": "terminal-2",
+          "session_id": "${SESSION}",
+          "result": "second",
+          "duration_ms": 12,
+          "num_turns": 1,
+          "total_cost_usd": 0.001,
+          "usage": {
+            "input_tokens": 7,
+            "cache_read_input_tokens": 3,
+            "cache_creation_input_tokens": 5,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 2,
+              "ephemeral_1h_input_tokens": 3
+            },
+            "output_tokens": 11,
+            "output_tokens_details": {
+              "thinking_tokens": 4
+            }
+          },
+          "usageMetadata": {
+            "promptTokenCount": 15,
+            "cachedContentTokenCount": 3,
+            "candidatesTokenCount": 11,
+            "thoughtsTokenCount": 4,
+            "totalTokenCount": 26
+          }
+        }
+      ],
+      "close": true,
+      "record_usage": true
+    },
+    "malformed-usage": {
+      "events": [
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg-fixture-tool",
+            "role": "assistant",
+            "model": "${MODEL}",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "fixture reasoning",
+                "signature": "fixture-signature"
+              },
+              {
+                "type": "text",
+                "text": "working"
+              },
+              {
+                "type": "tool_use",
+                "id": "tool-1",
+                "name": "fixture_lookup",
+                "input": {
+                  "query": "fixture"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "user",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "tool-1",
+                "content": "fixture tool answer"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg-fixture-final",
+            "role": "assistant",
+            "model": "${MODEL}",
+            "content": [
+              {
+                "type": "text",
+                "text": "pong"
+              }
+            ]
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "uuid": "terminal-1",
+          "session_id": "${SESSION}",
+          "result": "pong",
+          "duration_ms": 12,
+          "num_turns": 1,
+          "total_cost_usd": 0.001,
+          "usage": {
+            "input_tokens": "invalid",
+            "cache_read_input_tokens": 3,
+            "cache_creation_input_tokens": 5,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 2,
+              "ephemeral_1h_input_tokens": 3
+            },
+            "output_tokens": 11,
+            "output_tokens_details": {
+              "thinking_tokens": 4
+            }
+          },
+          "usageMetadata": {
+            "promptTokenCount": "invalid",
+            "cachedContentTokenCount": 3,
+            "candidatesTokenCount": 11,
+            "thoughtsTokenCount": 4,
+            "totalTokenCount": 26
+          }
+        }
+      ],
+      "close": true,
+      "record_usage": true,
+      "malformed_usage": true
+    },
+    "process-error": {
+      "events": [],
+      "stderr": "Authentication failed. Please run /login"
+    }
+  },
+  "usage": {
+    "input_tokens": 7,
+    "cache_read_input_tokens": 3,
+    "cache_creation_input_tokens": 5,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 2,
+      "ephemeral_1h_input_tokens": 3
+    },
+    "output_tokens": 11,
+    "output_tokens_details": {
+      "thinking_tokens": 4
+    }
+  },
+  "usageMetadata": {
+    "promptTokenCount": 15,
+    "cachedContentTokenCount": 3,
+    "candidatesTokenCount": 11,
+    "thoughtsTokenCount": 4,
+    "totalTokenCount": 26
+  },
+  "stores": {
+    "claude": ".claude/projects/fixture",
+    "qwen": ".qwen/projects/fixture/chats"
+  }
+}
