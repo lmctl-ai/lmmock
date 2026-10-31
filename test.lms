@@ -12,6 +12,7 @@ step(["bash", "scripts/compile-examples.sh"]);
 step(["bash", "scripts/compile-stdio.sh"]);
 step(["bash", "scripts/compile-streamjson.sh"]);
 step(["bash", "tests/acp-profiles/compile.sh"]);
+step(["bash", "scripts/compile-lane-e.sh"]);
 step(["node", "scripts/fixtures.mjs"]);
 step(["bash", "scripts/compile-fixtures.sh"]);
 step(["go", "test", "./..."]);

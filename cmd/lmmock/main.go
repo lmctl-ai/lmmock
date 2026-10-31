@@ -22,7 +22,13 @@ import (
 
 var version = "0.1.0"
 
-func main() { os.Exit(run(os.Args[1:])) }
+func main() {
+	args, err := processAlias(os.Args[1:])
+	if err != nil {
+		os.Exit(fail(err))
+	}
+	os.Exit(run(args))
+}
 func run(args []string) int {
 	if os.Getenv("LMMOCK_JSONLINES_SCENARIO") != "" {
 		return jsonLinesProcess(args)
@@ -38,6 +44,9 @@ func run(args []string) int {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if len(args) > 0 && args[0] == "sidecar" {
+		return sidecarCommand(ctx, args[1:])
+	}
 	if len(args) > 0 && args[0] == "proto" {
 		return protoCommand(ctx, args[1:])
 	}

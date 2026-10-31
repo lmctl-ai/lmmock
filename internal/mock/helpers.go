@@ -28,6 +28,7 @@ type Options struct {
 
 func helpers(reg *lmcode.Registry, options Options) {
 	registerJSONWith(reg)
+	registerSessionRecords(reg)
 	add := func(name string, params []string, ret string, fn lmcode.Function) {
 		if err := reg.Function(name, params, ret, fn); err != nil {
 			panic(err)

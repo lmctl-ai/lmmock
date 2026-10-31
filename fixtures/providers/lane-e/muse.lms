@@ -1,0 +1,45 @@
+p = _lmcode_ schema="../../../internal/rpcstdio/presets/schema.json";
+fn q(s: string) -> string { return json_quote(s); }
+@initialize
+fn initialize(x: RPC) -> void implements RPCHandler {
+ let cfg=json_parse(config());file_append(cfg.get("trace").as_string(),x.message()+"\n");
+ x.reply("{\"schema\":{\"version\":1},\"sessionDurability\":\"durable\",\"museHome\":"+cfg.get("muse_home").to_json()+"}");
+}
+@initialized fn initialized(x: RPC) -> void implements RPCHandler { x.set("initialized","yes"); }
+@open
+fn open(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());let cfg=json_parse(config());file_append(cfg.get("trace").as_string(),x.message()+"\n");
+ if(x.get("initialized")!="yes"){x.abort("initialized notification missing");}
+ let sid=p.get("sessionId").as_string();x.set("sid",sid);
+ let cwd=cfg.get("cwd").as_string();if(p.has("workspaceRoot")){cwd=p.get("workspaceRoot").as_string();}
+ x.reply("{\"session\":{\"sessionId\":"+q(sid)+",\"workspaceRoot\":"+q(cwd)+",\"status\":\"idle\",\"modelId\":"+cfg.get("model").to_json()+"}}");
+}
+@approval
+fn approval(x: RPC) -> void implements RPCHandler { let p=json_parse(x.params());x.reply("{\"effectiveMode\":{\"mode\":"+p.get("mode").to_json()+"}}"); }
+@model
+fn model(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());let cfg=json_parse(config());
+ if(p.get("model").get("modelId").as_string()!=cfg.get("model").as_string()){x.error(-32000,"model not supported");}else{x.reply("{\"status\":\"accepted\"}");}
+}
+@turn
+fn turn(x: RPC) -> void implements RPCHandler {
+ let cfg=json_parse(config());let p=json_parse(x.params());file_append(cfg.get("trace").as_string(),x.message()+"\n");
+ if(p.get("sessionId").as_string()!=x.get("sid")){x.error(-32000,"unknown session");}
+ else{
+ let tid="fixture-turn-"+str(x.next("turn"));let sid=q(x.get("sid"));
+ x.reply("{\"commandId\":"+p.get("commandId").to_json()+",\"status\":\"accepted\",\"disposition\":\"started\",\"turnId\":"+q(tid)+"}");
+ let owner="{\"sessionId\":"+sid+",\"turnId\":"+q(tid);
+ x.notify("turn/started",owner+"}");
+ x.notify("item/started",owner+",\"item\":{\"itemId\":\"fixture-item\",\"turnId\":"+q(tid)+",\"kind\":\"agentMessage\",\"revision\":1,\"text\":\"\"}}");
+ x.notify("item/delta","{\"sessionId\":"+sid+",\"itemId\":\"fixture-item\",\"delta\":"+cfg.get("text").to_json()+"}");
+ x.notify("session/tokenUsage",owner+",\"viewCursor\":"+q(tid)+",\"modelId\":"+cfg.get("model").to_json()+",\"promptTokens\":5,\"totalTokens\":7,\"usage\":{\"inputTokens\":5,\"outputTokens\":2,\"cacheReadTokens\":0,\"cacheWriteTokens\":0,\"reasoningTokens\":1}}");
+ if(cfg.has("missing_terminal") && cfg.get("missing_terminal").as_bool()){x.close();}
+ else {
+ let terminal="completed";if(cfg.has("terminal")){terminal=cfg.get("terminal").as_string();}
+ x.notify("turn/completed",owner+",\"terminal\":"+q(terminal)+"}");
+ }
+ }
+}
+bind("initialize","initialize");bind("initialized","initialized");bind("session/start","open");bind("session/resume","open");bind("session/setApprovalMode","approval");bind("session/setModel","model");bind("turn/start","turn");
+end _lmcode_
+savedsl(p,ARGV[0]);

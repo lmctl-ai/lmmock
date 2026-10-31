@@ -1,6 +1,6 @@
 {
   "dsl.schema": 2,
-  "name": "lmmock_v4",
+  "name": "lmmock_v5",
   "types": {
     "Exchange": {
       "methods": {
@@ -273,6 +273,23 @@
         "params": [
           "string",
           "Json"
+        ],
+        "returns": "string"
+      }
+    ],
+    "append_zstd": [
+      {
+        "params": [
+          "string",
+          "string"
+        ],
+        "returns": "void"
+      }
+    ],
+    "read_zstd": [
+      {
+        "params": [
+          "string"
         ],
         "returns": "string"
       }

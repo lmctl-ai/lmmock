@@ -1,0 +1,183 @@
+{
+  "dsl.schema": 2,
+  "name": "lmmock_stdio_1",
+  "functions": {
+    "bind": [
+      {
+        "params": [
+          "string",
+          "string"
+        ],
+        "returns": "void"
+      }
+    ],
+    "config": [
+      {
+        "params": [],
+        "returns": "string"
+      }
+    ],
+    "json_quote": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "string"
+      }
+    ]
+  },
+  "types": {
+    "RPC": {
+      "methods": {
+        "message": [
+          {
+            "params": [],
+            "returns": "string"
+          }
+        ],
+        "method": [
+          {
+            "params": [],
+            "returns": "string"
+          }
+        ],
+        "params": [
+          {
+            "params": [],
+            "returns": "string"
+          }
+        ],
+        "alias": [
+          {
+            "params": [],
+            "returns": "string"
+          }
+        ],
+        "get": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "string"
+          }
+        ],
+        "set": [
+          {
+            "params": [
+              "string",
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "next": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "int"
+          }
+        ],
+        "reply": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "error": [
+          {
+            "params": [
+              "int",
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "notify": [
+          {
+            "params": [
+              "string",
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "request": [
+          {
+            "params": [
+              "string",
+              "string"
+            ],
+            "returns": "int"
+          }
+        ],
+        "emit": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "abort": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "write_text": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "close": [
+          {
+            "params": [],
+            "returns": "void"
+          }
+        ],
+        "forward": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
+        ],
+        "defer_reply": [
+          {
+            "params": [],
+            "returns": "string"
+          }
+        ],
+        "reply_to": [
+          {
+            "params": [
+              "string",
+              "string"
+            ],
+            "returns": "void"
+          }
+        ]
+      }
+    }
+  },
+  "interfaces": {
+    "RPCHandler": {
+      "params": [
+        {
+          "name": "x",
+          "type": "RPC"
+        }
+      ],
+      "returns": "void"
+    }
+  }
+}

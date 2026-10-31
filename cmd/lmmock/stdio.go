@@ -45,7 +45,7 @@ func stdioCommand(args []string) int {
 		return 2
 	}
 	kind := args[0]
-	if kind != "acp" && kind != "mcp" && kind != "mcp-client" && kind != "agent" {
+	if kind != "acp" && kind != "mcp" && kind != "mcp-client" && kind != "agent" && kind != "once" && kind != "rpc" {
 		return 2
 	}
 	f := flag.NewFlagSet("stdio", flag.ContinueOnError)
@@ -61,6 +61,9 @@ func stdioCommand(args []string) int {
 		return 2
 	}
 	name := kind
+	if (kind == "once" || kind == "rpc") && *codePath == "" {
+		return 2
+	}
 	if kind == "agent" {
 		name = *preset
 		if name != "claude" && name != "codex" && name != "agy" && name != "gemini" {
@@ -134,7 +137,7 @@ func stdioCommand(args []string) int {
 			}
 		}()
 	}
-	engine, e := rpcstdio.New(code, rpcstdio.Options{Alias: *alias, StateDir: *state, Config: cfg}, rpcstdio.NewWire(in, out, *framing))
+	engine, e := rpcstdio.New(code, rpcstdio.Options{Alias: *alias, StateDir: *state, Config: cfg, Stderr: os.Stderr}, rpcstdio.NewWire(in, out, *framing))
 	if e != nil {
 		return fail(e)
 	}
@@ -149,8 +152,8 @@ func stdioCommand(args []string) int {
 	if e = engine.Start(map[string]any{"argv": f.Args(), "cwd": cwd, "stdin": input}); e != nil {
 		return fail(e)
 	}
-	if kind == "agent" && name != "codex" {
-		return 0
+	if kind == "once" || kind == "agent" && name != "codex" {
+		return engine.ExitCode()
 	}
 	if e = engine.Run(); e != nil {
 		return fail(e)
@@ -162,5 +165,5 @@ func stdioCommand(args []string) int {
 			return fail(e)
 		}
 	}
-	return 0
+	return engine.ExitCode()
 }
