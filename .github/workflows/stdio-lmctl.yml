@@ -1,0 +1,33 @@
+name: Stdio published client integration
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  published:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34
+        with: {go-version: '1.26'}
+      - name: Download published client and compiler
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
+          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/lmctl/node_modules/.bin/lmctl" --version
+      - name: Build and verify stdio handlers
+        run: |
+          bash scripts/compile-stdio.sh
+          git diff --exit-code -- internal/rpcstdio/presets
+          go test ./internal/rpcstdio ./cmd/lmmock -run 'TestStdio|TestACP|TestMCP|TestAgent|TestCodex|TestMalformed|TestRegistry|TestFraming|TestWire' -count=1
+          python3 tests/stdio/controls.py
+          mkdir -p build
+          go build -o build/lmmock ./cmd/lmmock
+          node tests/stdio/process.mjs build/lmmock
+      - name: Published lmscript drives lmctl through ACP
+        run: node tests/stdio/lmctl.mjs build/lmmock

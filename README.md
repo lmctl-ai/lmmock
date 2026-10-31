@@ -569,3 +569,128 @@ separate SSE chunks at a fixed HTTPS URL, succeeds with the exported CA and fail
 in a fresh untrusted process. Additional controls remove flush/CA export/reset/scrub
 or repair malformed/truncated framing and require real assertion failures. No
 wall-clock thresholds, sleeps or timeout mock behavior are used by these tests.
+## Stdio ACP, MCP and agent fixtures
+
+The stdio host uses newline JSON-RPC or Content-Length framing. Method behavior
+lives in annotated lmcode functions implementing RPCHandler(RPC), including the
+shipped ACP, MCP and MCP-client presets. Compiled presets are embedded in lmmock;
+running them does not require a compiler or a source checkout.
+
+```sh
+lmmock stdio acp --scenario tests/stdio/scenario.json --alias Worker
+lmmock stdio mcp --scenario tests/stdio/scenario.json --alias MCP
+```
+
+ACP supports initialize, the initialized notification, session/new, session/load,
+mode/model/config-option calls and session/prompt. Prompt cells emit ordered
+session/update text chunks followed by stopReason. Loading an unknown fixture
+session fails. Cancellation and native provider persistence are not simulated;
+an unsupported method fails loudly instead of silently succeeding. Kimi/OpenCode
+config-option and Hermes mode/model shapes are supported; vendor session files
+and identity probes remain the host adapter's responsibility.
+
+MCP targets protocol 2025-11-25: initialize, tools/list, tools/call, resources/list,
+resources/read, resources/templates/list, prompts/list, prompts/get and ping.
+The default tool is fixture. A call emits a log notification and the cell's text;
+unknown tools, resources and prompts fail. The default resource and prompt are
+small explicit fixtures, not filesystem access. Paging, sampling, elicitation and
+subscriptions are not claimed by these presets.
+
+## Script turns and fake agent output
+
+Scenario cells are exact (alias, turn) pairs. The alias is --alias or the cwd's
+basename. Turns start at one; --state DIR preserves counters across one-shot
+processes. Without it counters belong to one process. Duplicate/missing cells,
+wrong expected prompt text and timing faults fail with nonzero exit. An error
+cell emits the protocol error where applicable and stops; empty text must be
+explicitly scripted. No wildcard/default reply is supplied.
+
+```json
+{
+  "session": "fixture-session",
+  "cells": [
+    {"alias":"Worker","turn":1,"expect":"ping","text":"pong","chunks":["po","ng"]},
+    {"alias":"Worker","turn":2,"error":"scripted failure"}
+  ]
+}
+```
+
+```sh
+lmmock stdio agent --preset claude --scenario cells.json --alias Worker --state private-counters -- -p ping
+lmmock stdio agent --preset codex --scenario cells.json --alias Worker
+lmmock stdio agent --preset gemini --scenario cells.json --alias Worker -- -p ping
+lmmock stdio agent --preset agy --scenario cells.json --alias Worker -- -p ping
+```
+
+Claude emits system/assistant/result stream-JSON; Gemini emits init/message/result;
+agy emits plain print text, matching lmctl's non-streaming print transport. Codex
+speaks initialize, thread/start or thread/resume and turn/start, then emits
+turn/started, item/agentMessage/delta and turn/completed. One-shot prompts normally
+arrive as argv; --stdin-prompt explicitly reads EOF-delimited prompt input for
+Claude/Gemini/agy. No vendor CLI is invoked and no vendor session database is
+fabricated. These are wire presets, not a claim of native seed/discovery parity.
+
+State files contain counters only, keyed by alias and counter name. Concurrent
+updates of the same counter fail closed instead of polling or sleeping; separate
+aliases are independent. A crash may leave a lock requiring removal in the private
+test directory. Keep one private directory per test run; do not share it with an
+operator profile.
+
+## Extend methods and tools with lmcode
+
+Export the host declaration with lmmock stdio --schema. Compile a program against
+those exact bytes and select it with --lmcode FILE. New method/tool policy needs
+no Go edits. The top-level bind(method, annotation) registers a method; entries
+are validated before input is read. MCP tools can be routed by lmcode through
+x.forward("tool:" + name) to independent annotated handlers bound under that key.
+Forwarding retains the original request ID and parameters and rejects cycles.
+
+```text
+@echo
+fn echo(x: RPC) -> void implements RPCHandler {
+  x.reply(x.params());
+}
+bind("example/echo", "echo");
+```
+
+RPC methods expose message(), method(), params(), alias(), get/set/next state,
+reply(JSON), error(code,message), notify(method,JSON), request(method,JSON),
+emit(JSON), write_text(bytes), forward(key), close() and abort(message).
+request assigns a correlated ID; incoming responses dispatch to $response.
+An optional $start entry can initiate a client exchange. Replies and notifications
+flush without timing delays; stdout contains protocol data only. Diagnostics use
+stderr. Missing replies, duplicate replies, unknown IDs and malformed frames fail.
+Custom scripts are trusted, like other lmcode handlers.
+
+## MCP client mock and owned peers
+
+The MCP-client preset initializes a peer, lists the fixture tool, calls it, and
+checks the text against scenario.expected. It answers ping and accepts log
+notifications. The peer command must resolve inside --fake-bin after symlink
+resolution; a real executable outside that directory is refused before spawn.
+Use a private copy of the intended fixture binary in that directory.
+
+```sh
+lmmock stdio mcp-client --scenario cells.json --fake-bin private-bin -- private-bin/lmmock stdio mcp --scenario cells.json --alias MCP
+```
+
+For general protocol exercises, --framing content-length selects length-prefixed
+frames; ACP/MCP defaults to newline framing. The client owns only its direct peer:
+normal completion closes stdin and waits, and an error kills only that owned PID.
+No deadlines, sleeps, retries or automatic real-binary fallback are provided.
+
+## Published-client stdio verification
+
+The standard test gate compiles the preset sources, runs framing/protocol/alias
+checks, compiled mutation controls and an owned MCP client/server process test.
+The Stdio published client integration Actions job downloads npm lmctl 0.2.448
+privately and proves lmscript lm_agent and lm_prompt against the ACP preset through
+a guarded miniplayer shim in a scratch HOME/database. A third unscripted turn must
+remain a client-visible error. No model keys, production daemon or vendor traffic
+are involved. The regular five-platform matrix runs the stdio unit/process gates.
+
+The service-owned MCP topology remains distinct: lmbee owns connections; the mcp
+CLI/schema functions are stateless clients. The tested npm package contains no
+lmbee/mcp entrypoint, mcp-client is marked private in mono, and no public lmbee
+release was available during this work. MCP-through-lmbee is therefore not claimed;
+the standalone mock client/server proof does not substitute for that service gate.
