@@ -37,3 +37,5 @@ step(["node", "tests/runtime-json.mjs", "build/lmmock" + ext]);
 step([env("LMSCRIPT_BIN") || "lmscript", "--no-preflight", "fixtures/openai/handler.lms", "build/openai.dslb"]);
 step(["node", "tests/openai/run.mjs", "build/lmmock" + ext]);
 step(["node", "tests/openai/controls.mjs", "build/lmmock" + ext]);
+step(["node", "tests/provider-fixtures/run.mjs", "fixtures/providers/openai-chat-native.json", "build/lmmock" + ext]);
+step(["node", "tests/provider-fixtures/run.mjs", "fixtures/providers/openai-responses-native.json", "build/lmmock" + ext]);
