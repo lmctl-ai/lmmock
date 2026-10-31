@@ -1,0 +1,39 @@
+p = _lmcode_ schema="schema.json";
+
+fn field(j: Json, k: string) -> string { let s = ""; if (j.has(k)) { s = j.get(k).as_string(); } return s; }
+fn cell(x: RPC, input: string) -> Json {
+ let cfg = json_parse(config()); let cells = cfg.get("cells"); let turn = x.next("turn");
+ let found = json_parse("{}"); let hits = 0;
+ for (i in range(0, cells.len())) { let c = cells.at(i); if (c.get("alias").as_string() == x.alias() && c.get("turn").as_int() == turn) { found = c; hits = hits + 1; } }
+ if (hits != 1) { x.abort("unscripted or duplicate cell for alias " + x.alias() + " turn " + str(turn)); }
+ if (found.has("delay") || found.has("delayMs") || found.has("timeout") || found.has("hang")) { x.abort("timing faults are not supported"); }
+ if (found.has("expect")) { if (!str_contains(input, found.get("expect").as_string())) { x.abort("cell prompt expectation failed"); } }
+ if (!found.has("text") && !found.has("error")) { x.abort("cell requires explicit text or error"); }
+ return found;
+}
+fn sid() -> string { return json_parse(config()).get("session").as_string(); }
+
+@init fn init(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());if(field(p,"protocolVersion")!="2025-11-25"){x.abort("MCP profile must be 2025-11-25");}
+ x.set("initialized","yes");x.reply("{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"tools\":{},\"resources\":{},\"prompts\":{}},\"serverInfo\":{\"name\":\"lmmock\",\"version\":\"1\"}}");
+}
+@ready fn ready(x: RPC) -> void implements RPCHandler { if(x.get("initialized")!="yes"){x.abort("initialize first");}x.set("ready","yes"); }
+@ping fn ping(x: RPC) -> void implements RPCHandler {x.reply("{}");}
+@tools fn tools(x: RPC) -> void implements RPCHandler {x.reply("{\"tools\":[{\"name\":\"fixture\",\"description\":\"Scripted fixture cell\",\"inputSchema\":{\"type\":\"object\"}}]}");}
+@route_tool fn route_tool(x: RPC) -> void implements RPCHandler {let p=json_parse(x.params());x.forward("tool:"+field(p,"name"));}
+@call fn call(x: RPC) -> void implements RPCHandler {
+ if(x.get("ready")!="yes"){x.abort("initialized notification required");}
+ let p=json_parse(x.params());if(field(p,"name")!="fixture"){x.error(-32602,"unknown fixture tool");x.abort("scripted error");}
+ let c=cell(x,x.params());if(c.has("error")){x.error(-32000,c.get("error").as_string());x.abort("scripted error");}
+ x.notify("notifications/message","{\"level\":\"info\",\"data\":\"fixture called\"}");
+ x.reply("{\"content\":[{\"type\":\"text\",\"text\":"+json_quote(c.get("text").as_string())+"}],\"isError\":false}");
+}
+@resources fn resources(x: RPC) -> void implements RPCHandler {x.reply("{\"resources\":[{\"uri\":\"fixture:///note\",\"name\":\"note\",\"mimeType\":\"text/plain\"}]}");}
+@templates fn templates(x: RPC) -> void implements RPCHandler {x.reply("{\"resourceTemplates\":[]}");}
+@read fn read(x: RPC) -> void implements RPCHandler {let p=json_parse(x.params());if(field(p,"uri")!="fixture:///note"){x.error(-32602,"unknown resource");x.abort("scripted error");}x.reply("{\"contents\":[{\"uri\":\"fixture:///note\",\"mimeType\":\"text/plain\",\"text\":\"fixture note\"}]}");}
+@prompts fn prompts(x: RPC) -> void implements RPCHandler {x.reply("{\"prompts\":[{\"name\":\"fixture\",\"description\":\"Fixture prompt\",\"arguments\":[]}]}");}
+@get fn get(x: RPC) -> void implements RPCHandler {let p=json_parse(x.params());if(field(p,"name")!="fixture"){x.error(-32602,"unknown prompt");x.abort("scripted error");}x.reply("{\"messages\":[{\"role\":\"user\",\"content\":{\"type\":\"text\",\"text\":\"fixture prompt\"}}]}");}
+bind("initialize","init");bind("notifications/initialized","ready");bind("ping","ping");bind("tools/list","tools");bind("tools/call","route_tool");bind("tool:fixture","call");bind("resources/list","resources");bind("resources/read","read");bind("resources/templates/list","templates");bind("prompts/list","prompts");bind("prompts/get","get");
+
+end _lmcode_
+savedsl(p, ARGV[0]);

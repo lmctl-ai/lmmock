@@ -1,0 +1,34 @@
+p = _lmcode_ schema="schema.json";
+
+fn field(j: Json, k: string) -> string { let s = ""; if (j.has(k)) { s = j.get(k).as_string(); } return s; }
+fn cell(x: RPC, input: string) -> Json {
+ let cfg = json_parse(config()); let cells = cfg.get("cells"); let turn = x.next("turn");
+ let found = json_parse("{}"); let hits = 0;
+ for (i in range(0, cells.len())) { let c = cells.at(i); if (c.get("alias").as_string() == x.alias() && c.get("turn").as_int() == turn) { found = c; hits = hits + 1; } }
+ if (hits != 1) { x.abort("unscripted or duplicate cell for alias " + x.alias() + " turn " + str(turn)); }
+ if (found.has("delay") || found.has("delayMs") || found.has("timeout") || found.has("hang")) { x.abort("timing faults are not supported"); }
+ if (found.has("expect")) { if (!str_contains(input, found.get("expect").as_string())) { x.abort("cell prompt expectation failed"); } }
+ if (!found.has("text") && !found.has("error")) { x.abort("cell requires explicit text or error"); }
+ return found;
+}
+fn sid() -> string { return json_parse(config()).get("session").as_string(); }
+
+@start fn start(x: RPC) -> void implements RPCHandler {x.set("phase","initialize");let id=x.request("initialize","{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{},\"clientInfo\":{\"name\":\"lmmock-client\",\"version\":\"1\"}}");}
+@response fn response(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.message());if(p.has("error")){x.abort("MCP peer returned an error");}
+ let phase=x.get("phase");if(phase=="initialize"){
+  if(field(p.get("result"),"protocolVersion")!="2025-11-25"){x.abort("wrong MCP version");}
+  x.notify("notifications/initialized","{}");x.set("phase","tools");let id=x.request("tools/list","{}");
+ }else if(phase=="tools"){
+  let tools=p.get("result").get("tools");if(tools.len()!=1||field(tools.at(0),"name")!="fixture"){x.abort("expected fixture tool");}
+  x.set("phase","call");let id=x.request("tools/call","{\"name\":\"fixture\",\"arguments\":{}}");
+ }else if(phase=="call"){
+  let text=p.get("result").get("content").at(0).get("text").as_string();if(text!=json_parse(config()).get("expected").as_string()){x.abort("MCP result expectation failed");}x.set("phase","done");x.close();
+ }else{x.abort("unexpected MCP response");}
+}
+@note fn note(x: RPC) -> void implements RPCHandler {}
+@ping fn ping(x: RPC) -> void implements RPCHandler {x.reply("{}");}
+bind("$start","start");bind("$response","response");bind("notifications/message","note");bind("ping","ping");
+
+end _lmcode_
+savedsl(p, ARGV[0]);

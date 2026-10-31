@@ -1,0 +1,22 @@
+p = _lmcode_ schema="schema.json";
+
+fn field(j: Json, k: string) -> string { let s = ""; if (j.has(k)) { s = j.get(k).as_string(); } return s; }
+fn cell(x: RPC, input: string) -> Json {
+ let cfg = json_parse(config()); let cells = cfg.get("cells"); let turn = x.next("turn");
+ let found = json_parse("{}"); let hits = 0;
+ for (i in range(0, cells.len())) { let c = cells.at(i); if (c.get("alias").as_string() == x.alias() && c.get("turn").as_int() == turn) { found = c; hits = hits + 1; } }
+ if (hits != 1) { x.abort("unscripted or duplicate cell for alias " + x.alias() + " turn " + str(turn)); }
+ if (found.has("delay") || found.has("delayMs") || found.has("timeout") || found.has("hang")) { x.abort("timing faults are not supported"); }
+ if (found.has("expect")) { if (!str_contains(input, found.get("expect").as_string())) { x.abort("cell prompt expectation failed"); } }
+ if (!found.has("text") && !found.has("error")) { x.abort("cell requires explicit text or error"); }
+ return found;
+}
+fn sid() -> string { return json_parse(config()).get("session").as_string(); }
+
+@start fn start(x: RPC) -> void implements RPCHandler {
+ let c=cell(x,x.params());if(c.has("error")){x.abort(c.get("error").as_string());}
+ x.write_text(c.get("text").as_string());
+}
+bind("$start","start");
+end _lmcode_
+savedsl(p, ARGV[0]);

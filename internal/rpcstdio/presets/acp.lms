@@ -1,0 +1,46 @@
+p = _lmcode_ schema="schema.json";
+
+fn field(j: Json, k: string) -> string { let s = ""; if (j.has(k)) { s = j.get(k).as_string(); } return s; }
+fn cell(x: RPC, input: string) -> Json {
+ let cfg = json_parse(config()); let cells = cfg.get("cells"); let turn = x.next("turn");
+ let found = json_parse("{}"); let hits = 0;
+ for (i in range(0, cells.len())) { let c = cells.at(i); if (c.get("alias").as_string() == x.alias() && c.get("turn").as_int() == turn) { found = c; hits = hits + 1; } }
+ if (hits != 1) { x.abort("unscripted or duplicate cell for alias " + x.alias() + " turn " + str(turn)); }
+ if (found.has("delay") || found.has("delayMs") || found.has("timeout") || found.has("hang")) { x.abort("timing faults are not supported"); }
+ if (found.has("expect")) { if (!str_contains(input, found.get("expect").as_string())) { x.abort("cell prompt expectation failed"); } }
+ if (!found.has("text") && !found.has("error")) { x.abort("cell requires explicit text or error"); }
+ return found;
+}
+fn sid() -> string { return json_parse(config()).get("session").as_string(); }
+
+@init fn init(x: RPC) -> void implements RPCHandler {
+ let p = json_parse(x.params()); if (p.get("protocolVersion").as_int() != 1) { x.abort("ACP protocolVersion must be 1"); }
+ x.set("initialized", "yes"); x.reply("{\"protocolVersion\":1,\"agentCapabilities\":{\"loadSession\":true},\"authMethods\":[]}");
+}
+@noop fn noop(x: RPC) -> void implements RPCHandler { if(x.get("initialized")!="yes"){x.abort("initialize first");}x.set("ready","yes"); }
+@open fn open(x: RPC) -> void implements RPCHandler {
+ if (x.get("ready") != "yes") { x.abort("initialize must precede session open"); }
+ let p = json_parse(x.params());
+ if (x.method() == "session/load") { if (field(p,"sessionId") != sid()) { x.error(-32002,"unknown fixture session"); x.abort("scripted error"); } }
+ x.set("open", "yes"); x.reply("{\"sessionId\":" + json_quote(sid()) + ",\"configOptions\":[],\"models\":{\"currentModelId\":\"fixture-model\",\"availableModels\":[]}}");
+}
+@configure fn configure(x: RPC) -> void implements RPCHandler {
+ let p=json_parse(x.params());if (x.get("open") != "yes" || field(p,"sessionId")!=sid()) { x.abort("session configuration requires the opened session"); }
+ x.set("configuration",x.params());
+ if(x.method()=="session/set_model"){x.set("model",field(p,"modelId"));}
+ if(x.method()=="session/set_mode"){x.set("mode",field(p,"modeId"));}
+ if(x.method()=="session/set_config_option"){let key=field(p,"configId");if(key!="mode"&&key!="model"&&key!="effort"){x.abort("unsupported config option");}x.set(key,field(p,"value"));}
+ x.reply("{\"configOptions\":[],\"currentModeId\":"+json_quote(x.get("mode"))+",\"currentModelId\":"+json_quote(x.get("model"))+"}");
+}
+@prompt fn prompt(x: RPC) -> void implements RPCHandler {
+ let p = json_parse(x.params()); if (x.get("open") != "yes" || field(p,"sessionId") != sid()) { x.abort("prompt requires the opened session"); }
+ let c = cell(x,x.params()); if (c.has("error")) { x.error(-32000,c.get("error").as_string()); x.abort("scripted error"); }
+ let chunks = str_list(); if (c.has("chunks")) { let a=c.get("chunks"); for (i in range(0,a.len())) { chunks.add(a.at(i).as_string()); } } else { chunks.add(c.get("text").as_string()); }
+ for (i in range(0,chunks.len())) { x.notify("session/update","{\"sessionId\":"+json_quote(sid())+",\"update\":{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":"+json_quote(chunks.at(i))+"}}}"); }
+ let reason="end_turn";if(c.has("stopReason")){reason=c.get("stopReason").as_string();} x.reply("{\"stopReason\":"+json_quote(reason)+"}");
+}
+bind("initialize","init"); bind("notifications/initialized","noop");
+bind("session/new","open");bind("session/load","open");bind("session/set_config_option","configure");bind("session/set_mode","configure");bind("session/set_model","configure");bind("session/prompt","prompt");
+
+end _lmcode_
+savedsl(p, ARGV[0]);

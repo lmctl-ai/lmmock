@@ -24,6 +24,9 @@ var version = "0.1.0"
 
 func main() { os.Exit(run(os.Args[1:])) }
 func run(args []string) int {
+	if len(args) > 0 && args[0] == "stdio" {
+		return stdioCommand(args[1:])
+	}
 	if len(args) > 0 && args[0] == "scenario" {
 		return scenarioCommand(args[1:])
 	}
@@ -202,6 +205,7 @@ func compilerCommand(ctx context.Context, name string, args ...string) (*exec.Cm
 }
 func fail(err error) int { fmt.Fprintln(os.Stderr, "lmmock:", err); return 1 }
 func usage() {
+	fmt.Fprintln(os.Stderr, "       lmmock stdio acp|mcp|mcp-client|agent --scenario FILE (stdio --schema for handler declarations)")
 	fmt.Fprintln(os.Stderr, "       lmmock scenario import|scrub|verify --input FLOWS [--output FILE | --target URL]")
 	_, _ = io.WriteString(os.Stderr, `lmmock - scriptable loopback HTTP mocks
   lmmock schema > schema.json
