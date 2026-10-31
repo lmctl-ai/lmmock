@@ -11,13 +11,11 @@ Download the executable for your platform from
 [Releases](https://github.com/lmctl-ai/lmmock/releases), or build it with Go 1.26:
 
 ```sh
-go install github.com/lmctl-ai/lmmock/cmd/lmmock@latest
-npm install -g @lmctl-ai/lmctl
 lmmock exec --script examples/api.lms -- node examples/client.mjs
 ```
 
 Run these examples from a checkout, or extract `examples.tar.gz` from a release.
-The npm package installs both `lmscript` and `lmctl`. Source mode uses `lmscript`
+The npm package @lmctl-ai/lmctl supplies both `lmscript` and `lmctl`; keep a matching compiler on your PATH. Source mode uses `lmscript`
 (or `LMSCRIPT_BIN`) to compile the script before opening the listener.
 
 `exec` binds `127.0.0.1:0`, starts the client command with `LMMOCK_URL` set to the
@@ -392,3 +390,95 @@ binaries. macOS/Windows run the native lmmock client and protocol suites.
 lmmock exec --dsl build/copilot.dslb --config examples/copilot-config.json -- \
   node tests/copilot.mjs
 ```
+
+## Capture a client protocol
+
+Use lminspect as a reverse proxy when the client supports a base URL. The following
+command assumes a protected working directory and an operator-chosen upstream;
+raw recordings and tap output contain credentials. They are local inputs, never
+CI artifacts or committed fixtures. For fixed URLs, the lminspect case study
+covers a per-run CA, client trust, --ssl-bump and an explicit --route destination
+scheme (HTTPS interception can forward to a plain HTTP mock).
+
+```sh
+lminspect run --listen 127.0.0.1:18080 --mode reverse:https://YOUR_UPSTREAM --record raw.jsonl
+```
+
+Point the client at that listener, use synthetic prompts, then stop only the
+proxy process you started. No vendor capture runs in this repository's tests.
+
+## Convert and scrub a capture
+
+The Go converter handles lminspect JSONL, gzip bodies, raw binary data, HTTP error
+responses and ordered SSE records. It gathers credentials across the whole capture
+before scrubbing request/response bodies, paths and headers, including decoded JSON
+string escapes. Authorization, API-key, token and cookie headers are replaced or
+removed; response headers use an allowlist. Provider IDs and timestamps normalize
+deterministically. --exact disables only dynamic normalization, never scrubbing.
+Transport failures, incomplete flows, unsupported compression and secret residue
+are errors; they are never silently omitted. Review scrubbed output for application
+PII and unknown secret formats before sharing it: no finite pattern list identifies
+all application secrets.
+
+```sh
+lmmock scenario scrub --input raw.jsonl --output flows.jsonl
+lmmock scenario import --input flows.jsonl --output scenario.json
+```
+
+Files are written only after conversion passes. Raw credentials are not printed in
+errors. Delete private raw captures and per-run CA material after review. Scrubbed
+credential placeholders are safe fixture identities, not working credentials.
+
+## Replay the Copilot capture preset
+
+The capture-derived preset is captures/copilot/scenario.json. Its provenance names
+the lminspect case study for CLI v1.0.105 and the local lmcode stand-in actually
+recorded: this is not a claim of a newly recorded vendor session. Twelve exchanges
+cover the required model flags/catalog, auto selection, platform handshake,
+Responses API's nine sequential events, Anthropic messages, chat streaming and an
+unauthorized response. The existing examples/copilot.lms remains the configurable
+mock for clients whose prompts differ from this exact captured conversation.
+
+Compile examples/scenario.lms with the matching examples/schema.json, then replay:
+
+```sh
+lmmock exec --lmcode build/scenario.dslb --config captures/copilot/scenario.json -- YOUR_TEST_COMMAND
+```
+
+Handlers remain annotated lmcode entries implementing the Handler single-method
+interface. The generic HTTP transport adds Exchange.stream_event(bytes): each event
+is written and flushed in order after handler completion, without delays, sleeps,
+recorded timing or a timeout option. TCP packet boundaries are not event boundaries.
+A handler error before emission is still an HTTP error. send/json replace any queued
+events; use either event emission or a final buffered body in one response.
+
+## Add a preset and verify fidelity
+
+Store reviewed scrubbed flows, the generated scenario and a provenance document
+under captures/NAME. Keep raw files outside the checkout. The engine matches exact
+sanitized method, URI/query, raw body and credential identity; it does not generalize
+prompts or parse arbitrary request bodies as JSON. Identical requests consume their
+recorded replies in occurrence order (for example 429 then 200). Unmatched or exhausted
+rules return 501. Restart the server to reset the conversation; concurrent duplicate
+requests receive occurrence numbers in arrival order. Scheme/host are intentionally
+not matchers so a TLS capture can replay over loopback HTTP.
+
+Run verification inside a fresh lmmock exec, where LMMOCK_URL identifies the server:
+
+```sh
+lmmock scenario verify --input captures/copilot/flows.jsonl --target "$LMMOCK_URL"
+```
+
+Verification permits only a loopback HTTP origin, disables redirects/environment
+proxies, and compares normalized status, allowed headers, bytes and ordered SSE
+records. It fails on changed replies, missing rules or reordered events. The normal
+Go tests exercise these controls and per-event flushes. tests/scenario/controls.py
+also removes the production credential scrub rule and requires a failing assertion.
+
+The Capture fixture fidelity Actions job downloads a pinned npm compiler and a
+checksummed lminspect release, records only the local stand-in, and compares its
+regenerated scenario to the committed preset. It builds the candidate lmmock because
+the new streaming primitive must be tested before release; it does not substitute an
+older release binary. The normal test matrix also runs the fidelity suite. Publishing
+requires the separate manual workflow dispatch; pushes run tests only. Native
+Copilot CLI live integration is not part of the default offline gate.

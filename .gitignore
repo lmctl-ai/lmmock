@@ -6,3 +6,6 @@
 /p2.txt
 
 node_modules/
+/raw*.jsonl
+*.key
+__pycache__/
