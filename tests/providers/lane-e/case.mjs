@@ -14,10 +14,15 @@ function clientPath(){
  const prefix=process.env.LMCTL_TEST_PREFIX;if(prefix)return path.join(prefix,'node_modules/@lmctl-ai/lmctl/dist/cli/index.js');
  throw Error('LMCTL_TEST_CLI or LMCTL_TEST_PREFIX must point to the privately installed published client');
 }
+export function workspace(root){
+ // Native children resolve temporary-directory aliases (for example macOS /var).
+ // Derive transcript paths from that same identity before computing projectKey.
+ const work=path.join(root,'workspace 空间');fs.mkdirSync(work);return fs.realpathSync.native(work);
+}
 export function runCase(provider,variant,binary){
  assert.ok(Object.hasOwn(families.families,provider),'unknown fixture provider');
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'lmmock lane E '));
- const work=path.join(root,'workspace 空间');fs.mkdirSync(work);const bin=path.join(root,'bin');fs.mkdirSync(bin);
+ const work=workspace(root);const bin=path.join(root,'bin');fs.mkdirSync(bin);
  const native=path.join(bin,provider+(process.platform==='win32'?'.exe':''));fs.copyFileSync(binary,native);fs.chmodSync(native,0o700);
  assert.equal(path.dirname(fs.realpathSync(native)),fs.realpathSync(bin),'fake executable escaped owned bin');
  const cfgFile=path.join(root,'config.json'),binding=path.join(root,'bindings.json'),data=path.join(root,'data');fs.mkdirSync(path.join(data,'muse'),{recursive:true});
