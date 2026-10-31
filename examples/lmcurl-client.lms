@@ -1,4 +1,5 @@
-# Run inside lmmock exec; uses the released lmcurl client independently.
+# Run inside lmmock exec; this isolated compatibility test targets immutable lmcurl v0.1.2.
+# Its recorded wire spelling is not an option alias accepted by lmmock.
 base = env("LMMOCK_URL");
 assert(base != "", "run through lmmock exec");
 p = _lmcode_ cli="lmcurl";
@@ -11,6 +12,10 @@ assert_eq(streamed.status(), 200);
 assert_eq(streamed.text(), "pong");
 end _lmcode_
 savedsl(p, "build/lmcurl-client.dslb");
-r = system(["lmcurl", "--lmcode", "build/lmcurl-client.dslb"]);
+pin = json_parse(read_file("tests/lmcurl-v0.1.2.json"));
+assert(getstr(pin,"version") == "0.1.2", "unexpected compatibility release pin");
+version = system(["lmcurl", "--version"]);
+assert(version.code == 0 && trim(version.stdout) == "lmcurl " + getstr(pin,"version"), "compatibility client version differs");
+r = system(["lmcurl", getstr(pin,"execution_option"), "build/lmcurl-client.dslb"]);
 assert(r.code == 0, r.stdout + r.stderr);
 println("PASS released lmcurl chat and SSE against lmmock");
