@@ -1,0 +1,39 @@
+name: OpenAI HTTP published client
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  published:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: lmctl-ai/miniplayer
+          ref: eb4089de6337344e0a758f0a0d41448b71b610e2
+          path: .ci-miniplayer
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34
+        with: {go-version: '1.26'}
+      - name: Private published compiler and pinned real HTTP client
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
+          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "LMSCRIPT_BIN=$RUNNER_TEMP/lmctl/node_modules/.bin/lmscript" >> "$GITHUB_ENV"
+          echo "MINIPLAYER_TEST_BIN=$GITHUB_WORKSPACE/.ci-miniplayer/bin/miniplayer.js" >> "$GITHUB_ENV"
+          npm ci --prefix .ci-miniplayer --ignore-scripts
+          npm ci --prefix tests/vercel --ignore-scripts
+      - name: Real HTTP, SDK, lmctl adapter and compiled controls
+        run: |
+          mkdir -p build
+          go build -o build/lmmock ./cmd/lmmock
+          lmscript --no-preflight fixtures/openai/handler.lms build/openai.dslb
+          node tests/openai/run.mjs build/lmmock
+          node tests/openai/controls.mjs build/lmmock
+          node tests/openai/run.mjs build/lmmock --published
