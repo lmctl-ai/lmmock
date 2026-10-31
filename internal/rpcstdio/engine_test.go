@@ -139,13 +139,13 @@ func TestAgentCellsPersistAndIsolate(t *testing.T) {
 	}
 }
 func TestCodexTurnOrder(t *testing.T) {
-	input := rpc(1, "initialize", map[string]any{}) + rpc(nil, "initialized", nil) + rpc(2, "thread/start", map[string]any{}) + rpc(3, "turn/start", map[string]any{"input": "ping"})
+	input := rpc(1, "initialize", map[string]any{"clientInfo": map[string]any{"name": "lmctl", "version": "0.2.448"}}) + rpc(nil, "initialized", nil) + rpc(2, "thread/start", map[string]any{}) + rpc(3, "turn/start", map[string]any{"threadId": "fixture-session", "input": "ping"})
 	out, e := runTest(t, "codex", "Worker", input, "")
 	if e != nil {
 		t.Fatal(e)
 	}
 	m := decodeLines(t, out)
-	if len(m) != 6 || m[2]["id"] != float64(3) || m[3]["method"] != "turn/started" || m[4]["method"] != "item/agentMessage/delta" || m[5]["method"] != "turn/completed" {
+	if len(m) != 8 || m[2]["id"] != float64(3) || m[3]["method"] != "turn/started" || m[5]["method"] != "item/agentMessage/delta" || m[7]["method"] != "turn/completed" {
 		t.Fatal(out)
 	}
 }
