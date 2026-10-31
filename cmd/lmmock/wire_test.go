@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/lmctl-ai/lmmock/internal/wire"
-	"github.com/lmctl-ai/lmmock/internal/wire/testutil"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -35,8 +35,22 @@ func TestWireClientProcess(t *testing.T) {
 func TestWireExecOwnsListenerAndClient(t *testing.T) {
 	dir := t.TempDir()
 	body := `@echo fn echo(s: Session) -> void implements WebSocketHandler { if(s.recv()){s.send(s.body());} } bind("/echo","echo");`
-	code := testutil.Compile(t, "ws", body)
-	os.WriteFile(filepath.Join(dir, "program.dslb"), code, 0600)
+	schema, err := wire.Schema("ws")
+	if err != nil {
+		t.Fatal(err)
+	}
+	schemaFile, handlerFile := filepath.Join(dir, "schema.json"), filepath.Join(dir, "handler.lm")
+	if err = os.WriteFile(schemaFile, schema, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(handlerFile, []byte(body), 0600); err != nil {
+		t.Fatal(err)
+	}
+	// Exercise the documented fixture adapter on the native CI platform too.
+	compile := exec.Command("node", "../../examples/wire/compile.mjs", schemaFile, handlerFile, filepath.Join(dir, "program.dslb"))
+	if output, err := compile.CombinedOutput(); err != nil {
+		t.Fatalf("compile adapter: %v\n%s", err, output)
+	}
 	config := filepath.Join(dir, "scenario.json")
 	b, _ := json.Marshal(wire.Config{Program: "program.dslb"})
 	os.WriteFile(config, b, 0600)

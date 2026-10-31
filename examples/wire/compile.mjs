@@ -9,7 +9,7 @@ const [schema,input,output]=process.argv.slice(2);
 if(!schema||!input||!output||process.argv.length!==5)throw Error('usage: node compile.mjs SCHEMA.json HANDLER.lm PROGRAM.dslb');
 let compiler=process.env.LMSCRIPT_BIN||'lmscript';
 if(!compiler.includes('/')&&!compiler.includes('\\')){
- const extensions=process.platform==='win32'?['','.cmd','.exe']:[''];
+ const extensions=process.platform==='win32'?['.cmd','.exe','']:[''];
  compiler=(process.env.PATH||'').split(path.delimiter).flatMap(dir=>extensions.map(ext=>path.join(dir,compiler+ext))).find(file=>fs.existsSync(file));
  if(!compiler)throw Error('set LMSCRIPT_BIN to the npm lmscript compiler');
 }
