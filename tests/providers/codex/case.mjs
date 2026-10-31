@@ -21,7 +21,7 @@ try{
  const turns=e.requests.filter(r=>r.method==='turn/start');
  assert.equal(turns.length,vars.LMMOCK_CODEX_MODE==='batch'?2:1);
  if(turns.length===2){assert.equal(turns[1].params.input[0].text,'pong','turn2 depends on real turn1 reply');assert.equal(e.result.second.reply,'dependent answer');}
- assert.equal(e.rows.length,turns.length,'one accounting/transcript row per accepted turn');
+ assert.equal(e.rows.length,turns.length,'one accounting attempt per turn/start request');
  for(const row of e.rows){assert.ok(row.attempt_key);assert.equal(row.provider,'codex');assert.equal(row.native_session_id,['rpc-error','auth-error'].includes(id)?null:'11111111-1111-4111-8111-111111111111','pinned recorded identity (direct RPC rejection loses it)');assert.equal(row.model_requested,vars.LMMOCK_CODEX_MODEL);}
  // Direct accounting-only rows intentionally omit prompt content; the wire still carries it.
  assert.equal(turns[0].params.threadId,'11111111-1111-4111-8111-111111111111','wire thread identity remains exact');
@@ -29,6 +29,7 @@ try{
  assert.equal(e.rows[0].message,vars.LMMOCK_CODEX_MODE==='batch'?'ping':'');
  assert.equal(e.rows[0].accounting_only,vars.LMMOCK_CODEX_MODE==='batch'?null:1);
  if(vars.LMMOCK_CODEX_MODE==='batch')assert.deepEqual(e.rows.map(row=>[row.message,row.response]),[['ping','pong'],['pong','dependent answer']],'ordered batch transcripts');
+ assert.equal(new Set(e.rows.map(row=>row.attempt_key)).size,e.rows.length,'attempt keys are unique');
  const row=e.rows[0];const provider=e.result.result;
  if(provider.status==='ok')assert.equal(e.result.member.sessionid,'11111111-1111-4111-8111-111111111111');
  if(process.argv.includes('--require-error-classes')){

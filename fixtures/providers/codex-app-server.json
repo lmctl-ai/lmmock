@@ -96,9 +96,9 @@
       "kind": "usage",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "success"
         ],
         "env": {
@@ -111,6 +111,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "ok",
+          "provider.reply": "pong",
           "row_count": 1
         },
         "stdout_contains": "pong",
@@ -128,9 +129,9 @@
       "kind": "model",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "reasoning-model"
         ],
         "env": {
@@ -143,6 +144,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "ok",
+          "provider.reply": "pong",
           "row_count": 1
         },
         "stdout_contains": "pong",
@@ -160,9 +162,9 @@
       "kind": "success",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "resume"
         ],
         "env": {
@@ -175,6 +177,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "ok",
+          "provider.reply": "pong",
           "row_count": 1
         },
         "stdout_contains": "pong",
@@ -192,9 +195,9 @@
       "kind": "success",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "persistent"
         ],
         "env": {
@@ -207,6 +210,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "ok",
+          "provider.reply": "pong",
           "row_count": 2
         },
         "stdout_contains": "pong",
@@ -224,9 +228,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "app-error"
         ],
         "env": {
@@ -239,6 +243,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "error",
+          "provider.reply": "",
           "row_count": 1
         },
         "error_class": "unknown"
@@ -249,9 +254,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "rpc-error"
         ],
         "env": {
@@ -264,6 +269,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "error",
+          "provider.reply": "",
           "row_count": 1
         },
         "error_class": "unknown"
@@ -274,9 +280,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "auth-error"
         ],
         "env": {
@@ -289,6 +295,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "error",
+          "provider.reply": "",
           "row_count": 1
         },
         "error_class": "auth_required"
@@ -299,9 +306,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "quota-error"
         ],
         "env": {
@@ -314,6 +321,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "error",
+          "provider.reply": "",
           "row_count": 1
         },
         "error_class": "quota_exhausted"
@@ -324,9 +332,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "wrong-turn-id"
         ],
         "env": {
@@ -339,6 +347,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "error",
+          "provider.reply": "",
           "row_count": 1
         },
         "error_class": "unknown"
@@ -352,9 +361,9 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "missing-terminal"
         ],
         "env": {
@@ -367,6 +376,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "error",
+          "provider.reply": "",
           "row_count": 1
         },
         "error_class": "unknown"
@@ -380,9 +390,9 @@
       "kind": "stream",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "foreign-event"
         ],
         "env": {
@@ -395,6 +405,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "ok",
+          "provider.reply": "pong",
           "row_count": 1
         },
         "stdout_contains": "pong",
@@ -412,9 +423,9 @@
       "kind": "usage",
       "request": {
         "kind": "process",
-        "executable": "{{node_binary}}",
+        "executable": "node",
         "argv": [
-          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "tests/providers/codex/case.mjs",
           "malformed-usage"
         ],
         "env": {
@@ -427,6 +438,7 @@
         "exit_code": 0,
         "json": {
           "provider.status": "ok",
+          "provider.reply": "pong",
           "row_count": 1,
           "usage_reason": "counter_not_exposed",
           "cost_reason": "usage_unavailable"

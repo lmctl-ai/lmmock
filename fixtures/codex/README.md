@@ -26,7 +26,7 @@ The test session marker is inside its temporary HOME, never the host's Codex hom
 
 Tests assert real app-server argv/model fields, initialize ordering, thread
 identity, dependent turns over one process, reply/error text, stdout/stderr/exit,
-recorded session IDs, one attempt per turn and 70 uncached +30 cached input,
+recorded session IDs (pre-turn RPC failures currently record null), one attempt per turn/start and 70 uncached +30 cached input,
 12 output and4 reasoning tokens. P0 expectations reuse the shared validator and
 checker. Process projections expose the real lm_classify_failure result; the
 server never supplies an error_class to the test driver.

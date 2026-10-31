@@ -15,5 +15,6 @@ pretend a better client was tested.
 
 The protocol-owned Codex runner validates manifests through the shared P0 schema
 and reuses its executeProcess/checkExpectation helpers. The shared HTTP runner
-retains its explicit HTTP ownership boundary. node_binary is supplied by the
-Codex runner, not shell interpolation. Existing HTTP readiness remains unchanged.
+retains its explicit HTTP ownership boundary. The shared process-suite resolves the declared node harness to the actual Node
+executable after checking its real path is under tests/. No bare provider command
+is launched by the manifest runner. Existing HTTP readiness remains unchanged.
