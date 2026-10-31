@@ -11,7 +11,7 @@ import (
 
 func logSensitive(key string) bool {
 	key = strings.ReplaceAll(strings.ToLower(key), "_", "-")
-	return sensitive(key) || strings.Contains(key, "password") || strings.Contains(key, "secret")
+	return key == "key" || key == "apikey" || sensitive(key) || strings.Contains(key, "password") || strings.Contains(key, "secret")
 }
 
 // RedactRequest shares the converter's credential/pattern scrubber without
@@ -21,12 +21,15 @@ func RedactRequest(request Request) Request {
 	for key, values := range request.Headers {
 		if logSensitive(key) {
 			for _, value := range values {
+				if value == "" {
+					continue
+				}
 				n.secrets = append(n.secrets, value, strings.TrimPrefix(value, "Bearer "))
 				if strings.EqualFold(key, "Cookie") {
 					for _, part := range strings.Split(value, ";") {
 						_, secret, ok := strings.Cut(strings.TrimSpace(part), "=")
 						if ok && secret != "" {
-							n.secrets = append(n.secrets, secret)
+							n.secrets = append(n.secrets, strings.Trim(secret, "\""))
 						}
 					}
 				}
@@ -47,7 +50,11 @@ func RedactRequest(request Request) Request {
 		query := uri.Query()
 		for key, values := range query {
 			if logSensitive(key) {
-				n.secrets = append(n.secrets, values...)
+				for _, value := range values {
+					if value != "" {
+						n.secrets = append(n.secrets, value)
+					}
+				}
 				query.Set(key, "[redacted]")
 			}
 		}
