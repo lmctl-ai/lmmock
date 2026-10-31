@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "id": "openai-chat-completions",
+  "dialect": {
+    "id": "openai-chat-completions",
+    "version": "2024-08-01",
+    "transport": "http"
+  },
+  "source": {
+    "kind": "public-spec",
+    "reference": "https://platform.openai.com/docs/api-reference/chat/create",
+    "version": "2024-08-01",
+    "retrieved": "2026-10-31",
+    "note": "lmctl-owned standalone HTTP shape fixture; no live endpoint was called"
+  },
+  "server": {
+    "kind": "http",
+    "handler": "examples/llm.lms",
+    "config": "examples/llm-config.json",
+    "url_env": "LMMOCK_URL"
+  },
+  "models": [
+    { "id": "mock-agent", "family": "openai-chat", "capabilities": ["chat", "tools", "stream"] },
+    { "id": "overloaded", "family": "openai-chat", "capabilities": ["chat"] },
+    { "id": "unknown-model", "family": "openai-chat", "capabilities": ["chat"] }
+  ],
+  "routes": [
+    { "id": "chat", "method": "POST", "path": "/v1/chat/completions", "annotation": "chat", "sam": "Handler", "content_types": ["application/json"] }
+  ],
+  "cases": [
+    {
+      "id": "chat-success-and-usage",
+      "kind": "usage",
+      "request": { "kind": "http", "method": "POST", "path": "/v1/chat/completions", "headers": { "Authorization": "Bearer fixture-key" }, "body": { "model": "mock-agent", "messages": [{ "role": "user", "content": "ping" }] } },
+      "expect": { "status": 200, "model": "mock-agent", "usage": { "prompt_tokens": 2, "completion_tokens": 2, "total_tokens": 4 }, "json": { "choices.0.message.content": "pong" } }
+    },
+    {
+      "id": "missing-auth",
+      "kind": "error",
+      "request": { "kind": "http", "method": "POST", "path": "/v1/chat/completions", "body": { "model": "mock-agent", "messages": [{ "role": "user", "content": "ping" }] } },
+      "expect": { "status": 401, "json": { "error.type": "authentication_error" } },
+      "faults": ["auth-missing"]
+    },
+    {
+      "id": "unknown-model",
+      "kind": "model",
+      "request": { "kind": "http", "method": "POST", "path": "/v1/chat/completions", "headers": { "Authorization": "Bearer fixture-key" }, "body": { "model": "unknown-model", "messages": [{ "role": "user", "content": "ping" }] } },
+      "expect": { "status": 404, "json": { "error.code": "model_not_found" } },
+      "faults": ["unknown-model"]
+    },
+    {
+      "id": "rate-limit",
+      "kind": "error",
+      "request": { "kind": "http", "method": "POST", "path": "/v1/chat/completions", "headers": { "Authorization": "Bearer fixture-key" }, "body": { "model": "overloaded", "messages": [{ "role": "user", "content": "ping" }] } },
+      "expect": { "status": 429, "headers": { "retry-after": "1" }, "json": { "error.type": "rate_limit_error" } },
+      "faults": ["rate-limit"]
+    },
+    {
+      "id": "tool-call",
+      "kind": "tool",
+      "request": { "kind": "http", "method": "POST", "path": "/v1/chat/completions", "headers": { "Authorization": "Bearer fixture-key" }, "body": { "model": "mock-agent", "messages": [{ "role": "user", "content": "Look up Paris" }], "tools": [{ "type": "function", "function": { "name": "lookup", "parameters": { "type": "object" } } }] } },
+      "expect": { "status": 200, "json": { "choices.0.finish_reason": "tool_calls", "choices.0.message.tool_calls.0.function.name": "lookup" } }
+    },
+    {
+      "id": "sse-terminal",
+      "kind": "stream",
+      "request": { "kind": "http", "method": "POST", "path": "/v1/chat/completions", "headers": { "Authorization": "Bearer fixture-key" }, "body": { "model": "mock-agent", "messages": [{ "role": "user", "content": "ping" }], "stream": true } },
+      "expect": { "status": 200, "headers": { "content-type": "text/event-stream" }, "events": ["chatcmpl-mock", "[DONE]"] }
+    }
+  ],
+  "faults": [
+    { "id": "auth-missing", "surface": "http", "trigger": { "case_id": "missing-auth" }, "description": "Omit the configured bearer header; expect a vendor-shaped 401." },
+    { "id": "unknown-model", "surface": "http", "trigger": { "case_id": "unknown-model", "model": "unknown-model" }, "description": "Request an unlisted model selector; expect model_not_found." },
+    { "id": "rate-limit", "surface": "http", "trigger": { "case_id": "rate-limit", "model": "overloaded" }, "description": "Use the deterministic overloaded selector; expect 429 and Retry-After without waiting." }
+  ]
+}
