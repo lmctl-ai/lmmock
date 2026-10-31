@@ -17,6 +17,19 @@ const schema=z.object({city:z.string()});
 const tools={weather:tool({description:'Weather in a city',inputSchema:schema,execute:async({city})=>({city,temperature:21})})};
 let passed=0;
 async function check(name,fn){set({});await fn();passed++;console.log('PASS '+name);}
+await check('timing modes are refused deterministically',async()=>{
+ set({mode:'timeout'});
+ for(const [path,headers,body] of [
+  ['/v1/chat/completions',{authorization:'Bearer fixture-key'},{model:'mock-agent',messages:[]}],
+  ['/v1/responses',{authorization:'Bearer fixture-key'},{model:'mock-agent',input:'ping'}],
+  ['/v1/messages',{'x-api-key':'fixture-key','anthropic-version':'2023-06-01'},{model:'claude-sonnet-4-5',messages:[]}],
+  ['/v1beta/models/gemini-2.5-flash:generateContent',{'x-goog-api-key':'fixture-key'},{contents:[]}],
+  ['/api/chat',{authorization:'Bearer fixture-key'}, {model:'fixture-ollama',messages:[],stream:false}]
+ ]) {
+  const r=await fetch(process.env.LMMOCK_URL+path,{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(body)});
+  assert.equal(r.status,400,'timing mode must be refused '+path);assert.match(await r.text(),/timing modes are not supported/);
+ }
+});
 for(const [name,model] of [['compatible',compatible.chatModel('mock-agent')],['openai-chat',openai.chat('mock-agent')],['openai-responses',openai('mock-agent')],['anthropic',anthropic('claude-sonnet-4-5')],['gemini',google('gemini-2.5-flash')]]){
  await check(name+' generateText',async()=>{
   const r=await generateText({model,prompt:'ping',maxRetries:0});
@@ -85,9 +98,9 @@ await check('disconnect is rejected',async()=>{
  set({mode:'disconnect'});
  await assert.rejects(generateText({model:compatible('mock-agent'),prompt:'ping',maxRetries:0}));
 });
-await check('client deadline aborts slow handler',async()=>{
- set({mode:'timeout'});
- await assert.rejects(generateText({model:compatible('mock-agent'),prompt:'ping',maxRetries:0,abortSignal:AbortSignal.timeout(50)}));
+await check('client cancellation is caller owned',async()=>{
+ set({});
+ await assert.rejects(generateText({model:compatible('mock-agent'),prompt:'ping',maxRetries:0,abortSignal:AbortSignal.abort(new Error('synthetic client cancellation'))}));
 });
 await check('real bad credential',async()=>{
  const wrong=createOpenAICompatible({name:'bad',baseURL,apiKey:'wrong'});
@@ -112,9 +125,9 @@ for(const [name,model,statuses] of [
   set({mode:'disconnect'});
   await assert.rejects(generateText({model,prompt:'ping',maxRetries:0}));
  });
- await check(name+' deadline',async()=>{
-  set({mode:'timeout'});
-  await assert.rejects(generateText({model,prompt:'ping',maxRetries:0,abortSignal:AbortSignal.timeout(50)}));
+ await check(name+' client cancellation',async()=>{
+  set({});
+  await assert.rejects(generateText({model,prompt:'ping',maxRetries:0,abortSignal:AbortSignal.abort(new Error('synthetic client cancellation'))}));
  });
  await check(name+' configurable text',async()=>{
   set({text:'configured'});

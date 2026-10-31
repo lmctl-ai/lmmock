@@ -123,9 +123,9 @@ An omitted apiKey permits requests without authentication. The acceptance tests
 set it explicitly. Default text is pong; default structured output is
 {"city":"Paris"}. The fixture does not synthesize values from JSON Schema.
 
-Modes unauthorized, rate-limit, server-error, bad-json, timeout and disconnect
+Modes unauthorized, rate-limit, server-error, bad-json and disconnect
 exercise SDK failure handling. Chat mode retry fails its first request with 429
-and then succeeds. Timeout delays the response by one second. Chat also retains
+and then succeeds. The former timeout mode returns HTTP 400; timing modes are unsupported. Chat also retains
 the legacy unknown-model and overloaded model test cases. Rate limits include
 Retry-After. Configuration is read per request.
 
@@ -138,7 +138,7 @@ arbitrary tool selection, parallel tools, hosted tools or semantic reasoning.
 SSE messages are sent as one buffered HTTP response. streamText parsing,
 function-call assembly, usage and final events are tested; token timing,
 backpressure and cancellation during incremental token delivery are not.
-Client deadlines during a delayed handler are tested separately.
+Caller-owned cancellation is tested with an already-aborted signal; the mock adds no delay.
 
 ## Acceptance tests
 
