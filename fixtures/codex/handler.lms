@@ -53,7 +53,7 @@ fn thread_reply(x: RPC, id: string) -> void {
  else { if (!allowed(p)) { x.error(-32602,"unknown fixture model"); }
  else { let c=cell(x);
  if (c.has("error")) { let code=-32000; if(c.has("rpc_code")){code=c.get("rpc_code").as_int();} x.error(code,c.get("error").as_string()); }
- else { let id=field(c,"turn_id"); if(id==""){id="turn-fixture";} x.set("active",id);
+ else { let id=field(c,"turn_id"); if(id==""){id="turn-fixture-"+str(c.get("turn").as_int());} x.set("active",id);
  x.reply("{\"turn\":{\"id\":"+json_quote(id)+",\"status\":\"inProgress\"}}");
  if(c.has("events")) {
   let events=c.get("events");

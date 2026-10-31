@@ -92,3 +92,54 @@ func TestCodexProviderInterrupt(t *testing.T) {
 		t.Fatalf("Codex interrupt terminal: %v", last)
 	}
 }
+
+func TestCodexProviderAdverseFidelity(t *testing.T) {
+	input := codexHello() + rpc(2, "thread/start", map[string]any{}) + rpc(3, "turn/start", map[string]any{"threadId": codexFixtureID, "input": "ping"})
+	for _, selected := range []string{"malformed-usage", "wrong-turn-id", "rpc-error"} {
+		t.Run(selected, func(t *testing.T) {
+			out, err := codexCase(t, selected, input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			switch selected {
+			case "malformed-usage":
+				var found any
+				for _, m := range out {
+					if m["method"] == "thread/tokenUsage/updated" {
+						found = m["params"].(map[string]any)["tokenUsage"].(map[string]any)["last"].(map[string]any)["inputTokens"]
+					}
+				}
+				if found != "not-an-integer" {
+					t.Fatalf("malformed usage must not be repaired: %v", found)
+				}
+			case "wrong-turn-id":
+				last := out[len(out)-1]
+				if last["params"].(map[string]any)["turn"].(map[string]any)["id"] != "wrong-turn" {
+					t.Fatalf("wrong-ID terminal must not be repaired: %v", last)
+				}
+			case "rpc-error":
+				last := out[len(out)-1]
+				if last["error"].(map[string]any)["code"] != float64(-32001) {
+					t.Fatalf("Codex RPC error must retain code: %v", last)
+				}
+			}
+		})
+	}
+}
+
+func TestCodexProviderLegacyCellsHaveDistinctTurnIDs(t *testing.T) {
+	input := rpc(1, "initialize", map[string]any{"clientInfo": map[string]any{"name": "lmctl", "version": "0.0.0"}}) + rpc(nil, "initialized", nil) + rpc(2, "thread/resume", map[string]any{"threadId": "fixture-session"}) + rpc(3, "turn/start", map[string]any{"threadId": "fixture-session", "input": "ping"}) + rpc(4, "turn/start", map[string]any{"threadId": "fixture-session", "input": "ping"})
+	out, err := runTest(t, "codex", "Worker", input, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := []string{}
+	for _, m := range decodeLines(t, out) {
+		if m["method"] == "turn/completed" {
+			ids = append(ids, m["params"].(map[string]any)["turn"].(map[string]any)["id"].(string))
+		}
+	}
+	if len(ids) != 2 || ids[0] == ids[1] {
+		t.Fatalf("consecutive legacy cells need distinct turn IDs: %v", ids)
+	}
+}

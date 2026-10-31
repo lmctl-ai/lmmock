@@ -9,7 +9,7 @@
   "source": {
     "kind": "synthetic",
     "reference": "https://developers.openai.com/codex/app-server",
-    "version": "lmctl-0.2.448; mono584fee2a adapter",
+    "version": "lmctl-0.2.448; mono8e334dda adapter",
     "retrieved": "2026-10-31",
     "note": "Synthetic stdio only. Exact tested client is published npm0.2.448. Foreign turn events are ignored; malformed usage remains provider success with unavailable accounting. Specialized protocol/usage error classes are NOT claimed; strict client controls record this unmet requirement."
   },
@@ -96,9 +96,10 @@
       "kind": "usage",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "success"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "success",
@@ -113,6 +114,7 @@
           "row_count": 1
         },
         "stdout_contains": "pong",
+        "model": "gpt-5.6-sol",
         "usage": {
           "input_tokens": 100,
           "cached_input_tokens": 30,
@@ -126,12 +128,13 @@
       "kind": "model",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "reasoning-model"
         ],
         "env": {
-          "LMMOCK_CODEX_CASE": "success",
+          "LMMOCK_CODEX_CASE": "reasoning-model",
           "LMMOCK_CODEX_MODE": "agent",
           "LMMOCK_CODEX_MODEL": "o3"
         }
@@ -143,6 +146,7 @@
           "row_count": 1
         },
         "stdout_contains": "pong",
+        "model": "o3",
         "usage": {
           "input_tokens": 100,
           "cached_input_tokens": 30,
@@ -156,9 +160,10 @@
       "kind": "success",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "resume"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "success",
@@ -173,6 +178,7 @@
           "row_count": 1
         },
         "stdout_contains": "pong",
+        "model": "gpt-5.6-sol",
         "usage": {
           "input_tokens": 100,
           "cached_input_tokens": 30,
@@ -186,9 +192,10 @@
       "kind": "success",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "persistent"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "success",
@@ -203,6 +210,7 @@
           "row_count": 2
         },
         "stdout_contains": "pong",
+        "model": "gpt-5.6-sol",
         "usage": {
           "input_tokens": 100,
           "cached_input_tokens": 30,
@@ -216,9 +224,10 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "app-error"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "app-error",
@@ -240,9 +249,10 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "rpc-error"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "rpc-error",
@@ -260,13 +270,64 @@
       }
     },
     {
+      "id": "auth-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "{{node_binary}}",
+        "argv": [
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "auth-error"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "auth-error",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "error",
+          "row_count": 1
+        },
+        "error_class": "auth_required"
+      }
+    },
+    {
+      "id": "quota-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "{{node_binary}}",
+        "argv": [
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "quota-error"
+        ],
+        "env": {
+          "LMMOCK_CODEX_CASE": "quota-error",
+          "LMMOCK_CODEX_MODE": "agent",
+          "LMMOCK_CODEX_MODEL": "gpt-5.6-sol"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "provider.status": "error",
+          "row_count": 1
+        },
+        "error_class": "quota_exhausted"
+      }
+    },
+    {
       "id": "wrong-turn-id",
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "wrong-turn-id"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "wrong-turn-id",
@@ -291,9 +352,10 @@
       "kind": "error",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "missing-terminal"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "missing-terminal",
@@ -318,9 +380,10 @@
       "kind": "stream",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "foreign-event"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "foreign-event",
@@ -335,6 +398,7 @@
           "row_count": 1
         },
         "stdout_contains": "pong",
+        "model": "gpt-5.6-sol",
         "usage": {
           "input_tokens": 100,
           "cached_input_tokens": 30,
@@ -348,9 +412,10 @@
       "kind": "usage",
       "request": {
         "kind": "process",
-        "executable": "node",
+        "executable": "{{node_binary}}",
         "argv": [
-          "tests/providers/codex/manifest.mjs"
+          "{{repo_root}}/tests/providers/codex/case.mjs",
+          "malformed-usage"
         ],
         "env": {
           "LMMOCK_CODEX_CASE": "malformed-usage",
@@ -366,7 +431,8 @@
           "usage_reason": "counter_not_exposed",
           "cost_reason": "usage_unavailable"
         },
-        "stdout_contains": "pong"
+        "stdout_contains": "pong",
+        "model": "gpt-5.6-sol"
       },
       "faults": [
         "malformed-usage"
