@@ -33,8 +33,9 @@ server never supplies an error_class to the test driver.
 
 ## Interrupt
 
-An owned loopback observer receives the actual native turn/started wire record and sends
-SIGINT through a test IPC bootstrap to the published runner's own signal handler.
+A test-only observer watches delivery of the actual native turn/started record,
+then signals after the client data callbacks and promise jobs. IPC carries SIGINT
+to the published runner's own signal handler; native processes and bytes are unchanged.
 The real adapter must send one matching turn/interrupt and receive the interrupted
 terminal event. This works without a sleep, mock deadline or pacing rule. The
 active cell waits for the protocol interrupt, not for a clock. Native stdout stays

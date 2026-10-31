@@ -19,6 +19,9 @@ retains its explicit HTTP ownership boundary. The shared process-suite resolves 
 executable after checking its real path is under tests/. No bare provider command
 is launched by the manifest runner. Existing HTTP readiness remains unchanged.
 
-The cross-platform cancellation rendezvous observes an owned loopback byte stream
-teed from the native fake. Filesystem append hints were unreliable on macOS/Windows.
-The observer is test-only, refuses non-loopback addresses and adds no timing policy.
+The cross-platform cancellation rendezvous observes the real child stdout at client
+delivery, without replacing the process or changing its bytes. Notification runs
+after the client data callbacks and promise jobs, then IPC triggers the published
+runner signal handler. Filesystem hints can be missed; server-write observation
+can precede Windows pipe delivery and send cancellation before a turn ID exists.
+The test-only observer adds no elapsed-time delay or mock policy.
