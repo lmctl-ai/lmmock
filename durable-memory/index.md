@@ -31,3 +31,7 @@ Go HTTP mock host backed by lmcode-go v0.6.38. Public repo lmctl-ai/lmmock, MIT.
 
 - [Streaming, TLS and request observations](streaming-tls.md): direct event flush, framing faults, per-run public CA exports, fixed HTTPS client routing, request-log/reset primitives and causal compiled controls.
 - [Stdio protocol boundary](stdio.md): annotated ACP/MCP/agent presets, framing, controls and published-client proof.
+- [OpenAI fixture families](../fixtures/openai/README.md): distinct route credentials,
+  JSON/SSE usage and tool cases, compiled controls, and pinned published-lmctl
+  integration. SDK error names and lmctl error_class are different boundaries;
+  do not silently label a standalone SDK stream test as an lmctl stream test.

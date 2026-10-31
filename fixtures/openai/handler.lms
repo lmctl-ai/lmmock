@@ -11,7 +11,12 @@ fn handle(x: Exchange, dialect: string) -> void {
   for (i in range(0, models.len())) { if (request.get("model").as_string() == models.at(i).as_string()) { supported = true; } }
   if (!supported) { x.status(404); x.json("{\"error\":{\"message\":\"fixture unsupported model\",\"code\":\"model_not_found\"}}"); }
   else {
-  let reply = cfg.get("cases").get(dialect).get(cfg.get("selected").as_string());
+  let selected = x.header("X-Lmmock-Case");
+  if (selected == "") { selected = cfg.get("selected").as_string(); }
+  let cases = cfg.get("cases").get(dialect);
+  if (!cases.has(selected)) { x.status(400); x.json("{\"error\":\"unknown fixture case\"}"); }
+  else {
+  let reply = cases.get(selected);
   x.status(reply.get("status").as_int());
   let headers = reply.get("headers");
   let keys = headers.keys();
@@ -21,6 +26,7 @@ fn handle(x: Exchange, dialect: string) -> void {
     let events = reply.get("events");
     for (i in range(0, events.len())) { x.stream_event(events.at(i).as_string()); }
   } else { x.json(reply.get("body").to_json()); }
+  }
   }
   }
 }
