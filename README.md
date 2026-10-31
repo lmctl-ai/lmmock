@@ -594,8 +594,8 @@ lmmock stdio mcp --scenario tests/stdio/scenario.json --alias MCP
 ACP supports initialize, the initialized notification, session/new, session/load,
 mode/model/config-option calls and session/prompt. Prompt cells emit ordered
 session/update text chunks followed by stopReason. Loading an unknown fixture
-session fails. Cancellation and native provider persistence are not simulated;
-an unsupported method fails loudly instead of silently succeeding. Kimi/OpenCode
+session fails. The stock preset does not simulate cancellation or native provider persistence; the ACP profile fixtures below add event-driven cancellation.
+An unsupported method fails loudly instead of silently succeeding. Kimi/OpenCode
 config-option and Hermes mode/model shapes are supported; vendor session files
 and identity probes remain the host adapter's responsibility.
 
@@ -722,3 +722,20 @@ on all native platforms. Model families are manifest data. Missing result/error
 classes and unavailable usage are pinned to observed client behavior; documented
 client gaps are not disguised as successful rejection. No vendor traffic or real
 credentials are involved.
+## ACP provider-profile coverage
+
+[ACP profile fixtures](fixtures/acp/README.md) extend the stdio host with one lmcode
+handler and six P0 manifests. Copilot, Kimi, OpenCode, Hermes and Miniplayer run
+through published lmctl adapters; Gemini's disabled adapter is asserted separately
+from its wire profile. Model families stay in manifests. The matrix checks auth
+error classes, session/configuration effects, tool updates, replay isolation,
+unknown billing facts and event-driven cancellation on all five native platforms.
+
+```sh
+node tests/acp-profiles/run.mjs
+```
+
+Active cancellation uses generic deferred JSON-RPC replies; protocol policy stays
+in lmcode. Tests do not use sleeps, provider credentials or vendor traffic. See the
+profile notes for exact expected warnings, conservative error classes and the
+Linux-only native SIGTERM qualification.

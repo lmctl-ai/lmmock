@@ -13,8 +13,8 @@ export function runCase(selected,{model='gpt-5.6-sol',resume=false,batch=false}=
  assert.equal(path.dirname(fs.realpathSync(fake)),fs.realpathSync(bin),'provider escaped owned fake-bin');
  const wire=JSON.parse(fs.readFileSync(path.join(root,'fixtures/codex/wire.json')));wire.model=model;wire.cells=wire.cases[selected].cells;
  const trace=path.join(dir,'trace');fs.mkdirSync(trace);const config=path.join(dir,'config.json');fs.writeFileSync(config,JSON.stringify(wire));
- const codexHome=path.join(dir,'codex-home');const sessions=path.join(codexHome,'sessions','2026','10','31');fs.mkdirSync(sessions,{recursive:true});
- if(resume||batch)fs.writeFileSync(path.join(sessions,'rollout-fixture-'+wire.session+'.jsonl'),JSON.stringify({type:'session_meta',payload:{id:wire.session,cwd:dir,model}})+'\n');
+ const codexHome=path.join(dir,'.codex');const sessions=path.join(codexHome,'sessions','2026','10','31');fs.mkdirSync(sessions,{recursive:true});
+ if(resume||batch)fs.writeFileSync(path.join(sessions,'rollout-2026-10-31T00-00-00-'+wire.session+'.jsonl'),JSON.stringify({type:'session_meta',payload:{id:wire.session,cwd:dir,model}})+'\n');
  const member={provider:'codex',alias:'Worker',model,sessiondir:dir,...(resume||batch?{sessionid:wire.session}:{})};
  const script=path.join(dir,'drive.lms');
  fs.writeFileSync(script,'m = '+JSON.stringify(member)+';\n'+(batch?
@@ -27,7 +27,7 @@ export function runCase(selected,{model='gpt-5.6-sol',resume=false,batch=false}=
  let result;try{result=JSON.parse(processResult.stdout.trim().split('\n').at(-1));}catch{}
  const read=name=>fs.existsSync(path.join(trace,name))?fs.readFileSync(path.join(trace,name),'utf8'):'';
  const decode=text=>text.trim()?text.trim().split('\n').map(x=>JSON.parse(x)):[];
- let rows=[];if(fs.existsSync(path.join(dir,'state.db'))){const db=new DatabaseSync(path.join(dir,'state.db'),{readOnly:true});try{rows=db.prepare('SELECT * FROM team_chat_log WHERE accounting_only=1').all();}finally{db.close();}}
+ let rows=[];if(fs.existsSync(path.join(dir,'state.db'))){const db=new DatabaseSync(path.join(dir,'state.db'),{readOnly:true});try{rows=db.prepare(batch?'SELECT * FROM team_chat_log':'SELECT * FROM team_chat_log WHERE accounting_only=1').all();}finally{db.close();}}
  const evidence={selected,exit:processResult.status,signal:processResult.signal,stdout:processResult.stdout,stderr:processResult.stderr,result,requests:decode(read('input.jsonl')),events:decode(read('output.jsonl')),rows,dir};
  // Files remain available on assertion failure; only this test's recorded native PID is eligible for teardown.
  evidence.cleanup=()=>{const pid=Number(read('pid'));if(Number.isSafeInteger(pid)&&pid>0){try{process.kill(pid,0);process.kill(pid,'SIGKILL');}catch(e){if(e.code!=='ESRCH')throw e;}}fs.rmSync(dir,{recursive:true,force:true});};

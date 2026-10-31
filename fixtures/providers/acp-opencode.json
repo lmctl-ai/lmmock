@@ -21,7 +21,7 @@
   },
   "models": [
     {
-      "id": "fixture-opencode-configured-provider-model",
+      "id": "fixture-provider/fixture-configured-provider-model",
       "family": "configured-provider-model",
       "capabilities": [
         "chat",
@@ -86,7 +86,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_contains": "pong",
-        "model": "fixture-opencode-configured-provider-model",
+        "model": "fixture-provider/fixture-configured-provider-model",
         "json": {
           "usage.source": null,
           "usage.inputUncached": null,

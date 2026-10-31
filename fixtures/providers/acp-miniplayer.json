@@ -21,7 +21,7 @@
   },
   "models": [
     {
-      "id": "fixture-miniplayer-anthropic",
+      "id": "anthropic/fixture-chat",
       "family": "anthropic",
       "capabilities": [
         "chat",
@@ -31,7 +31,7 @@
       "price_record": null
     },
     {
-      "id": "fixture-miniplayer-openai",
+      "id": "openai/fixture-chat",
       "family": "openai",
       "capabilities": [
         "chat",
@@ -41,7 +41,7 @@
       "price_record": null
     },
     {
-      "id": "fixture-miniplayer-google",
+      "id": "google/fixture-chat",
       "family": "google",
       "capabilities": [
         "chat",
@@ -51,7 +51,7 @@
       "price_record": null
     },
     {
-      "id": "fixture-miniplayer-moonshot",
+      "id": "moonshot/fixture-chat",
       "family": "moonshot",
       "capabilities": [
         "chat",
@@ -61,7 +61,7 @@
       "price_record": null
     },
     {
-      "id": "fixture-miniplayer-deepseek",
+      "id": "deepseek/fixture-chat",
       "family": "deepseek",
       "capabilities": [
         "chat",
@@ -71,7 +71,7 @@
       "price_record": null
     },
     {
-      "id": "fixture-miniplayer-ollama",
+      "id": "ollama/fixture-chat",
       "family": "ollama",
       "capabilities": [
         "chat",
@@ -81,7 +81,7 @@
       "price_record": null
     },
     {
-      "id": "fixture-miniplayer-openrouter",
+      "id": "openrouter/fixture-chat",
       "family": "openrouter",
       "capabilities": [
         "chat",
@@ -146,7 +146,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_contains": "pong",
-        "model": "fixture-miniplayer-anthropic",
+        "model": "anthropic/fixture-chat",
         "json": {
           "usage.source": null,
           "usage.inputUncached": null,

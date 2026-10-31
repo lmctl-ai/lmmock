@@ -240,6 +240,25 @@
         "stdout_contains": "pong",
         "stderr_contains": "set_config_option"
       }
+    },
+    {
+      "id": "kimi-mode-error",
+      "kind": "error",
+      "request": {
+        "kind": "process",
+        "executable": "node",
+        "argv": [
+          "tests/acp-profiles/run-case.mjs",
+          "kimi-mode-error"
+        ],
+        "env": {
+          "LMMOCK_ACP_SCENARIO": "fixtures/acp/kimi-mode-error.json"
+        }
+      },
+      "expect": {
+        "exit_code": 0,
+        "error_class": "auth_required"
+      }
     }
   ],
   "faults": [

@@ -1,6 +1,6 @@
 {
   "profile": "hermes",
-  "model": "fixture-hermes-deepseek",
+  "model": "deepseek:fixture-chat",
   "initial_model": "fixture-default",
   "session": "11111111-2222-4333-8444-555555555555",
   "argv": [
@@ -15,7 +15,7 @@
     {
       "method": "session/set_model",
       "key": "modelId",
-      "value": "fixture-hermes-deepseek"
+      "value": "deepseek:fixture-chat"
     }
   ],
   "fault": "stale",

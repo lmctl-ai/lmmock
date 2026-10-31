@@ -5,6 +5,10 @@ fn sid() -> string { return cfg().get("session").as_string(); }
 fn check_session(x: RPC,p: Json) -> void { if(x.get("open")!="yes"||text(p,"sessionId")!=sid()){x.abort("No conversation found with session ID fixture");} }
 fn update(x: RPC,event: Json) -> void { x.notify("session/update","{\"sessionId\":"+json_quote(sid())+",\"update\":"+event.to_json()+"}"); }
 @startup fn startup(x: RPC) -> void implements RPCHandler {
+ let configuration=cfg();let keys=configuration.keys();
+ for(i in range(0,keys.len())){let key=keys.at(i);if(key!="profile"&&key!="model"&&key!="initial_model"&&key!="session"&&key!="argv"&&key!="configure"&&key!="fault"&&key!="replay"&&key!="cells"){x.abort("unknown ACP fixture field");}}
+ let fault=configuration.get("fault").as_string();if(fault!=""&&fault!="auth"&&fault!="config"&&fault!="stale"&&fault!="mode-error"){x.abort("unknown ACP fault");}
+
  let args=json_parse(x.params()).get("argv");let expected=cfg().get("argv");
  if(args.to_json()!=expected.to_json()){x.abort("ACP profile argv mismatch");}
 }
@@ -33,7 +37,8 @@ fn update(x: RPC,event: Json) -> void { x.notify("session/update","{\"sessionId\
  let key=step.get("key").as_string();if(text(p,key)!=step.get("value").as_string()){x.abort("configuration value mismatch");}
  if(step.has("configId")){if(text(p,"configId")!=step.get("configId").as_string()){x.abort("configuration selector mismatch");}}
  x.set("config_count",str(n+1));
- if(text(cfg(),"fault")=="config"&&n==steps.len()-1){x.error(-32602,"model is not supported: synthetic fixture");}
+ if(text(cfg(),"fault")=="mode-error"&&n==0){x.error(-32000,"Authentication required: permission configuration refused");}
+ else if(text(cfg(),"fault")=="config"&&n==steps.len()-1){x.error(-32602,"model is not supported: synthetic fixture");}
  else{if(key=="modelId"||text(p,"configId")=="model"){x.set("model",text(p,key));}x.reply("{\"configOptions\":[],\"currentModelId\":"+json_quote(x.get("model"))+"}");}
 }
 @prompt fn prompt(x: RPC) -> void implements RPCHandler {

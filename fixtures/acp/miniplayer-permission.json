@@ -1,12 +1,12 @@
 {
   "profile": "miniplayer",
-  "model": "fixture-miniplayer-anthropic",
+  "model": "anthropic/fixture-chat",
   "initial_model": "fixture-default",
   "session": "11111111-2222-4333-8444-555555555555",
   "argv": [
     "acp",
     "-m",
-    "fixture-miniplayer-anthropic"
+    "anthropic/fixture-chat"
   ],
   "configure": [],
   "fault": "",
