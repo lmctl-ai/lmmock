@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -45,21 +44,6 @@ func run() error {
 		return err
 	}
 	defer output.Close()
-	writers := []io.Writer{os.Stdout, output}
-	// A test-owned observer receives the same ordered bytes as the real client.
-	// Filesystem change notifications are not a reliable cross-platform rendezvous.
-	if address := os.Getenv("LMMOCK_CODEX_OBSERVER_ADDR"); address != "" {
-		host, _, err := net.SplitHostPort(address)
-		if err != nil || net.ParseIP(host) == nil || !net.ParseIP(host).IsLoopback() {
-			return fmt.Errorf("observer address must be loopback")
-		}
-		observer, err := net.Dial("tcp", address)
-		if err != nil {
-			return err
-		}
-		defer observer.Close()
-		writers = append(writers, observer)
-	}
 	if err = os.WriteFile(filepath.Join(directory, "pid"), []byte(strconv.Itoa(os.Getpid())), 0600); err != nil {
 		return err
 	}
@@ -81,7 +65,7 @@ func run() error {
 		case <-done:
 		}
 	}()
-	engine, err := rpcstdio.New(code, rpcstdio.Options{Alias: "Worker", Config: cfg}, rpcstdio.NewWire(io.TeeReader(os.Stdin, input), io.MultiWriter(writers...), "line"))
+	engine, err := rpcstdio.New(code, rpcstdio.Options{Alias: "Worker", Config: cfg}, rpcstdio.NewWire(io.TeeReader(os.Stdin, input), io.MultiWriter(os.Stdout, output), "line"))
 	if err != nil {
 		return err
 	}
