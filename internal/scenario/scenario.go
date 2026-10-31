@@ -81,6 +81,12 @@ func sensitive(k string) bool {
 	return k == "authorization" || k == "proxy-authorization" || k == "cookie" || k == "set-cookie" || strings.Contains(k, "api-key") || strings.Contains(k, "token")
 }
 
+// Credential fields exclude protocol metadata such as tokenizer and token counts.
+func credentialField(key string) bool {
+	key = strings.ReplaceAll(strings.ToLower(key), "_", "-")
+	return key == "key" || key == "apikey" || key == "api-key" || key == "token" || strings.HasSuffix(key, "-token") || strings.Contains(key, "password") || strings.Contains(key, "secret")
+}
+
 type normalizer struct {
 	secrets []string
 	names   map[string]string
@@ -245,7 +251,7 @@ func Import(input io.Reader, exact bool) (Scenario, []Flow, error) {
 	for _, f := range flows {
 		if u, err := url.ParseRequestURI(f.Request.Path); err == nil {
 			for key, values := range u.Query() {
-				if logSensitive(key) {
+				if credentialField(key) {
 					for _, value := range values {
 						add(value)
 						add(url.QueryEscape(value))
@@ -277,7 +283,7 @@ func Import(input io.Reader, exact bool) (Scenario, []Flow, error) {
 						}
 					case map[string]any:
 						for key, value := range x {
-							discover(value, named || logSensitive(key))
+							discover(value, named || credentialField(key))
 						}
 					}
 				}
