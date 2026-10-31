@@ -387,7 +387,7 @@ binaries. macOS/Windows run the native lmmock client and protocol suites.
 
 ```sh
 # Run Copilot CLI against lmmock
-lmmock exec --dsl build/copilot.dslb --config examples/copilot-config.json -- \
+lmmock exec --lmcode build/copilot.dslb --config examples/copilot-config.json -- \
   node tests/copilot.mjs
 ```
 
