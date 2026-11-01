@@ -25,9 +25,35 @@ try {
   assert.throws(()=>checkProviderStream(r.text,expected,r.type),undefined,`${dialect} ${fault} must fail the success decoder`);
   console.log('CAUGHT wire contract',dialect,fault);
  }
+ if(dialect==='ollama') {
+  set('success');
+  const tool={type:'function',function:{name:'get_weather',description:'Get weather',parameters:{type:'object',properties:{city:{type:'string'}},required:['city']}}};
+  const callBody={model:'fixture-ollama',messages:[{role:'user',content:'weather in Tokyo'}],tools:[tool],stream:false};
+  const call=await fetch(root+'/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(callBody)});
+  assert.equal(call.status,200);const callJson=await call.json();
+  assert.deepEqual(callJson.message.tool_calls,[{function:{name:'get_weather',arguments:{city:'Tokyo'}}}], 'Ollama tool schema must produce the matching native tool_calls shape');
+  const streamed=await fetch(root+'/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...callBody,stream:true})});
+  assert.equal(streamed.status,200);assert.equal(streamed.headers.get('content-type'),'application/x-ndjson');
+  const rows=(await streamed.text()).trim().split(/\r?\n/).map(JSON.parse);
+  assert.equal(rows[0].message.tool_calls[0].function.name,'get_weather');assert.equal(rows[0].done,false);assert.equal(rows.at(-1).done,true);
+  const history={model:'fixture-ollama',messages:[...callBody.messages,{role:'assistant',content:'',tool_calls:callJson.message.tool_calls},{role:'tool',tool_name:'get_weather',content:'11 degrees celsius'}],tools:[tool],stream:false};
+  const continued=await fetch(root+'/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(history)});
+  assert.equal(continued.status,200);assert.equal((await continued.json()).message.content,'Tool result: 11 degrees celsius');
+  const tags=await fetch(root+'/api/tags');assert.equal(tags.status,200);assert.ok((await tags.json()).models.some(model=>model.model==='fixture-ollama'));
+  console.log('PASS Ollama /api/chat tool call, NDJSON tool call, tool-result history and /api/tags');
+ }
  set('success',dialect==='ollama'?{auth_mode:'bearer'}:{});
  const secret='synthetic-wrong-auth-value';const auth=await receive(false,secret);
  assert.equal(auth.status,dialect==='gemini'?403:401);assert.ok(!auth.text.includes(secret),'credential leakage');JSON.parse(auth.text);
+ if(dialect==='ollama') {
+  const tagsAuth=await fetch(root+'/api/tags',{headers:{authorization:'Bearer '+secret}});
+  assert.equal(tagsAuth.status,401);assert.ok(!(await tagsAuth.text()).includes(secret),'tags auth error leaked a key');
+  set('rate-limit',{auth_mode:'keyless'});let limited=await receive(false);assert.equal(limited.status,429);assert.equal(limited.type,'application/json');
+  const tagsLimited=await fetch(root+'/api/tags');assert.equal(tagsLimited.status,429);
+  set('server-error',{auth_mode:'keyless'});let unavailable=await receive(false);assert.equal(unavailable.status,500);assert.equal(JSON.parse(unavailable.text).error,'server error');
+  const tagsUnavailable=await fetch(root+'/api/tags');assert.equal(tagsUnavailable.status,500);
+  set('success');
+ }
  if(dialect==='miniplayer') {
   for(const provider of ['moonshot','openrouter','qwen','ollama']) {
    set('auth-error',{provider});const r=await fetch(root+'/v1/chat/completions',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+secret,'x-mock-provider':provider},body:JSON.stringify({model:'fixture-miniplayer',stream:false})});

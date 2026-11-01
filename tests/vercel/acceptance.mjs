@@ -74,6 +74,32 @@ await check('model discovery',async()=>{
  const r=await fetch(baseURL+'/models',{headers:{Authorization:'Bearer fixture-key'}});
  assert.equal(r.status,200);assert.equal((await r.json()).data[0].id,'mock-agent');
 });
+await check('native Ollama chat tools, NDJSON, result history and tags',async()=>{
+ const headers={'content-type':'application/json',authorization:'Bearer fixture-key'};
+ const tool={type:'function',function:{name:'get_weather',description:'Get weather for a city',parameters:{type:'object',properties:{city:{type:'string'}},required:['city']}}};
+ const textReply=await fetch(process.env.LMMOCK_URL+'/api/chat',{method:'POST',headers,body:JSON.stringify({model:'mock-agent',messages:[{role:'user',content:'ping'}],stream:false})});
+ assert.equal(textReply.status,200);assert.equal((await textReply.json()).message.content,'pong');
+ const request={model:'mock-agent',messages:[{role:'user',content:'Weather in Paris?'}],tools:[tool],stream:false};
+ const response=await fetch(process.env.LMMOCK_URL+'/api/chat',{method:'POST',headers,body:JSON.stringify(request)});
+ assert.equal(response.status,200);const result=await response.json();
+ assert.deepEqual(result.message.tool_calls,[{function:{name:'get_weather',arguments:{city:'Paris'}}}]);
+ const streamed=await fetch(process.env.LMMOCK_URL+'/api/chat',{method:'POST',headers,body:JSON.stringify({...request,stream:true})});
+ assert.equal(streamed.headers.get('content-type'),'application/x-ndjson');const records=(await streamed.text()).trim().split(/\r?\n/).map(JSON.parse);
+ assert.equal(records[0].message.tool_calls[0].function.name,'get_weather');assert.equal(records[0].done,false);assert.equal(records.at(-1).done,true);
+ const history={model:'mock-agent',messages:[...request.messages,{role:'assistant',content:'',tool_calls:result.message.tool_calls},{role:'tool',tool_name:'get_weather',content:'21 degrees'}],tools:[tool],stream:false};
+ const continued=await fetch(process.env.LMMOCK_URL+'/api/chat',{method:'POST',headers,body:JSON.stringify(history)});
+ assert.equal((await continued.json()).message.content,'Tool result: 21 degrees');
+ const tags=await fetch(process.env.LMMOCK_URL+'/api/tags',{headers});assert.ok((await tags.json()).models.some(item=>item.model==='mock-agent'));
+ const missing=await fetch(process.env.LMMOCK_URL+'/api/chat',{method:'POST',headers,body:JSON.stringify({messages:[],stream:false})});
+ assert.equal(missing.status,400);assert.equal((await missing.json()).error,'model is required');
+ const unknown=await fetch(process.env.LMMOCK_URL+'/api/chat',{method:'POST',headers,body:JSON.stringify({model:'unknown-model',messages:[],stream:false})});
+ assert.equal(unknown.status,404);assert.equal((await unknown.json()).error,'model not found');
+ set({mode:'rate-limit'});
+ for(const [url,init] of [
+  [process.env.LMMOCK_URL+'/api/chat',{method:'POST',headers,body:JSON.stringify(request)}],
+  [process.env.LMMOCK_URL+'/api/tags',{headers}],
+ ]) assert.equal((await fetch(url,init)).status,429);
+});
 for(const [mode,status] of [['unauthorized',401],['rate-limit',429],['server-error',503]]){
  await check('SDK error '+mode,async()=>{
   set({mode});

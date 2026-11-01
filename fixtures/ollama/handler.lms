@@ -14,6 +14,11 @@ fn ollama_auth_ok(x: Exchange, cfg: Json, selected: string) -> bool {
   }
   return ok;
 }
+fn field(value: Json, name: string) -> string {
+ let text = "";
+ if (value.has(name)) { text = value.get(name).as_string(); }
+ return text;
+}
 @ollama_chat
 fn ollama_chat(x: Exchange) -> void implements Handler {
   let cfg = json_parse(config());
@@ -24,15 +29,22 @@ fn ollama_chat(x: Exchange) -> void implements Handler {
     x.json("{\"error\":\"unauthorized\"}");
   } else {
     let request = json_parse(x.body());
-    let models = cfg.get("models");
-    let model = "";
-    if (request.has("model")) { model = request.get("model").as_string(); }
-    if (model == "overloaded" || selected == "rate-limit") {
+    let model = field(request, "model");
+    if (model == "") {
+      x.status(400);
+      x.set_header("Content-Type", "application/json");
+      x.json("{\"error\":\"model is required\"}");
+    } else if (model == "overloaded" || selected == "rate-limit") {
       x.status(429);
       x.set_header("Content-Type", "application/json");
       x.set_header("Retry-After", "1");
       x.json("{\"error\":\"rate limit exceeded\"}");
+    } else if (model == "server-error" || selected == "server-error") {
+      x.status(500);
+      x.set_header("Content-Type", "application/json");
+      x.json("{\"error\":\"server error\"}");
     } else {
+      let models = cfg.get("models");
       let supported = false;
       for (i in range(0, models.len())) {
         if (model == models.at(i).as_string()) { supported = true; }
@@ -52,7 +64,44 @@ fn ollama_chat(x: Exchange) -> void implements Handler {
         }
         let stream = true;
         if (request.has("stream")) { stream = request.get("stream").as_bool(); }
-        if (stream && reply.get("status").as_int() == 200) {
+        let is_chat = x.path() == "/api/chat";
+        let messages = json_parse("[]");
+        if (request.has("messages")) { messages = request.get("messages"); }
+        let tool_result = false;
+        let content = "pong";
+        for (i in range(0, messages.len())) {
+          let message = messages.at(i);
+          if (field(message, "role") == "tool") {
+            tool_result = true;
+            content = "Tool result: " + field(message, "content");
+          }
+        }
+        let tool_name = "";
+        if (is_chat && !tool_result && request.has("tools") && request.get("tools").len() > 0) {
+          tool_name = field(request.get("tools").at(0).get("function"), "name");
+        }
+        let has_tool_call = tool_name != "";
+        if (is_chat && cfg.has("text") && !tool_result && !has_tool_call) {
+          content = cfg.get("text").as_string();
+        }
+        if (is_chat && (has_tool_call || tool_result) && reply.get("status").as_int() == 200) {
+          let response_message = "{\"role\":\"assistant\",\"content\":" + json_quote(content) + "}";
+          if (has_tool_call) {
+            let tool_calls_json = "[{\"function\":{\"name\":" + json_quote(tool_name) + ",\"arguments\":{\"city\":\"Tokyo\"}}}]";
+            response_message = "{\"role\":\"assistant\",\"content\":\"\",\"tool_calls\":" + tool_calls_json + "}";
+          }
+          if (stream) {
+            x.set_header("Content-Type", "application/x-ndjson");
+            let first = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":" + response_message + ",\"done\":false}\n";
+            let final = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":1000000,\"prompt_eval_count\":10,\"eval_count\":2}\n";
+            x.stream_event(first);
+            x.stream_event(final);
+          } else {
+            x.set_header("Content-Type", "application/json");
+            let response = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":" + response_message + ",\"done_reason\":\"stop\",\"done\":true,\"total_duration\":1000000,\"prompt_eval_count\":10,\"eval_count\":2}";
+            x.send(response);
+          }
+        } else if (stream && reply.get("status").as_int() == 200) {
           x.set_header("Content-Type", "application/x-ndjson");
           let events = reply.get("events");
           for (i in range(0, events.len())) {
@@ -72,11 +121,26 @@ fn ollama_chat(x: Exchange) -> void implements Handler {
 @ollama_tags
 fn ollama_tags(x: Exchange) -> void implements Handler {
   let cfg = json_parse(config());
-  if (!ollama_auth_ok(x, cfg, cfg.get("selected").as_string())) {
+  let selected = cfg.get("selected").as_string();
+  if (!ollama_auth_ok(x, cfg, selected)) {
     x.status(401);
     x.json("{\"error\":\"unauthorized\"}");
+  } else if (selected == "rate-limit") {
+    x.status(429);
+    x.set_header("Retry-After", "1");
+    x.json("{\"error\":\"rate limit exceeded\"}");
+  } else if (selected == "server-error") {
+    x.status(500);
+    x.json("{\"error\":\"server error\"}");
   } else {
-    x.json("{\"models\":[{\"name\":\"fixture-ollama\",\"model\":\"fixture-ollama\"}]}");
+    let models = cfg.get("models");
+    let items = "";
+    for (i in range(0, models.len())) {
+      if (i > 0) { items = items + ","; }
+      let model = models.at(i).as_string();
+      items = items + "{\"name\":" + json_quote(model) + ",\"model\":" + json_quote(model) + "}";
+    }
+    x.json("{\"models\":[" + items + "]}");
   }
 }
 @ollama_version

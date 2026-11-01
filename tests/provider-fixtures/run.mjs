@@ -209,7 +209,7 @@ export async function checkExpectation(testCase, result, vars) {
   }
   if (expected.tool_calls !== undefined) {
     const source = isHttp ? result.json : (() => { try { return JSON.parse(result.stdout.trim()); } catch { return undefined; } })();
-    const actual = source?.tool_calls ?? source?.choices?.[0]?.message?.tool_calls ?? source?.result?.tool_calls;
+    const actual = source?.tool_calls ?? source?.message?.tool_calls ?? source?.choices?.[0]?.message?.tool_calls ?? source?.result?.tool_calls;
     if (JSON.stringify(actual) !== JSON.stringify(expected.tool_calls)) errors.push(`tool_calls expected ${JSON.stringify(expected.tool_calls)}, got ${JSON.stringify(actual)}`);
   }
   if (expected.error_class !== undefined) {

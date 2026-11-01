@@ -86,6 +86,27 @@ try {
     assert.notEqual(runMutant.status, 0, `Mutant for ${h.family} was NOT caught! Run status was 0.`);
     console.log(`PASS ${h.family} handler mutation was caught: ${runMutant.stderr.split('\n')[0]}`);
   }
+
+  const ollamaSource = fs.readFileSync('fixtures/ollama/handler.lms', 'utf8');
+  const ollamaWithSchema = ollamaSource.replace('"../../examples/schema.json"', schemaPath);
+  const toolTarget = 'city\\\":\\\"Tokyo';
+  assert.ok(ollamaWithSchema.includes(toolTarget), 'Ollama tool-argument mutation anchor exists');
+  const ollamaMutant = ollamaWithSchema.replace(toolTarget, 'city\\\":\\\"Osaka');
+  const mutantScript = path.join(dir, 'ollama-tool-args-mutant.lms');
+  const mutantBin = path.join(dir, 'ollama-tool-args-mutant.bin');
+  const mutantConfig = path.join(dir, 'ollama-tool-args-config.json');
+  fs.writeFileSync(mutantScript, ollamaMutant);
+  const compileMutant = spawnSync(lmscript.command, [...lmscript.args, '--no-preflight', mutantScript, mutantBin], {encoding: 'utf8'});
+  assert.equal(compileMutant.status, 0, `Ollama tool-argument mutant compile failed: ${compileMutant.stderr}`);
+  fs.copyFileSync('fixtures/ollama/wire.json', mutantConfig);
+  const runMutant = spawnSync(binary, ['exec', '--lmcode', mutantBin, '--config', mutantConfig, '--', process.execPath, 'tests/provider-compat/failing-controls.mjs'], {
+    encoding: 'utf8',
+    env: {...process.env, DIALECT: 'ollama', MOCK_CONFIG: mutantConfig}
+  });
+  assert.notEqual(runMutant.status, 0, 'Ollama changed tool arguments were not caught');
+  assert.match(runMutant.stderr, /tool schema must produce|tool_calls expected/);
+  const control = runMutant.stderr.split('\n').find(line => /Ollama tool schema must produce|tool_calls expected/.test(line));
+  console.log(`PASS Ollama tool-argument mutation was caught by semantic assertion: ${control}`);
 } finally {
   fs.rmSync(dir, { recursive: true, force: true });
 }
