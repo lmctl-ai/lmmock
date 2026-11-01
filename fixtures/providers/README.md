@@ -59,3 +59,6 @@ implementation. The provider-compat lane separately parses success and malformed
 usage/JSON with the pinned Anthropic, Google and OpenAI-compatible SDKs. Ordering
 and missing-terminal rejection are strict wire checks, not claims about SDK EOF
 enforcement. Ollama uses the documented native JSON/NDJSON contract directly.
+The Ollama fixture also asserts `/api/chat` tool definitions, function-name and
+argument tool calls in JSON and NDJSON, tool-result history, `/api/tags`, and
+deterministic auth/rate/server/model errors.

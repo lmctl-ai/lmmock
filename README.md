@@ -327,6 +327,11 @@ It supports OpenAI Chat/Responses, native Anthropic Messages and native Gemini
 generateContent, plus OpenAI/Gemini embeddings, tools, structured output and SSE.
 See [setup, tested clients and limits](docs/llm-api.md).
 
+The native Ollama fixture also serves `/api/chat` and `/api/tags` without a Go
+provider handler. Chat supports JSON replies, NDJSON streams, function tool calls
+and tool-result history; the contract and deterministic error cases are in
+[`fixtures/providers/ollama-ndjson.json`](fixtures/providers/ollama-ndjson.json).
+
 
 [examples/llm.lms](examples/llm.lms) serves the shared OpenAI-compatible route family below. It returns
 OpenAI-compatible text, usage, tool calls and SSE-formatted responses. When tools
