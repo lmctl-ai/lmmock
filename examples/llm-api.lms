@@ -770,18 +770,49 @@ fn ollama_chat(x: Exchange) -> void implements Handler {
  if (native_allowed(x,"ollama")) {
   let b = json_parse(x.body()); let c = json_parse(config()); let text = "pong";
   if (c.has("text")) { text = field(c,"text"); }
-  let model = "mock-agent"; if (b.has("model")) { model = field(b,"model"); }
-  let stream = true; if (b.has("stream")) { stream = b.get("stream").as_bool(); }
-  if (stream) {
-   x.set_header("Content-Type","application/x-ndjson");
-   let chunk1 = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":" + json_quote(text) + "},\"done\":false}\n";
-   let chunk2 = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":1000000,\"prompt_eval_count\":2,\"eval_count\":2}\n";
-   x.stream_event(chunk1);
-   x.stream_event(chunk2);
+  let model = ""; if (b.has("model")) { model = field(b,"model"); }
+  if (model == "" && x.path() == "/api/generate") { model = "mock-agent"; }
+  if (model == "") {
+   x.status(400); x.json("{\"error\":\"model is required\"}");
+  } else if (model == "unknown-model") {
+   x.status(404); x.json("{\"error\":\"model not found\"}");
   } else {
-   x.set_header("Content-Type","application/json");
-   let response = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":" + json_quote(text) + "},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":1000000,\"prompt_eval_count\":2,\"eval_count\":2}";
-   x.send(response);
+   let tool_result = false; let tool_name = "";
+   if (x.path() == "/api/chat" && b.has("messages")) {
+    let messages = b.get("messages");
+    for (i in range(0,messages.len())) {
+     if (field(messages.at(i),"role") == "tool") { tool_result = true; text = "Tool result: " + field(messages.at(i),"content"); }
+    }
+   }
+   if (x.path() == "/api/chat" && !tool_result && b.has("tools") && b.get("tools").len() > 0) {
+    tool_name = field(b.get("tools").at(0).get("function"),"name");
+   }
+   let has_tool_call = tool_name != "";
+   let stream = true; if (b.has("stream")) { stream = b.get("stream").as_bool(); }
+   if (x.path() == "/api/generate") {
+    if (stream) {
+     x.set_header("Content-Type","application/x-ndjson");
+     x.stream_event("{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"response\":" + json_quote(text) + ",\"done\":false}\n");
+     x.stream_event("{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"response\":\"\",\"done\":true,\"done_reason\":\"stop\",\"prompt_eval_count\":2,\"eval_count\":2}\n");
+    } else {
+     let response = "{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"response\":" + json_quote(text) + ",\"done\":true,\"done_reason\":\"stop\",\"prompt_eval_count\":2,\"eval_count\":2}";
+     x.send(response);
+    }
+   } else {
+    let message = "{\"role\":\"assistant\",\"content\":" + json_quote(text) + "}";
+    if (has_tool_call) {
+     let calls = "[{\"function\":{\"name\":" + json_quote(tool_name) + ",\"arguments\":{\"city\":\"Paris\"}}}]";
+     message = "{\"role\":\"assistant\",\"content\":\"\",\"tool_calls\":" + calls + "}";
+    }
+    if (stream) {
+     x.set_header("Content-Type","application/x-ndjson");
+     x.stream_event("{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":" + message + ",\"done\":false}\n");
+     x.stream_event("{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done_reason\":\"stop\",\"done\":true,\"prompt_eval_count\":2,\"eval_count\":2}\n");
+    } else {
+     x.set_header("Content-Type","application/json");
+     x.send("{\"model\":" + json_quote(model) + ",\"created_at\":\"2026-10-31T00:00:00Z\",\"message\":" + message + ",\"done_reason\":\"stop\",\"done\":true,\"prompt_eval_count\":2,\"eval_count\":2}");
+    }
+   }
   }
  }
 }

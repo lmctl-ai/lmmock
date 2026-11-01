@@ -25,7 +25,8 @@
       "family": "llama3.2",
       "capabilities": [
         "chat",
-        "stream"
+        "stream",
+        "tools"
       ]
     },
     {
@@ -161,6 +162,166 @@
           "output_tokens": 2
         }
       }
+    },
+    {
+      "id": "ollama-tool-call-json",
+      "kind": "tool",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/chat",
+        "body": {
+          "model": "fixture-ollama",
+          "messages": [
+            { "role": "user", "content": "weather in Tokyo" }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_weather",
+                "description": "Get weather for a city",
+                "parameters": {
+                  "type": "object",
+                  "properties": { "city": { "type": "string" } },
+                  "required": ["city"]
+                }
+              }
+            }
+          ],
+          "stream": false
+        }
+      },
+      "expect": {
+        "status": 200,
+        "json": { "message.role": "assistant", "message.content": "", "done": true },
+        "tool_calls": [
+          { "function": { "name": "get_weather", "arguments": { "city": "Tokyo" } } }
+        ]
+      }
+    },
+    {
+      "id": "ollama-tool-call-ndjson",
+      "kind": "stream",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/chat",
+        "body": {
+          "model": "fixture-ollama",
+          "messages": [
+            { "role": "user", "content": "weather in Tokyo" }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_weather",
+                "description": "Get weather for a city",
+                "parameters": {
+                  "type": "object",
+                  "properties": { "city": { "type": "string" } },
+                  "required": ["city"]
+                }
+              }
+            }
+          ],
+          "stream": true
+        }
+      },
+      "expect": {
+        "status": 200,
+        "headers": { "content-type": "application/x-ndjson" },
+        "stream": { "dialect": "ollama", "text": "", "input_tokens": 10, "output_tokens": 2 },
+        "events": [
+          "\"tool_calls\":[{\"function\":{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Tokyo\"}}}]",
+          "\"done\":true"
+        ]
+      }
+    },
+    {
+      "id": "ollama-tool-result-history",
+      "kind": "success",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/chat",
+        "body": {
+          "model": "fixture-ollama",
+          "messages": [
+            { "role": "user", "content": "weather in Tokyo" },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                { "function": { "name": "get_weather", "arguments": { "city": "Tokyo" } } }
+              ]
+            },
+            { "role": "tool", "tool_name": "get_weather", "content": "11 degrees celsius" }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_weather",
+                "description": "Get weather for a city",
+                "parameters": {
+                  "type": "object",
+                  "properties": { "city": { "type": "string" } },
+                  "required": ["city"]
+                }
+              }
+            }
+          ],
+          "stream": false
+        }
+      },
+      "expect": {
+        "status": 200,
+        "json": { "message.role": "assistant", "message.content": "Tool result: 11 degrees celsius", "done": true }
+      }
+    },
+    {
+      "id": "ollama-tags",
+      "kind": "model",
+      "request": { "kind": "http", "method": "GET", "path": "/api/tags" },
+      "expect": {
+        "status": 200,
+        "json": { "models.0.name": "fixture-ollama", "models.0.model": "fixture-ollama" }
+      }
+    },
+    {
+      "id": "ollama-overloaded",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/chat",
+        "body": { "model": "overloaded", "messages": [{ "role": "user", "content": "ping" }], "stream": false }
+      },
+      "expect": { "status": 429, "body_contains": "rate limit exceeded" }
+    },
+    {
+      "id": "ollama-server-error",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/chat",
+        "body": { "model": "server-error", "messages": [{ "role": "user", "content": "ping" }], "stream": false }
+      },
+      "expect": { "status": 500, "json": { "error": "server error" } }
+    },
+    {
+      "id": "ollama-missing-model",
+      "kind": "error",
+      "request": {
+        "kind": "http",
+        "method": "POST",
+        "path": "/api/chat",
+        "body": { "messages": [{ "role": "user", "content": "ping" }], "stream": false }
+      },
+      "expect": { "status": 400, "json": { "error": "model is required" } }
     },
     {
       "id": "ollama-unknown-model",
