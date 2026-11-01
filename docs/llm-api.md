@@ -25,6 +25,8 @@ and immutable structured updates. See [runtime JSON data flow](runtime-json.md).
 | POST /v1beta/models/{model}:streamGenerateContent | Native Gemini SSE with usageMetadata |
 | POST /v1beta/models/{model}:embedContent | Gemini single embedding |
 | POST /v1beta/models/{model}:batchEmbedContents | Gemini batch embeddings |
+| POST /api/chat | Ollama native JSON or NDJSON chat, function tool calls and tool-result history |
+| GET /api/tags | Ollama local-model list for the mock model |
 | GET /__inspect | Last request for assertions; synthetic test credentials only |
 | GET /__requests | `{"count":N}`: LLM requests served so far (chat, responses, embeddings, Anthropic, Gemini); lets a client prove that a retry-mode 429 attempt happened |
 
@@ -89,6 +91,15 @@ await generateText({ model: gemini('gemini-2.5-flash'), prompt: 'ping' });
 
 These model IDs select the clients' request formats; no live models are called.
 The mock accepts arbitrary model IDs for these native routes.
+
+The Ollama routes are local protocol fixtures, not an inference backend. `/api/chat`
+accepts documented function tool definitions and returns the first offered function
+with synthetic `city: Paris` arguments. A later `role: tool` message with `tool_name`
+returns a deterministic tool-result summary. Streaming responses use one JSON object
+per NDJSON line and finish with a `done: true` usage record. `/api/tags` lists the
+configured mock model. Auth, rate-limit, server, missing-model and unknown-model
+responses are deterministic and use synthetic data; no Ollama server or credentials
+are required. See [the Ollama API reference](https://github.com/ollama/ollama/blob/main/docs/api.md).
 
 When apiKey is configured, OpenAI requires Authorization: Bearer, Anthropic
 requires x-api-key, and Gemini requires x-goog-api-key or a key query parameter.
