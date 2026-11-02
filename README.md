@@ -55,6 +55,10 @@ normally answers such a request with a tool call, so pass `{"toolCalls": false}`
 the config to always reply with plain text. See [docs/llm-api.md](docs/llm-api.md).
 Regenerate the embedded bytecode after editing the script with `scripts/compile-builtin.sh`.
 
+`--builtin oauth-codex-device` mocks the OpenAI auth service for `codex login --device-auth`
+(device code, PKCE exchange, API-key exchange, refresh with rotation); see
+[docs/oauth-codex-device.md](docs/oauth-codex-device.md) and `scripts/codex-login-e2e.sh`.
+
 ## Write handlers in lmcode
 
 Export the exact host schema next to your script:
