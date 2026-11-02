@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {spawnSync} from 'node:child_process';
-const binary=path.resolve(process.argv[2]||'build/lmmock'), code=path.resolve(process.argv[3]||'fixtures/streamjson/handler.dslb');
+const binary=path.resolve(process.argv[2]||'build/lmmock'), code=path.resolve(process.argv[3]||'fixtures/streamjson/handler.lmcode');
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'lmmock-jsonlines-'));
 try{
  const fixture=path.join(dir,'config.json'),audit=path.join(dir,'audit.jsonl');fs.writeFileSync(audit,'');

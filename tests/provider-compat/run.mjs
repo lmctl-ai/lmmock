@@ -11,15 +11,15 @@ const lmscript = resolveLmscriptCommand(lmscriptBin);
 const published = process.argv.includes('--published');
 
 const dialects = [
-  { name: 'anthropic', handler: 'fixtures/anthropic/handler.lms', dslb: 'build/anthropic.dslb', wire: 'fixtures/anthropic/wire.json', manifest: 'fixtures/providers/anthropic-messages.json' },
-  { name: 'gemini', handler: 'fixtures/gemini/handler.lms', dslb: 'build/gemini.dslb', wire: 'fixtures/gemini/wire.json', manifest: 'fixtures/providers/gemini-content.json' },
-  { name: 'ollama', handler: 'fixtures/ollama/handler.lms', dslb: 'build/ollama.dslb', wire: 'fixtures/ollama/wire.json', manifest: 'fixtures/providers/ollama-ndjson.json' },
-  { name: 'miniplayer', handler: 'fixtures/miniplayer/handler.lms', dslb: 'build/miniplayer.dslb', wire: 'fixtures/miniplayer/wire.json', manifest: 'fixtures/providers/miniplayer-routed.json' },
+  { name: 'anthropic', handler: 'fixtures/anthropic/handler.lms', lmcode: 'build/anthropic.lmcode', wire: 'fixtures/anthropic/wire.json', manifest: 'fixtures/providers/anthropic-messages.json' },
+  { name: 'gemini', handler: 'fixtures/gemini/handler.lms', lmcode: 'build/gemini.lmcode', wire: 'fixtures/gemini/wire.json', manifest: 'fixtures/providers/gemini-content.json' },
+  { name: 'ollama', handler: 'fixtures/ollama/handler.lms', lmcode: 'build/ollama.lmcode', wire: 'fixtures/ollama/wire.json', manifest: 'fixtures/providers/ollama-ndjson.json' },
+  { name: 'miniplayer', handler: 'fixtures/miniplayer/handler.lms', lmcode: 'build/miniplayer.lmcode', wire: 'fixtures/miniplayer/wire.json', manifest: 'fixtures/providers/miniplayer-routed.json' },
 ];
 
 // Compile all handlers
 for (const d of dialects) {
-  const c = spawnSync(lmscript.command, [...lmscript.args, '--no-preflight', d.handler, d.dslb], { stdio: 'inherit' });
+  const c = spawnSync(process.execPath, [resolve('scripts/capture-fixture.mjs'), d.handler, d.lmcode], { stdio: 'inherit' });
   if (c.error) throw c.error;
   if (c.status !== 0) throw new Error(`Compile failed for ${d.name}: ${c.status}`);
 }
@@ -37,7 +37,7 @@ try {
         copyFileSync(d.wire, config);
         const r = spawnSync(binary, [
           'exec',
-          '--lmcode', d.dslb,
+          '--lmcode', d.lmcode,
           '--config', config,
           '--',
           process.execPath, 'tests/provider-compat/published.mjs'
@@ -66,7 +66,7 @@ try {
       copyFileSync(d.wire, config);
       const r = spawnSync(binary, [
         'exec',
-        '--lmcode', d.dslb,
+        '--lmcode', d.lmcode,
         '--config', config,
         '--',
         process.execPath, 'tests/provider-compat/failing-controls.mjs'
@@ -80,7 +80,7 @@ try {
 
     for (const name of ['gemini', 'ollama']) {
       const d = dialects.find(d => d.name === name);
-      const r = spawnSync(binary, ['exec', '--lmcode', d.dslb, '--config', d.wire, '--', process.execPath, 'tests/provider-compat/regressions.mjs'], {stdio: 'inherit', env: {...process.env, DIALECT: name}});
+      const r = spawnSync(binary, ['exec', '--lmcode', d.lmcode, '--config', d.wire, '--', process.execPath, 'tests/provider-compat/regressions.mjs'], {stdio: 'inherit', env: {...process.env, DIALECT: name}});
       if (r.error) throw r.error;
       if (r.status !== 0) throw new Error(`Native dialect regressions failed: ${name}`);
     }
@@ -89,7 +89,7 @@ try {
       const d = dialects.find(d => d.name === name);
       const config = join(dir, `${name}-sdk.json`);
       copyFileSync(d.wire, config);
-      const r = spawnSync(binary, ['exec', '--lmcode', d.dslb, '--config', config, '--', process.execPath, 'tests/provider-compat/sdk-stream.mjs'], {stdio: 'inherit', env: {...process.env, DIALECT: name, MOCK_CONFIG: config}});
+      const r = spawnSync(binary, ['exec', '--lmcode', d.lmcode, '--config', config, '--', process.execPath, 'tests/provider-compat/sdk-stream.mjs'], {stdio: 'inherit', env: {...process.env, DIALECT: name, MOCK_CONFIG: config}});
       if (r.error) throw r.error;
       if (r.status !== 0) throw new Error(`Independent SDK stream failed: ${name}`);
     }

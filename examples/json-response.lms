@@ -31,4 +31,5 @@ fn message(x: Exchange) -> void implements Handler {
 }
 route("GET", "/message", "message");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

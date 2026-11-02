@@ -20,7 +20,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
-          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          npm install --prefix "$RUNNER_TEMP/lmcode-compiler" @lmctl-ai/lmctl@0.2.454
+          echo "LMSCRIPT_BIN=$RUNNER_TEMP/lmcode-compiler/node_modules/.bin/lmscript" >> "$GITHUB_ENV"
+          echo "LMMOCK_LMCTL_PACKAGE=$RUNNER_TEMP/lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/lmcode-compiler/node_modules/.bin" >> "$GITHUB_PATH"
           mkdir -p "$RUNNER_TEMP/inspect"
           gh release download v0.1.0 --repo lmctl-ai/lminspect --pattern lminspect-linux-x64 --pattern SHA256SUMS --dir "$RUNNER_TEMP/inspect"
           cd "$RUNNER_TEMP/inspect"
@@ -31,13 +34,13 @@ jobs:
         run: |
           mkdir -p build
           go build -o build/lmmock ./cmd/lmmock
-          lmscript --no-preflight examples/scenario.lms build/scenario.dslb
-          lmscript --no-preflight examples/copilot.lms build/copilot.dslb
+          node scripts/capture-fixture.mjs examples/scenario.lms build/scenario.lmcode
+          node scripts/capture-fixture.mjs examples/copilot.lms build/copilot.lmcode
           go test ./internal/scenario ./internal/mock -run 'TestScenario|TestScrub|TestSSE|TestGzip|TestEscaped|TestCopilot' -count=1
           python3 tests/scenario/controls.py
           python3 tests/scenario/capture_test.py
       - name: Record a local stand-in and compare scrubbed fixtures
         run: |
-          build/lmmock exec --lmcode build/copilot.dslb --config examples/copilot-config.json -- python3 tests/scenario/capture.py build/recaptured
+          build/lmmock exec --lmcode build/copilot.lmcode --config examples/copilot-config.json -- python3 tests/scenario/capture.py build/recaptured
           diff -u captures/copilot/scenario.json build/recaptured/scenario.json
-          build/lmmock exec --lmcode build/scenario.dslb --config build/recaptured/scenario.json -- sh -c 'build/lmmock scenario verify --input build/recaptured/flows.jsonl --target "$LMMOCK_URL"'
+          build/lmmock exec --lmcode build/scenario.lmcode --config build/recaptured/scenario.json -- sh -c 'build/lmmock scenario verify --input build/recaptured/flows.jsonl --target "$LMMOCK_URL"'

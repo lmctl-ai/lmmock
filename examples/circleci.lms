@@ -41,4 +41,5 @@ route("GET", "/api/v2/project/{vcs}/{slug}/pipeline", "pipelines");
 route("POST", "/api/v2/project/{vcs}/{slug}/pipeline", "pipelines");
 route("GET", "/api/v2/project/{vcs}/{slug}/pipeline/{number}", "get_pipeline");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

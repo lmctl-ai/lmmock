@@ -15,9 +15,9 @@ const cases=[
 try{
  for(const [label,before,after,ids]of cases){
   assert.ok(source.includes(before),'stale mutation anchor '+label);
-  const fixture=path.join(tmp,label+'.lms'),binary=path.join(tmp,label+'.dslb');
+  const fixture=path.join(tmp,label+'.lms'),binary=path.join(tmp,label+'.lmcode');
   fs.writeFileSync(fixture,source.replace('schema="../../internal/rpcstdio/presets/schema.json"','schema='+JSON.stringify(path.join(root,'internal/rpcstdio/presets/schema.json'))).replaceAll(before,after));
-  let r=spawnSync(process.execPath,[compiler(),'--no-preflight',fixture,binary],{encoding:'utf8'});assert.equal(r.status,0,r.stdout+r.stderr);
+  let r=spawnSync(process.execPath,[path.resolve('scripts/capture-fixture.mjs'),fixture,binary],{encoding:'utf8'});assert.equal(r.status,0,r.stdout+r.stderr);
   for(const id of ids){
    r=spawnSync(process.execPath,['tests/acp-profiles/run-case.mjs',id],{encoding:'utf8'});assert.equal(r.status,0,'baseline '+id+' '+r.stdout+r.stderr);
    r=spawnSync(process.execPath,['tests/acp-profiles/run-case.mjs',id],{env:{...process.env,LMMOCK_ACP_BYTECODE:binary},encoding:'utf8'});

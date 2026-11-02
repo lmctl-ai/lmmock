@@ -14,7 +14,7 @@ import (
 
 func fixture(t *testing.T, name string) []byte {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("..", "..", "build", name+".dslb"))
+	b, err := os.ReadFile(filepath.Join("..", "..", "build", name+".lmcode"))
 	if err != nil {
 		t.Fatal("run lmscript test.lms to compile fixtures:", err)
 	}

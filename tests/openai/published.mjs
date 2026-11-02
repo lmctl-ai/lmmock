@@ -24,7 +24,7 @@ try {
    const before=new Set(fs.existsSync(sessions)?fs.readdirSync(sessions):[]);
    const script=path.join(home,'case.lms');
    fs.writeFileSync(script,'r = lm_agent({provider:"miniplayer",model:'+JSON.stringify(provider+'/fixture-gpt')+'}, "ping"); println(json_stringify(r));\n');
-   const r=spawnSync(process.env.LMSCRIPT_BIN||'lmscript',['--no-preflight',script],{env,cwd:home,encoding:'utf8'});
+   const r=spawnSync(process.env.LMSCRIPT_BIN||'lmscript',[script],{env,cwd:home,encoding:'utf8'});
    assert.equal(r.status,0,r.stdout+r.stderr);
    const result=JSON.parse(r.stdout.trim().split('\n').at(-1));
    assert.match(r.stderr,/^agent [0-9:]+: prompting miniplayer\n$/,dialect+' expected progress stderr');

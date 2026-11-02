@@ -13,4 +13,5 @@ fn boot(x: RPC) -> void implements RPCHandler {
 }
 bind("$start","boot");
 end _lmcode_
-savedsl(p,ARGV[0]);
+r = run_lmcode(p, {command: ARGV}); require(r.ok, "fixture host failed");
+if (r.result != null) { print(r.result.stdout); }

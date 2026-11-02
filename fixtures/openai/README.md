@@ -24,7 +24,7 @@ No sleeps, mock deadlines or retry loops are implemented.
 
 Compile with private npm lmscript 0.2.448:
 
-    lmscript --no-preflight fixtures/openai/handler.lms build/openai.dslb
+    node scripts/capture-fixture.mjs fixtures/openai/handler.lms build/openai.lmcode
     node tests/openai/run.mjs build/lmmock
     node tests/openai/controls.mjs build/lmmock
 

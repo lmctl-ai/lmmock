@@ -17,7 +17,7 @@ try {
   }
   const script=path.join(dir,dialect+'.lms'),program=path.join(dir,dialect+'.bin');fs.writeFileSync(script,code);
   // Invoke compiler through bash so npm Windows .cmd launchers are honored.
-  const compiled=spawnSync('bash',['-c','"$LMSCRIPT_BIN" --no-preflight "$1" "$2"','compile',script,program],{encoding:'utf8',env:{...process.env,LMSCRIPT_BIN:process.env.LMSCRIPT_BIN||'lmscript'}});
+  const compiled=spawnSync(process.execPath,[path.resolve('scripts/capture-fixture.mjs'),script,program],{encoding:'utf8',env:{...process.env,LMSCRIPT_BIN:process.env.LMSCRIPT_BIN||'lmscript'}});
   assert.equal(compiled.status,0,compiled.stdout+compiled.stderr);
   const r=spawnSync(binary,['exec','--lmcode',program,'--config','fixtures/openai/wire.json','--',process.execPath,'tests/openai/contract.mjs'],{encoding:'utf8'});
   if(dialect==='baseline')assert.equal(r.status,0,r.stdout+r.stderr);

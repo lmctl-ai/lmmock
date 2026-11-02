@@ -20,6 +20,9 @@ with tempfile.TemporaryDirectory(prefix='wire-controls-') as temp:
  shutil.copytree(ROOT/'internal/wire',root/'internal/wire')
  (root/'internal/proto').mkdir(parents=True);shutil.copyfile(ROOT/'internal/proto/registry.go',root/'internal/proto/registry.go')
  shutil.copytree(ROOT/'examples/wire',root/'examples/wire')
+ shutil.copytree(ROOT/'scripts',root/'scripts')
+ (root/'tests/provider-compat').mkdir(parents=True)
+ shutil.copyfile(ROOT/'tests/provider-compat/lmscript-command.mjs',root/'tests/provider-compat/lmscript-command.mjs')
  def run(package,pattern):
   return subprocess.run(['go','test','-count=1',package,'-run','^'+pattern+'$'],cwd=root,env=os.environ,capture_output=True,text=True)
  for name,file,old,new,package,pattern in CASES:

@@ -98,4 +98,5 @@ route("PUT", "/forms/{form}/webhooks/{tag}", "put_webhook");
 route("GET", "/forms/{form}/webhooks/{tag}", "get_webhook");
 route("DELETE", "/forms/{form}/webhooks/{tag}", "delete_webhook");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

@@ -51,7 +51,7 @@ node tests/acp-profiles/controls.mjs
 Or serve one explicitly configured profile over the existing stdio protocol:
 
 ```sh
-lmmock stdio acp --lmcode build/acp-profiles.dslb --scenario fixtures/acp/kimi-success.json --alias Worker -- acp
+lmmock stdio acp --lmcode build/acp-profiles.lmcode --scenario fixtures/acp/kimi-success.json --alias Worker -- acp
 ```
 
 The trailing argv is the fake provider's actual process argv and is checked by

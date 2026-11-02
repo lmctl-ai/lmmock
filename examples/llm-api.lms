@@ -833,4 +833,5 @@ route("POST","/api/generate","ollama_chat");
 route("GET","/api/tags","ollama_tags");
 route("GET","/api/version","ollama_version");
 end _lmcode_
-savedsl(p,ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

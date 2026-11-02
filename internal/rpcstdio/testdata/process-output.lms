@@ -4,4 +4,4 @@ p = _lmcode_ schema="../presets/schema.json";
 }
 bind("$start","start");
 end _lmcode_
-savedsl(p,ARGV[0]);
+r = run_lmcode(p, {command: ARGV}); require(r.ok, "fixture host failed");

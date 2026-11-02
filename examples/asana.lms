@@ -49,4 +49,5 @@ route("GET", "/api/1.0/tasks", "list_items");
 route("POST", "/api/1.0/tasks", "create_item");
 route("GET", "/api/1.0/tasks/{id}", "get_item");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

@@ -10,4 +10,5 @@ route("POST", "/webhook", "save");
 route("GET", "/last-event", "read");
 route("GET", "/count", "count");
 end _lmcode_
-savedsl(program, ARGV[0]);
+r = run_lmcode(program, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

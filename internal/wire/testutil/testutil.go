@@ -11,7 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
+	"runtime"
 	"testing"
 )
 
@@ -27,26 +27,14 @@ func Compile(t testing.TB, kind, body string) []byte {
 		t.Fatal(err)
 	}
 	q, _ := json.Marshal(filepath.ToSlash(schemaFile))
-	source := "program = _lmcode_ schema=" + string(q) + ";\n" + body + "\nend _lmcode_\nsavedsl(program,ARGV[0]);\n"
-	input, output := filepath.Join(dir, "program.lms"), filepath.Join(dir, "program.dslb")
+	source := "program = _lmcode_ schema=" + string(q) + ";\n" + body + "\nend _lmcode_\n"
+	input, output := filepath.Join(dir, "program.lms"), filepath.Join(dir, "program.lmcode")
 	if err = os.WriteFile(input, []byte(source), 0600); err != nil {
 		t.Fatal(err)
 	}
-	compiler := os.Getenv("LMSCRIPT_BIN")
-	if compiler == "" {
-		compiler = "lmscript"
-	}
-	if !strings.ContainsAny(compiler, "/\\") {
-		compiler, err = exec.LookPath(compiler)
-		if err != nil {
-			t.Fatal("set LMSCRIPT_BIN to the published compiler used by CI:", err)
-		}
-	}
-	// Invoke the npm JS entry through Node, including on Windows; never a shell.
-	if strings.HasSuffix(strings.ToLower(compiler), ".cmd") {
-		compiler = filepath.Join(filepath.Dir(compiler), "..", "@lmctl-ai", "lmctl", "bin", "lmscript")
-	}
-	command := exec.Command("node", compiler, "--no-preflight", input, output)
+	_, ownFile, _, _ := runtime.Caller(0)
+	adapter := filepath.Join(filepath.Dir(ownFile), "..", "..", "..", "scripts", "capture-fixture.mjs")
+	command := exec.Command("node", adapter, input, output)
 	if b, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("fixture compile: %v\n%s", err, b)
 	}

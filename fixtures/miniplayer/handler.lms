@@ -80,4 +80,5 @@ route("POST", "/v1/chat/completions", "miniplayer_chat");
 route("POST", "/api/v1/chat/completions", "miniplayer_chat");
 route("POST", "/chat/completions", "miniplayer_chat");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

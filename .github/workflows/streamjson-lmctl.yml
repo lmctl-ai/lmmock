@@ -34,12 +34,14 @@ jobs:
         run: |
           pin="$(node -p 'JSON.parse(require("fs").readFileSync("tests/streamjson/client.json")).version')"
           npm install --prefix "$RUNNER_TEMP/streamjson-lmctl" "@lmctl-ai/lmctl@$pin"
-          echo "$RUNNER_TEMP/streamjson-lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          npm install --prefix "$RUNNER_TEMP/lmcode-compiler" @lmctl-ai/lmctl@0.2.454
+          echo "$RUNNER_TEMP/lmcode-compiler/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "LMSCRIPT_BIN=$RUNNER_TEMP/lmcode-compiler/node_modules/.bin/lmscript" >> "$GITHUB_ENV"
           echo "LMMOCK_LMCTL_PACKAGE=$RUNNER_TEMP/streamjson-lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
       - name: Compile and exercise annotated native process fixtures
         run: |
           bash scripts/compile-streamjson.sh
-          git diff --exit-code -- fixtures/streamjson/handler.dslb
+          git diff --exit-code -- fixtures/streamjson/handler.lmcode
           go test ./internal/rpcstdio ./cmd/lmmock -count=1
           mkdir -p build
           go build -o build/lmmock${{ matrix.ext }} ./cmd/lmmock

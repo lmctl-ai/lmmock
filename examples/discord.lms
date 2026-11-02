@@ -70,4 +70,5 @@ route("POST", "/api/v10/channels/{channel}/messages", "send_message");
 route("GET", "/api/v10/channels/{channel}/messages", "list_messages");
 route("POST", "/api/webhooks/{id}/{token}", "webhook"); route("POST", "/api/v10/webhooks/{id}/{token}", "webhook");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

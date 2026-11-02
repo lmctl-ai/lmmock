@@ -84,4 +84,5 @@ bind("initialize","initialize");bind("initialized","initialized");
 bind("thread/start","thread_start");bind("thread/resume","thread_resume");bind("thread/fork","thread_fork");
 bind("turn/start","turn");bind("turn/interrupt","interrupt");
 end _lmcode_
-savedsl(p,ARGV[0]);
+r = run_lmcode(p, {command: ARGV}); require(r.ok, "fixture host failed");
+if (r.result != null) { print(r.result.stdout); }

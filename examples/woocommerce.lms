@@ -47,4 +47,5 @@ route("GET","/wp-json/wc/v3/products","list_items");
 route("POST","/wp-json/wc/v3/products","create_item");
 route("GET","/wp-json/wc/v3/products/{id}","get_item");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

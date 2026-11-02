@@ -17,7 +17,7 @@ const home = fs.mkdtempSync(path.join(os.tmpdir(), `lmmock-${dialect}-lmctl-`));
 const quote = s => "'" + s.replaceAll("'", "'\\''") + "'";
 
 function runLmscript(script, env, cwd) {
-  return spawnSync('bash', ['-c', '"$LMSCRIPT_BIN" --no-preflight "$1"', 'run', script], {
+  return spawnSync('bash', ['-c', '"$LMSCRIPT_BIN"  "$1"', 'run', script], {
     env: { ...env, LMSCRIPT_BIN: process.env.LMSCRIPT_BIN || 'lmscript' },
     cwd,
     encoding: 'utf8'

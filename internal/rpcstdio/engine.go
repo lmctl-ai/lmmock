@@ -14,11 +14,11 @@ import (
 	"strconv"
 )
 
-//go:embed presets/schema*.json presets/*.dslb
+//go:embed presets/schema*.json presets/*.lmcode
 var presets embed.FS
 
 func Schema() []byte                     { b, _ := presets.ReadFile("presets/schema.json"); return b }
-func Preset(name string) ([]byte, error) { return presets.ReadFile("presets/" + name + ".dslb") }
+func Preset(name string) ([]byte, error) { return presets.ReadFile("presets/" + name + ".lmcode") }
 
 type Options struct {
 	Alias, StateDir string

@@ -41,14 +41,17 @@ jobs:
       - name: Install compiler and tools
         run: |
           npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
-          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          npm install --prefix "$RUNNER_TEMP/lmcode-compiler" @lmctl-ai/lmctl@0.2.454
+          echo "LMSCRIPT_BIN=$RUNNER_TEMP/lmcode-compiler/node_modules/.bin/lmscript" >> "$GITHUB_ENV"
+          echo "LMMOCK_LMCTL_PACKAGE=$RUNNER_TEMP/lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/lmcode-compiler/node_modules/.bin" >> "$GITHUB_PATH"
           echo "LMCTL_PACKAGE_ROOT=$RUNNER_TEMP/lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
 
           echo "LMCTL_TEST_PREFIX=$RUNNER_TEMP/lmctl" >> "$GITHUB_ENV"
           npm ci --prefix tests/vercel
       - name: Build and test
         run: |
-          lmscript --no-preflight test.lms
+          lmscript  test.lms
           [[ "$(build/lmmock --version | tr -d '\r')" == "lmmock $SAMPLE_VERSION" ]]
           mkdir -p dist
           cp 'build/lmmock${{ matrix.ext }}' 'dist/lmmock-${{ matrix.label }}${{ matrix.ext }}'
@@ -57,21 +60,7 @@ jobs:
         env:
           CGO_ENABLED: '1'
         run: go test -race ./internal/...
-      - name: Released lmcurl compatibility (v5 compiler isolated)
-        if: runner.os == 'Linux'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/lmcurl-client"
-          gh release download v0.1.2 --repo lmctl-ai/lmcurl --pattern 'lmcurl-${{ matrix.label }}' --pattern SHA256SUMS --dir "$RUNNER_TEMP/lmcurl-client"
-          cd "$RUNNER_TEMP/lmcurl-client"
-          grep 'lmcurl-${{ matrix.label }}$' SHA256SUMS | sha256sum -c -
-          cp 'lmcurl-${{ matrix.label }}' lmcurl
-          chmod +x lmcurl
-          export PATH="$RUNNER_TEMP/lmcurl-client:$PATH"
-          npm install --prefix "$RUNNER_TEMP/lmcurl-compiler" @lmctl-ai/lmctl@0.2.426
-          cd "$GITHUB_WORKSPACE"
-          build/lmmock exec --lmcode build/llm.dslb -- node "$RUNNER_TEMP/lmcurl-compiler/node_modules/@lmctl-ai/lmctl/bin/lmscript" --no-preflight examples/lmcurl-client.lms
+
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: binary-${{ matrix.label }}

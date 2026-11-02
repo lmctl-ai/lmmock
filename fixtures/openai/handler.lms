@@ -37,4 +37,5 @@ fn responses(x: Exchange) -> void implements Handler { handle(x, "responses"); }
 route("POST", "/v1/chat/completions", "chat");
 route("POST", "/v1/responses", "responses");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

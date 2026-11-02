@@ -41,7 +41,7 @@ export function runCase(provider,variant,binary){
  if(variant==='missing-terminal')cfg.missing_terminal=true;
  fs.writeFileSync(cfgFile,JSON.stringify(cfg));
  const profile=process.env.LANE_E_HANDLER_OVERRIDE;
- const code=name=>path.join(repo,'build/lane-e-'+name+'.dslb');
+ const code=name=>path.join(repo,'build/lane-e-'+name+'.lmcode');
  let command;
  if(provider==='dsh')command=['sidecar','--config',cfgFile,'--http-lmcode',profile||code('dsh'),'--boot-lmcode',process.env.LANE_E_BOOT_OVERRIDE||code('sidecar-boot'),'--'];
  else if(provider==='muse')command=['stdio','rpc','--lmcode',profile||code('muse'),'--scenario',cfgFile,'--alias','muse','--state',path.join(root,'counts'),'--'];

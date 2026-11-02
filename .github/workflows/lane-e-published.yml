@@ -30,7 +30,10 @@ jobs:
       - name: Download pinned published client and compiler
         run: |
           npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
-          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          npm install --prefix "$RUNNER_TEMP/lmcode-compiler" @lmctl-ai/lmctl@0.2.454
+          echo "LMSCRIPT_BIN=$RUNNER_TEMP/lmcode-compiler/node_modules/.bin/lmscript" >> "$GITHUB_ENV"
+          echo "LMMOCK_LMCTL_PACKAGE=$RUNNER_TEMP/lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/lmcode-compiler/node_modules/.bin" >> "$GITHUB_PATH"
           echo "LMCTL_TEST_PREFIX=$RUNNER_TEMP/lmctl" >> "$GITHUB_ENV"
       - name: Compile annotated process and HTTP handlers
         run: |

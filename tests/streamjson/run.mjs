@@ -22,7 +22,7 @@ function cleanEnv(dir,bin,pkg,scenario,code,prices){
 function runClient(pkg,name,args,env,cwd){
  const p=spawnSync(process.execPath,[path.join(pkg,'bin',name),...args],{env,cwd,encoding:'utf8'});assert.ifError(p.error);assert.equal(p.signal,null,'unexpected client signal');return p;
 }
-export async function runProvider({manifestFile,binary,code=path.join(ROOT,'fixtures/streamjson/handler.dslb'),only,mutateExpected=false}={}){
+export async function runProvider({manifestFile,binary,code=path.join(ROOT,'fixtures/streamjson/handler.lmcode'),only,mutateExpected=false}={}){
  const {manifest}=await loadFixture(manifestFile,ROOT);assert.equal(manifest.server.kind,'stdio');
  const pkg=clientPackage(),wire=JSON.parse(fs.readFileSync(path.join(ROOT,manifest.server.config)));
  const provider=manifest.server.binary;assert.ok(['claude','qwen'].includes(provider),'declared adapter');
@@ -52,7 +52,7 @@ export async function runProvider({manifestFile,binary,code=path.join(ROOT,'fixt
    const env=cleanEnv(dir,bin,pkg,scenario,path.resolve(code),prices);
    const team=path.join(dir,'team.lmctl');fs.writeFileSync(team,`_MEMBER_ alias=Worker provider=${provider} model=${model} sessiondir=${JSON.stringify(workspace.replaceAll('\\','/'))}\n`);
    const script=path.join(dir,'client.lms');fs.writeFileSync(script,`s=lm_seed(${JSON.stringify(team)});assert(s.status=="ok",json_stringify(s));r=lm_prompt(${JSON.stringify(team)},"Worker","ping");println("OBS "+json_stringify(r));m=lm_session_get({provider:${JSON.stringify(provider)},sessionid:${JSON.stringify(sid)}});println("SESSION "+json_stringify(m));`);
-   const client=runClient(pkg,'lmscript',['--no-preflight',script],env,workspace);
+   const client=runClient(pkg,'lmscript',[script],env,workspace);
    assert.equal(client.status,0,'published client failed: '+client.stdout+client.stderr);
    const observed=client.stdout.split('\n').filter(l=>l.startsWith('OBS '));assert.equal(observed.length,1,'one adapter result');const result=JSON.parse(observed[0].slice(4));
    const testCase=materialize(structuredClone(original),vars);

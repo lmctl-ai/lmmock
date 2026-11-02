@@ -8,7 +8,7 @@ import (
 )
 
 func TestDeferredReplyLifecycle(t *testing.T) {
-	code, e := os.ReadFile("testdata/deferred.dslb")
+	code, e := os.ReadFile("testdata/deferred.lmcode")
 	if e != nil {
 		t.Fatal(e)
 	}

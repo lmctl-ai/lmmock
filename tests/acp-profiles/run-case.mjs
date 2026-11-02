@@ -10,7 +10,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 export const profiles=JSON.parse(fs.readFileSync(path.join(root,'tests/acp-profiles/profiles.json')));
 const ext=process.platform==='win32'?'.exe':'';
 export const binary=path.resolve(process.env.LMMOCK_TEST_BINARY||path.join(root,'build/lmmock'+ext));
-const bytecode=path.resolve(process.env.LMMOCK_ACP_BYTECODE||path.join(root,'build/acp-profiles.dslb'));
+const bytecode=path.resolve(process.env.LMMOCK_ACP_BYTECODE||path.join(root,'build/acp-profiles.lmcode'));
 function compiler(){
  if(process.env.LMMOCK_LMSCRIPT_JS)return path.resolve(process.env.LMMOCK_LMSCRIPT_JS);
  for(const dir of process.env.PATH.split(path.delimiter)){const file=path.resolve(dir,'../@lmctl-ai/lmctl/bin/lmscript');if(fs.existsSync(file))return file;}
@@ -33,7 +33,7 @@ export async function runCase(id,{quiet=false,variantOverride,expectedOverride}=
   const script=path.join(dir,'run.lms');fs.writeFileSync(script,`r = lm_prompt(${JSON.stringify('team.lmctl')}, "Worker", "ping"); println(json_stringify(r));\n`);
   const env=Object.fromEntries(Object.entries(process.env).filter(([k])=>!k.startsWith('LMCTL_')&&!k.startsWith('LMBEE_')&&!/^(COPILOT|KIMI|OPENCODE|HERMES|GEMINI|MINIPLAYER|CODEX|CLAUDE|AGY|QWEN|OPENAI|ANTHROPIC|GOOGLE|XDG_)/.test(k)&&!/TOKEN|API_KEY|SECRET|PASSWORD|AUTHORIZATION/.test(k)));
   Object.assign(env,{HOME:dir,USERPROFILE:dir,LMCTL_HOME:path.join(dir,'profile'),LMCTL_DB:path.join(dir,'state.db'),XDG_CACHE_HOME:path.join(dir,'cache'),XDG_DATA_HOME:path.join(dir,'data'),XDG_CONFIG_HOME:path.join(dir,'config'),LMCTL_NO_UPDATE_NOTIFIER:'1',NODE_NO_WARNINGS:'1',PATH:bin+path.delimiter+process.env.PATH,LMMOCK_ACP_CASE_DIR:dir,LMMOCK_TEST_BINARY:binary,LMMOCK_ACP_BYTECODE:bytecode});
-  const child=spawnSync(process.execPath,[compiler(),'--no-preflight',script],{cwd:dir,env,encoding:'utf8'});
+  const child=spawnSync(process.execPath,[compiler(),script],{cwd:dir,env,encoding:'utf8'});
   assert.equal(child.status,0,child.stdout+child.stderr);
   const result=JSON.parse(child.stdout.trim());const expected=expectedOverride||item.expect;
   assert.equal(result.error_class,expected.error_class??null,id+' error_class: '+result.error);

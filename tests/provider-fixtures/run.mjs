@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {spawn} from 'node:child_process';
+import {spawn, spawnSync} from 'node:child_process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import readline from 'node:readline';
 
@@ -116,7 +116,10 @@ export function expand(value, vars) {
 function startServer(binary, loaded, tempDir) {
   const {manifest, root} = loaded;
   const readyFile = path.join(tempDir, 'ready.json');
-  const child = spawn(binary, ['serve', '--script', manifest.server.handler, '--config', manifest.server.config, '--ready-file', readyFile], {
+  const program = path.join(tempDir, 'handler.lmcode');
+  const captured = spawnSync(process.execPath, [path.join(defaultRoot,'scripts/capture-fixture.mjs'), path.resolve(root,manifest.server.handler), program], {encoding:'utf8'});
+  assert.equal(captured.status, 0, captured.stdout + captured.stderr);
+  const child = spawn(binary, ['serve', '--lmcode', program, '--config', manifest.server.config, '--ready-file', readyFile], {
     cwd: root,
     env: process.env,
     stdio: ['ignore', 'pipe', 'pipe'],

@@ -18,4 +18,5 @@ route("GET", "/disconnect", "drop");
 route("GET", "/malformed", "bad_json");
 route("GET", "/error", "failure");
 end _lmcode_
-savedsl(program, ARGV[0]);
+r = run_lmcode(program, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

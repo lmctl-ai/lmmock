@@ -1,4 +1,4 @@
-// usage: node tests/request-count.mjs build/lmmock   (spawns `lmmock exec` on build/llm-api.dslb and runs itself as the client)
+// usage: node tests/request-count.mjs build/lmmock   (spawns `lmmock exec` on build/llm-api.lmcode and runs itself as the client)
 // GET /__requests reports how many LLM requests the mock served; a retry-mode client can therefore prove the 429
 // attempt really happened before the 200.
 import assert from 'node:assert/strict';
@@ -16,7 +16,7 @@ if (process.argv[3] !== 'client') {
     // One mock per scenario: the retry counter is per mock instance.
     for (const scenario of ['chat', 'responses']) {
       fs.writeFileSync(config, JSON.stringify({ apiKey: 'fixture-key' }));
-      const r = spawnSync(binary, ['exec', '--lmcode', 'build/llm-api.dslb', '--config', config, '--', process.execPath, import.meta.filename, binary, 'client', scenario],
+      const r = spawnSync(binary, ['exec', '--lmcode', 'build/llm-api.lmcode', '--config', config, '--', process.execPath, import.meta.filename, binary, 'client', scenario],
         { env: { ...process.env, MOCK_CONFIG: config }, encoding: 'utf8', timeout: 60000 });
       process.stdout.write(r.stdout); process.stderr.write(r.stderr);
       if (r.status !== 0) { process.exitCode = 1; break; }

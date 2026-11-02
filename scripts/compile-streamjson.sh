@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-"${LMSCRIPT_BIN:-lmscript}" --no-preflight fixtures/streamjson/handler.lms fixtures/streamjson/handler.dslb
+node scripts/capture-fixture.mjs  fixtures/streamjson/handler.lms fixtures/streamjson/handler.lmcode

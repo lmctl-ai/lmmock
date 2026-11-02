@@ -25,13 +25,16 @@ jobs:
       - name: Download published compiler and adapter
         run: |
           npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
-          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          npm install --prefix "$RUNNER_TEMP/lmcode-compiler" @lmctl-ai/lmctl@0.2.454
+          echo "LMSCRIPT_BIN=$RUNNER_TEMP/lmcode-compiler/node_modules/.bin/lmscript" >> "$GITHUB_ENV"
+          echo "LMMOCK_LMCTL_PACKAGE=$RUNNER_TEMP/lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/lmcode-compiler/node_modules/.bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/lmctl/node_modules/.bin/lmctl" --version
       - name: Build protocol and profile fixtures
         run: |
           bash scripts/compile-stdio.sh
           bash tests/acp-profiles/compile.sh
-          git diff --exit-code -- internal/rpcstdio/presets internal/rpcstdio/testdata/deferred.dslb
+          git diff --exit-code -- internal/rpcstdio/presets internal/rpcstdio/testdata/deferred.lmcode
           go build -o build/lmmock ./cmd/lmmock
           if [[ "$RUNNER_OS" == Windows ]]; then mv build/lmmock build/lmmock.exe; fi
           go test ./internal/rpcstdio -count=1

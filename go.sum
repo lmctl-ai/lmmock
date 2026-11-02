@@ -37,6 +37,8 @@ github.com/klauspost/compress v1.20.3 h1:zWNoFqq/lSuYQRim3dUXlXeA0IqwuZGicdG5ZTf
 github.com/klauspost/compress v1.20.3/go.mod h1:LUdAzn7YLVvxLpc7y3V1m40wESHTgc1422pwwBSKYuI=
 github.com/lmctl-ai/lmcode-go v0.6.39-0.20261031113748-65f0ef2275b0 h1:EI9xRa8z5XikrNpy8hne2FJnVCikgJZFyuRA2JBQBeo=
 github.com/lmctl-ai/lmcode-go v0.6.39-0.20261031113748-65f0ef2275b0/go.mod h1:Wfm1dj/9Uek4C4Y6LOkL5kFNRojgFUej7DDRGStSfVc=
+github.com/lmctl-ai/lmcode-go v0.6.39-0.20261102140952-06cd9ae991d9 h1:FM1pg6GQqiKtMPIJLyX7TZsDqFw9lDzOzwTkpzs+nMs=
+github.com/lmctl-ai/lmcode-go v0.6.39-0.20261102140952-06cd9ae991d9/go.mod h1:Wfm1dj/9Uek4C4Y6LOkL5kFNRojgFUej7DDRGStSfVc=
 github.com/mochi-mqtt/server/v2 v2.7.9 h1:y0g4vrSLAag7T07l2oCzOa/+nKVLoazKEWAArwqBNYI=
 github.com/mochi-mqtt/server/v2 v2.7.9/go.mod h1:lZD3j35AVNqJL5cezlnSkuG05c0FCHSsfAKSPBOSbqc=
 github.com/pierrec/lz4/v4 v4.1.33 h1:GjG1TJ1V4IzKP8L96muuuDNpTwd7D+l2ccXrjAbe014=

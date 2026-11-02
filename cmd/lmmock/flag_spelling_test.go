@@ -12,7 +12,7 @@ import (
 func TestRetiredHostModesRefuseBeforeInput(t *testing.T) {
 	old := "--" + "dsl"
 	directory := t.TempDir()
-	missing := filepath.Join(directory, "must-not-open.dslb")
+	missing := filepath.Join(directory, "must-not-open.lmcode")
 	audit := filepath.Join(directory, "must-not-create.jsonl")
 	cases := [][]string{
 		{old + "-schema", "--json"},
@@ -30,8 +30,8 @@ func TestRetiredHostModesRefuseBeforeInput(t *testing.T) {
 }
 
 func TestNewExecutionOptionReachesInput(t *testing.T) {
-	missing := filepath.Join(t.TempDir(), "missing.dslb")
-	if code := run([]string{"serve", "--lmcode", missing}); code != 1 {
+	missing := filepath.Join(t.TempDir(), "missing.lmcode")
+	if code := run([]string{"serve", "--lmcode", missing}); code != 3 {
 		t.Fatalf("new execution option did not reach existing input-failure policy: exit=%d", code)
 	}
 }

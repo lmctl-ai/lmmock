@@ -60,10 +60,10 @@ fn message(x: Exchange) -> void implements Handler {
 }
 route("GET", "/message", "message");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
 ~~~
 
-With --script, lmmock runs lmscript at server startup. The runtime-created value
+With run_lmcode, lmscript constructs the program before starting lmmock. The runtime-created value
 becomes a constant in that instance of the lmcode program. It is not recomputed
 by lmscript on every HTTP request. Handlers can still fill fields from each
 request and read live configuration through config().
@@ -131,6 +131,6 @@ schema also allows compilation with an npm compiler whose bundled catalog has
 not yet received the standard function.
 
 Validation includes the full 60-scenario SDK suite, template paths, escaping, JSON types, JSON Pointer and numeric
-edge cases, an old-schema compiled handler, and a real --script startup test.
+edge cases, an old-schema compiled handler, and a real --lmcode "$PRIVATE_PROGRAM_FILE" test.
 The startup test supplies an environment value, sends escaped request data, and
 checks that a later request still sees the original immutable template.

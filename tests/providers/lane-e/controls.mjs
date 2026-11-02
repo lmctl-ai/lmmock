@@ -13,9 +13,9 @@ for(const m of mutations){
  const baseline=invoke({});assert.equal(baseline.status,m.variant==='nonzero'?1:0,baseline.stdout+baseline.stderr);assert.doesNotMatch(baseline.stderr,/FAIL lane-E/);
  const temp=fs.mkdtempSync(path.join(repo,'build','lane-e-handler-control-'));
  try{
-  const sourceFile=path.join(temp,'handler.lms'),code=path.join(temp,'handler.dslb');let source=fs.readFileSync(path.join(repo,'fixtures/providers/lane-e',m.file+'.lms'),'utf8');assert.ok(source.includes(m.from),'missing mutation anchor');
+  const sourceFile=path.join(temp,'handler.lms'),code=path.join(temp,'handler.lmcode');let source=fs.readFileSync(path.join(repo,'fixtures/providers/lane-e',m.file+'.lms'),'utf8');assert.ok(source.includes(m.from),'missing mutation anchor');
   const schema=path.join(repo,m.file==='dsh'?'examples/schema.json':'internal/rpcstdio/presets/schema.json').replaceAll('\\','/');source=source.replace(/schema="[^"]+"/,`schema=${JSON.stringify(schema)}`).replace(m.from,m.to);fs.writeFileSync(sourceFile,source);
-  const shell=process.platform==='win32';const command=shell?'bash':compiler;const args=shell?['-c','exec "$LMSCRIPT_BIN" --no-preflight "$1" "$2"','lane-e-compile',sourceFile,code]:['--no-preflight',sourceFile,code];
+  const command=process.execPath;const args=[path.join(repo,'scripts/capture-fixture.mjs'),sourceFile,code];
   const compile=spawnSync(command,args,{cwd:repo,env:{...process.env,LMSCRIPT_BIN:compiler},encoding:'utf8'});assert.equal(compile.status,0,compile.stdout+compile.stderr);
   const mutated=invoke({[m.file==='sidecar-boot'?'LANE_E_BOOT_OVERRIDE':'LANE_E_HANDLER_OVERRIDE']:code});assert.equal(mutated.status,1,'mutant survived');assert.match(mutated.stderr,/FAIL lane-E/);assert.match(mutated.stderr,m.oracle,'wrong mutation assertion');console.log('CAUGHT lane-E handler family',m.file);
  }finally{fs.rmSync(temp,{recursive:true,force:true});}

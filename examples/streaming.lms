@@ -40,4 +40,5 @@ route("GET", "/bad-fault", "badfault");
 route("GET", "/committed-error", "committed_error");
 route("GET", "/tokens", "tokens");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

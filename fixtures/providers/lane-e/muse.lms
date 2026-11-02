@@ -59,4 +59,5 @@ fn turn(x: RPC) -> void implements RPCHandler {
 }
 bind("initialize","initialize");bind("initialized","initialized");bind("session/start","open");bind("session/resume","open");bind("session/setApprovalMode","approval");bind("session/setModel","model");bind("turn/start","turn");
 end _lmcode_
-savedsl(p,ARGV[0]);
+r = run_lmcode(p, {command: ARGV}); require(r.ok, "fixture host failed");
+if (r.result != null) { print(r.result.stdout); }
