@@ -129,6 +129,7 @@ is not a transaction. Each concurrent request uses its own VM registry and arena
 | Script | Endpoints and purpose |
 | --- | --- |
 | [api.lms](examples/api.lms) | `/health`, binary `/echo`, and `/users/{id}` with bearer authentication and query parameters |
+| [proxy-passthrough.lms](examples/proxy-passthrough.lms) | Mock `/health` and `/artifacts/demo.bin`; forward other paths to `--upstream` |
 | [faults.lms](examples/faults.lms) | `/retry` fails twice with 503 then succeeds; `/slow`, `/disconnect`, `/malformed`, and `/error` simulate client failures |
 | [stateful.lms](examples/stateful.lms) | POST `/webhook`, GET `/last-event`, and atomic `/count` |
 

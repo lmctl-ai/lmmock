@@ -1,0 +1,18 @@
+# Start a loopback upstream on port 8080, then run from the checkout:
+# lmscript examples/proxy-passthrough.lms --upstream http://127.0.0.1:8080/ --upstream-read-only --audit-log requests.jsonl
+# run_lmcode supplies the private $DSLFILE for this host invocation:
+# lmmock serve --lmcode "$DSLFILE" --upstream http://127.0.0.1:8080/ --upstream-read-only --audit-log requests.jsonl
+program = _lmcode_ schema="schema.json";
+@health
+fn healthcheck(x: Exchange) -> void implements Handler { x.json("{\"ok\":true}"); }
+@artifact
+fn artifact(x: Exchange) -> void implements Handler {
+  x.set_header("Content-Type", "application/octet-stream");
+  x.send("mock artifact\n");
+}
+route("GET", "/health", "health");
+route("GET", "/artifacts/demo.bin", "artifact");
+# No catch-all route: other paths pass through to --upstream.
+end _lmcode_
+r = run_lmcode(program, {command: concat(["lmmock", "serve", "--lmcode", "$DSLFILE"], ARGV)});
+require(r.ok, "mock server failed");
