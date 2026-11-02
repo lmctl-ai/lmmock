@@ -185,7 +185,7 @@ func TestBuiltinAnthropicAcceptsBearerCredential(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := filepath.Join(t.TempDir(), "cfg.json")
-	os.WriteFile(cfg, []byte(`{"apiKey":"good-key","toolCalls":false}`), 0600)
+	os.WriteFile(cfg, []byte(`{"apiKey":"good-key","toolCalls":false,"anthropicBearer":true}`), 0600)
 	engine, err := mock.NewWithOptions(code, mock.Options{ConfigFile: cfg})
 	if err != nil {
 		t.Fatal(err)
@@ -211,5 +211,33 @@ func TestBuiltinAnthropicAcceptsBearerCredential(t *testing.T) {
 		if got := post(c.header, c.value); got != c.want {
 			t.Errorf("%s %q: got %d want %d", c.header, c.value, got, c.want)
 		}
+	}
+}
+
+// Without anthropicBearer the route keeps the strict x-api-key contract that the
+// Vercel acceptance suite asserts (Authorization: Bearer is a 401).
+func TestBuiltinAnthropicRejectsBearerByDefault(t *testing.T) {
+	code, err := builtinProgram("llm-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := filepath.Join(t.TempDir(), "cfg.json")
+	os.WriteFile(cfg, []byte(`{"apiKey":"good-key"}`), 0600)
+	engine, err := mock.NewWithOptions(code, mock.Options{ConfigFile: cfg})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(engine)
+	defer server.Close()
+	req, _ := http.NewRequest("POST", server.URL+"/v1/messages", strings.NewReader(`{"model":"m","max_tokens":5,"messages":[{"role":"user","content":"hi"}]}`))
+	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("Authorization", "Bearer good-key")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != 401 {
+		t.Fatalf("Bearer accepted by default: %d", resp.StatusCode)
 	}
 }

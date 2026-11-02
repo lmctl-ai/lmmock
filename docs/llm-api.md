@@ -111,7 +111,7 @@ configured mock model. Auth, rate-limit, server, missing-model and unknown-model
 responses are deterministic and use synthetic data; no Ollama server or credentials
 are required. See [the Ollama API reference](https://github.com/ollama/ollama/blob/main/docs/api.md).
 
-When apiKey is configured, OpenAI requires Authorization: Bearer, Anthropic (x-api-key or Authorization: Bearer, like the real API)
+When apiKey is configured, OpenAI requires Authorization: Bearer, Anthropic requires x-api-key (set `"anthropicBearer": true` to also accept Authorization: Bearer, as Claude Code's ANTHROPIC_AUTH_TOKEN sends)
 requires x-api-key, and Gemini requires x-goog-api-key or a key query parameter.
 Anthropic also requires an anthropic-version header; its SDK supplies it.
 A Bearer token alone is rejected on the native Anthropic and Gemini endpoints.
