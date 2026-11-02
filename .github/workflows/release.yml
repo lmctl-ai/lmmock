@@ -55,15 +55,19 @@ jobs:
           [[ "$(build/lmmock --version | tr -d '\r')" == "lmmock $SAMPLE_VERSION" ]]
           mkdir -p dist
           cp 'build/lmmock${{ matrix.ext }}' 'dist/lmmock-${{ matrix.label }}${{ matrix.ext }}'
-      - name: Embedded llm-api builtin is current and runs without lmscript
+      - name: Embedded builtins are current and run without lmscript
         run: |
           if [[ '${{ matrix.label }}' == linux-x64 ]]; then
-            cp cmd/lmmock/builtin/llm-api.lmcode "$RUNNER_TEMP/committed.lmcode"
+            mkdir "$RUNNER_TEMP/committed"
+            cp cmd/lmmock/builtin/*.lmcode "$RUNNER_TEMP/committed/"
             scripts/compile-builtin.sh
-            cmp "$RUNNER_TEMP/committed.lmcode" cmd/lmmock/builtin/llm-api.lmcode
+            for f in "$RUNNER_TEMP"/committed/*.lmcode; do cmp "$f" "cmd/lmmock/builtin/$(basename "$f")"; done
           fi
           go test ./cmd/lmmock -run TestBuiltin
           PATH=/nonexistent:"$(dirname "$(command -v node)")" build/lmmock exec --builtin llm-api -- node -e "fetch(process.env.LMMOCK_URL+'/v1/messages',{method:'POST',headers:{'anthropic-version':'2023-06-01','content-type':'application/json'},body:'{\"model\":\"m\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}'}).then(r=>{console.log(r.status);process.exit(r.status===200?0:1)})"
+      - name: Embedded oauth-codex-device builtin serves the device-code flow without lmscript
+        run: |
+          PATH=/nonexistent:"$(dirname "$(command -v node)")" build/lmmock exec --builtin oauth-codex-device -- node -e "(async()=>{const u=process.env.LMMOCK_URL,j={'content-type':'application/json'};const a=await(await fetch(u+'/api/accounts/deviceauth/usercode',{method:'POST',headers:j,body:'{\"client_id\":\"c\"}'})).json();const p=await fetch(u+'/api/accounts/deviceauth/token',{method:'POST',headers:j,body:JSON.stringify({device_auth_id:a.device_auth_id,user_code:a.user_code})});const b=await p.json();const t=await fetch(u+'/oauth/token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',code:b.authorization_code,redirect_uri:'https://x/deviceauth/callback',client_id:'c',code_verifier:b.code_verifier})});console.log(p.status,t.status);process.exit(p.status===200&&t.status===200?0:1)})()"
       - name: Race detector
         if: matrix.label == 'linux-x64'
         env:

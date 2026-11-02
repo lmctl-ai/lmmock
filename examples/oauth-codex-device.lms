@@ -1,0 +1,125 @@
+# Mock OpenAI auth server for `codex login --device-auth` (device-code flow, PKCE
+# code exchange, API-key token exchange, refresh with rotation). Synthetic secrets only.
+# Config (all optional): mode approve|pending-forever|denied|expired, autoApprove (true),
+# pollsBeforeApproval (0), pendingStatus (403), interval (1, sent as a JSON string like the real service; codex rejects numbers), intervalAsNumber, userCode,
+# clientId, disabled, email, planType, userId, accountId, expiresIn, rotateRefreshTokens (true),
+# failApiKeyExchange, corruptVerifier (poll hands out a verifier that fails PKCE).
+p = _lmcode_ schema="schema.json";
+fn text(j: Json, key: string, fallback: string) -> string { let value = fallback; if (j.has(key)) { value = j.get(key).as_string(); } return value; }
+fn flag(j: Json, key: string, fallback: bool) -> bool { let value = fallback; if (j.has(key)) { value = j.get(key).as_bool(); } return value; }
+fn num(j: Json, key: string, fallback: int) -> int { let value = fallback; if (j.has(key)) { value = j.get(key).as_int(); } return value; }
+fn b64u(s: string) -> string { return str_replace(str_replace(str_replace(str_base64_encode(s), "+", "-"), "/", "_"), "=", ""); }
+fn jwt(payload: string) -> string { return b64u("{\"alg\":\"none\",\"typ\":\"JWT\"}") + "." + b64u(payload) + "." + b64u("mock-signature"); }
+fn field(body: string, name: string) -> string {
+ let value = "";
+ if (str_starts_with(str_trim(body), "{")) { let j = json_parse(body); value = text(j, name, ""); } else { value = form_get(body, name); }
+ return value;
+}
+fn event(x: Exchange, step: string, status: int, detail: string) -> void {
+ let entry = "{\"step\":" + json_quote(step) + ",\"status\":" + str(status) + ",\"detail\":" + json_quote(detail) + "}";
+ let old = x.get("events"); if (old == "") { x.set("events", entry); } else { x.set("events", old + "," + entry); }
+ x.set("n:" + step, str(x.increment("n:" + step)));
+}
+fn fail(x: Exchange, step: string, status: int, code: string) -> void {
+ event(x, step, status, code); x.status(status); x.json("{\"error\":" + json_quote(code) + "}");
+}
+fn claims(c: Json, aud: string, ttl: int) -> string {
+ let now = now_ms() / 1000;
+ let auth = "{\"chatgpt_plan_type\":" + json_quote(text(c, "planType", "plus")) + ",\"chatgpt_user_id\":" + json_quote(text(c, "userId", "user-mock-0001")) + ",\"user_id\":" + json_quote(text(c, "userId", "user-mock-0001")) + ",\"chatgpt_account_id\":" + json_quote(text(c, "accountId", "acct-mock-0001")) + "}";
+ return "{\"iss\":\"https://auth.openai.com\",\"aud\":" + json_quote(aud) + ",\"sub\":" + json_quote(text(c, "userId", "user-mock-0001")) + ",\"jti\":" + json_quote(random_token()) + ",\"email\":" + json_quote(text(c, "email", "mock-user@example.test")) + ",\"iat\":" + str(now) + ",\"exp\":" + str(now + ttl) + ",\"https://api.openai.com/auth\":" + auth + "}";
+}
+fn issue(x: Exchange, c: Json, client: string, refresh: string) -> void {
+ let ttl = num(c, "expiresIn", 3600);
+ let id = jwt(claims(c, client, ttl)); let access = jwt(claims(c, "https://api.openai.com/v1", ttl));
+ let rt = refresh; if (rt == "") { rt = "rt-mock-" + random_token(); }
+ x.set("refresh:" + rt, "{\"clientId\":" + json_quote(client) + "}"); x.set("idt:" + sha256_url(id), "1");
+ x.json("{\"id_token\":" + json_quote(id) + ",\"access_token\":" + json_quote(access) + ",\"refresh_token\":" + json_quote(rt) + ",\"token_type\":\"Bearer\",\"expires_in\":" + str(ttl) + "}");
+}
+@usercode
+fn usercode(x: Exchange) -> void implements Handler {
+ while (true) {
+ let c = json_parse(config()); let client = field(x.body(), "client_id");
+ if (flag(c, "disabled", false)) { fail(x, "usercode", 404, "not_found"); break; }
+ if (client == "" || (c.has("clientId") && client != text(c, "clientId", ""))) { fail(x, "usercode", 400, "invalid_client"); break; }
+ let id = "deviceauth_" + random_token(); let code = text(c, "userCode", "MOCK-0001");
+ x.set("dev:" + id, "{\"userCode\":" + json_quote(code) + ",\"clientId\":" + json_quote(client) + "}"); x.set("user:" + code, id);
+ let interval = json_quote(str(num(c, "interval", 1))); if (flag(c, "intervalAsNumber", false)) { interval = str(num(c, "interval", 1)); }
+ event(x, "usercode", 200, client);
+ x.json("{\"device_auth_id\":" + json_quote(id) + ",\"user_code\":" + json_quote(code) + ",\"interval\":" + interval + "}");
+ break;
+ }
+}
+@poll
+fn poll(x: Exchange) -> void implements Handler {
+ while (true) {
+ let c = json_parse(config()); let body = x.body(); let id = field(body, "device_auth_id"); let raw = x.get("dev:" + id);
+ if (raw == "") { fail(x, "poll", 400, "invalid_request"); break; }
+ let dev = json_parse(raw); if (!secure_equal(text(dev, "userCode", ""), field(body, "user_code"))) { fail(x, "poll", 400, "invalid_request"); break; }
+ let mode = text(c, "mode", "approve"); let n = x.increment("polls:" + id);
+ if (mode == "denied") { fail(x, "poll", 400, "access_denied"); break; }
+ if (mode == "expired") { fail(x, "poll", 410, "expired_token"); break; }
+ let approved = x.get("approved:" + id) != "";
+ if (mode == "approve" && flag(c, "autoApprove", true) && n > num(c, "pollsBeforeApproval", 0)) { approved = true; x.set("approved:" + id, "1"); }
+ if (!approved) { fail(x, "poll", num(c, "pendingStatus", 403), "authorization_pending"); break; }
+ let verifier = random_token() + random_token(); let challenge = sha256_url(verifier); let code = "ac-mock-" + random_token();
+ x.set("code:" + code, "{\"clientId\":" + json_quote(text(dev, "clientId", "")) + ",\"challenge\":" + json_quote(challenge) + "}");
+ let shown = verifier; if (flag(c, "corruptVerifier", false)) { shown = verifier + "x"; }
+ event(x, "poll", 200, "approved");
+ x.json("{\"authorization_code\":" + json_quote(code) + ",\"code_challenge\":" + json_quote(challenge) + ",\"code_verifier\":" + json_quote(shown) + "}");
+ break;
+ }
+}
+@token
+fn token_endpoint(x: Exchange) -> void implements Handler {
+ while (true) {
+ let c = json_parse(config()); let body = x.body(); let grant = field(body, "grant_type"); let client = field(body, "client_id");
+ if (c.has("clientId") && client != text(c, "clientId", "")) { fail(x, "token", 401, "invalid_client"); break; }
+ if (grant == "authorization_code") {
+  let raw = x.take("code:" + field(body, "code")); if (raw == "") { fail(x, "code_exchange", 400, "invalid_grant"); break; }
+  let rec = json_parse(raw); let redirect = field(body, "redirect_uri");
+  if (text(rec, "clientId", "") != client || !str_ends_with(redirect, "/deviceauth/callback")) { fail(x, "code_exchange", 400, "invalid_grant"); break; }
+  let v = field(body, "code_verifier"); if (v == "" || !secure_equal(sha256_url(v), text(rec, "challenge", ""))) { fail(x, "code_exchange", 400, "invalid_grant"); break; }
+  event(x, "code_exchange", 200, "pkce_ok"); issue(x, c, client, ""); break;
+ }
+ if (grant == "urn:ietf:params:oauth:grant-type:token-exchange") {
+  let subject = field(body, "subject_token");
+  if (field(body, "requested_token") != "openai-api-key" || field(body, "subject_token_type") != "urn:ietf:params:oauth:token-type:id_token" || x.get("idt:" + sha256_url(subject)) == "" || flag(c, "failApiKeyExchange", false)) { fail(x, "api_key_exchange", 400, "invalid_request"); break; }
+  event(x, "api_key_exchange", 200, "ok"); x.json("{\"access_token\":" + json_quote("sk-mock-" + random_token()) + ",\"token_type\":\"Bearer\"}"); break;
+ }
+ if (grant == "refresh_token") {
+  let rt = field(body, "refresh_token"); let raw = x.get("refresh:" + rt);
+  if (raw == "") { let code = "invalid_grant"; if (x.get("used:" + rt) != "") { code = "refresh_token_reused"; } if (x.get("revoked:" + rt) != "") { code = "refresh_token_invalidated"; } fail(x, "refresh", 401, code); break; }
+  let rec = json_parse(raw); if (text(rec, "clientId", "") != client) { fail(x, "refresh", 400, "invalid_grant"); break; }
+  let keep = rt; if (flag(c, "rotateRefreshTokens", true)) { x.take("refresh:" + rt); x.set("used:" + rt, "1"); keep = ""; }
+  event(x, "refresh", 200, "ok"); issue(x, c, client, keep); break;
+ }
+ fail(x, "token", 400, "unsupported_grant_type");
+ break;
+ }
+}
+@revoke
+fn revoke(x: Exchange) -> void implements Handler {
+ let t = field(x.body(), "token");
+ if (t != "") { x.take("refresh:" + t); x.set("revoked:" + t, "1"); }
+ event(x, "revoke", 200, "ok"); x.json("{}");
+}
+@approve
+fn approve(x: Exchange) -> void implements Handler {
+ while (true) {
+ let code = field(x.body(), "user_code"); let id = x.get("user:" + code);
+ if (id == "") { fail(x, "approve", 404, "unknown_user_code"); break; }
+ x.set("approved:" + id, "1"); event(x, "approve", 200, "approved"); x.json("{\"approved\":true}");
+ break;
+ }
+}
+fn count(x: Exchange, name: string) -> string { let v = x.get("n:" + name); if (v == "") { v = "0"; } return json_quote(name) + ":" + v; }
+@state
+fn state(x: Exchange) -> void implements Handler {
+ x.json("{\"counts\":{" + count(x,"usercode") + "," + count(x,"poll") + "," + count(x,"code_exchange") + "," + count(x,"api_key_exchange") + "," + count(x,"refresh") + "," + count(x,"revoke") + "," + count(x,"approve") + "},\"events\":[" + x.get("events") + "]}");
+}
+@page
+fn page(x: Exchange) -> void implements Handler { x.set_header("Content-Type", "text/plain"); x.send("mock device login"); }
+route("POST","/api/accounts/deviceauth/usercode","usercode");route("POST","/api/accounts/deviceauth/token","poll");route("POST","/oauth/token","token");route("POST","/oauth/revoke","revoke");route("POST","/__oauth/approve","approve");route("GET","/__oauth","state");route("GET","/codex/device","page");
+end _lmcode_
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }
