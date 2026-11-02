@@ -625,9 +625,9 @@ fn native_allowed(x: Exchange, provider: string) -> bool {
  let c = json_parse(config()); let mode = field(c,"mode"); let ok = true;
  let credential = x.header("x-api-key");
  if (provider == "anthropic" && credential == "" && bearer_ok(c)) {
-  credential = x.header("Authorization");
-  if (str_starts_with(credential, "Bearer ")) {
-   credential = str_substr(credential, 7, str_len(credential));
+  let authorization = x.header("Authorization");
+  if (str_starts_with(str_lower(authorization), "bearer ")) {
+   credential = str_substr(authorization, 7, str_len(authorization));
   }
  }
  if (provider == "gemini") {

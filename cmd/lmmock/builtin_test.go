@@ -207,7 +207,7 @@ func TestBuiltinAnthropicAcceptsBearerCredential(t *testing.T) {
 	for _, c := range []struct {
 		header, value string
 		want          int
-	}{{"x-api-key", "good-key", 200}, {"Authorization", "Bearer good-key", 200}, {"Authorization", "Bearer bad", 401}, {"x-api-key", "bad", 401}} {
+	}{{"x-api-key", "good-key", 200}, {"Authorization", "Bearer good-key", 200}, {"Authorization", "bearer good-key", 200}, {"Authorization", "good-key", 401}, {"Authorization", "Basic good-key", 401}, {"Authorization", "Bearer bad", 401}, {"x-api-key", "bad", 401}} {
 		if got := post(c.header, c.value); got != c.want {
 			t.Errorf("%s %q: got %d want %d", c.header, c.value, got, c.want)
 		}
