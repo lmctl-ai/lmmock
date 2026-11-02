@@ -35,7 +35,17 @@ Chat additionally accepts /api/v1/chat/completions.
 
 ## Run it
 
-Install the compiler and start a server:
+Without Node or the compiler, use the program embedded in the lmmock binary:
+
+~~~sh
+lmmock serve --builtin llm-api --listen 127.0.0.1:4000
+lmmock exec --builtin llm-api --config settings.json -- COMMAND
+~~~
+
+`--builtin llm-api` is exclusive with `--lmcode`. The bytecode in
+cmd/lmmock/builtin/llm-api.lmcode is generated from examples/llm-api.lms by
+scripts/compile-builtin.sh (CI checks it is current). Alternatively, install the
+compiler and start a server from source:
 
 ~~~sh
 npm i -g @lmctl-ai/lmctl
@@ -126,9 +136,15 @@ Pass --config settings.json. Available common fields:
   "apiKey": "fixture-key",
   "text": "custom reply",
   "structuredOutput": {"city": "Paris"},
-  "mode": ""
+  "mode": "",
+  "toolCalls": true
 }
 ~~~
+
+`toolCalls` defaults to true. Set `"toolCalls": false` for clients that always
+declare `tools` (coding CLIs, agents) but only need a plain reply: on every
+provider route the mock then answers with the text (`pong` by default) instead of
+calling the first offered tool. Tool-result continuations are unaffected.
 
 An omitted apiKey permits requests without authentication. The acceptance tests
 set it explicitly. Default text is pong; default structured output is
@@ -184,3 +200,11 @@ multimodal generation, provider-hosted tools, Anthropic thinking, Gemini groundi
 provider model catalogs (except the OpenAI fixture) and Responses persistence are
 not implemented. Vercel compatibility means the pinned versions
 and scenarios above, not every provider or feature in the SDK.
+
+Embedded executions emit the same invocation-result envelope as file-backed executions.
+For a custom protocol launcher, the builtin's virtual registration is the absolute
+path `builtin/llm-api.lmcode` resolved against the host working directory; no file at
+that path is read or created. Invocation metadata must register exactly that path.
+A dry invocation validates the embedded program without reading config, opening a
+listener, writing audit/readiness files, or starting a client. A normal
+`run_lmcode` launcher should use `--lmcode $DSLFILE` to execute its supplied program.

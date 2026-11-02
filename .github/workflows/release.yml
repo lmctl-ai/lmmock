@@ -55,6 +55,15 @@ jobs:
           [[ "$(build/lmmock --version | tr -d '\r')" == "lmmock $SAMPLE_VERSION" ]]
           mkdir -p dist
           cp 'build/lmmock${{ matrix.ext }}' 'dist/lmmock-${{ matrix.label }}${{ matrix.ext }}'
+      - name: Embedded llm-api builtin is current and runs without lmscript
+        run: |
+          if [[ '${{ matrix.label }}' == linux-x64 ]]; then
+            cp cmd/lmmock/builtin/llm-api.lmcode "$RUNNER_TEMP/committed.lmcode"
+            scripts/compile-builtin.sh
+            cmp "$RUNNER_TEMP/committed.lmcode" cmd/lmmock/builtin/llm-api.lmcode
+          fi
+          go test ./cmd/lmmock -run TestBuiltin
+          PATH=/nonexistent:"$(dirname "$(command -v node)")" build/lmmock exec --builtin llm-api -- node -e "fetch(process.env.LMMOCK_URL+'/v1/messages',{method:'POST',headers:{'anthropic-version':'2023-06-01','content-type':'application/json'},body:'{\"model\":\"m\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}'}).then(r=>{console.log(r.status);process.exit(r.status===200?0:1)})"
       - name: Race detector
         if: matrix.label == 'linux-x64'
         env:
