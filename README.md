@@ -35,6 +35,23 @@ lmscript examples/api.lms build/api.dslb
 lmmock exec --lmcode build/api.dslb -- node examples/client.mjs
 ```
 
+## Built-in LLM API mock (no Node, no lmscript)
+
+The release binary embeds the compiled [examples/llm-api.lms](examples/llm-api.lms)
+(OpenAI chat/responses, Anthropic `/v1/messages`, Gemini, Ollama, `/__inspect`,
+`/__requests`). Use it without any compiler:
+
+```sh
+lmmock exec --builtin llm-api -- your-llm-client-test
+lmmock serve --builtin llm-api --config cfg.json --audit-log requests.jsonl
+```
+
+`--builtin` is mutually exclusive with `--script` and `--lmcode`. Every reply is
+`pong` unless `--config` sets `"text"`. Coding CLIs always send `tools`; the mock
+normally answers such a request with a tool call, so pass `{"toolCalls": false}` in
+the config to always reply with plain text. See [docs/llm-api.md](docs/llm-api.md).
+Regenerate the embedded bytecode after editing the script with `scripts/compile-builtin.sh`.
+
 ## Write handlers in lmcode
 
 Export the exact host schema next to your script:

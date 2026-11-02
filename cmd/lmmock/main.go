@@ -81,6 +81,7 @@ func run(args []string) int {
 	f := flag.NewFlagSet(mode, flag.ContinueOnError)
 	script := f.String("script", "", "trusted .lms source (requires lmscript)")
 	dsl := f.String("lmcode", "", "precompiled .dslb file")
+	builtin := f.String("builtin", "", "embedded mock program: llm-api (no lmscript needed)")
 	listen := f.String("listen", "127.0.0.1:0", "loopback IP:port; 0 chooses a free port")
 	config := f.String("config", "", "trusted JSON configuration file, read by config()")
 	ready := f.String("ready-file", "", "write readiness JSON and remove it on exit")
@@ -95,8 +96,14 @@ func run(args []string) int {
 		return 2
 	}
 	command := f.Args()
-	if (*script == "") == (*dsl == "") || (mode == "exec" && len(command) == 0) || (mode == "serve" && len(command) > 0) {
-		fmt.Fprintln(os.Stderr, "specify exactly one of --script or --lmcode; exec requires -- COMMAND")
+	sources := 0
+	for _, set := range []bool{*script != "", *dsl != "", *builtin != ""} {
+		if set {
+			sources++
+		}
+	}
+	if sources != 1 || (mode == "exec" && len(command) == 0) || (mode == "serve" && len(command) > 0) {
+		fmt.Fprintln(os.Stderr, "specify exactly one of --script, --lmcode or --builtin; exec requires -- COMMAND")
 		return 2
 	}
 	if *script != "" {
@@ -120,7 +127,13 @@ func run(args []string) int {
 			return fail(fmt.Errorf("compile source: %w", err))
 		}
 	}
-	code, err := os.ReadFile(*dsl)
+	var code []byte
+	var err error
+	if *builtin != "" {
+		code, err = builtinProgram(*builtin)
+	} else {
+		code, err = os.ReadFile(*dsl)
+	}
 	if err != nil {
 		return fail(err)
 	}
@@ -231,6 +244,7 @@ func usage() {
   lmmock serve --script mock.lms [--listen 127.0.0.1:0] [--ready-file ready.json]
   lmmock exec --script mock.lms -- COMMAND [ARG...]
   lmmock exec --lmcode mock.dslb -- COMMAND [ARG...]
+  lmmock exec --builtin llm-api [--config cfg.json] -- COMMAND [ARG...]   (embedded LLM API mock; no lmscript)
   serve/exec: [--tls] [--tls-host DNS_NAME] [--upstream http(s)://host/base/] [--upstream-timeout 2m]
               [--upstream-read-only] [--audit-log requests.jsonl]
   lmmock check --suite assertions.json [--url URL]
