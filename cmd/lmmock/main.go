@@ -80,6 +80,7 @@ func run(args []string) (exitCode int) {
 	mode := args[0]
 	f := flag.NewFlagSet(mode, flag.ContinueOnError)
 	dsl := f.String("lmcode", "", "private program file supplied by run_lmcode")
+	builtin := f.String("builtin", "", "embedded mock program: llm-api (no lmscript needed)")
 	listen := f.String("listen", "127.0.0.1:0", "loopback IP:port; 0 chooses a free port")
 	config := f.String("config", "", "trusted JSON configuration file, read by config()")
 	ready := f.String("ready-file", "", "write readiness JSON and remove it on exit")
@@ -94,11 +95,21 @@ func run(args []string) (exitCode int) {
 		return lmcode.FailureFrame(os.Stdout, "cli", lmcode.NewError(lmcode.CLI_USAGE, "invalid execution flags"))
 	}
 	command := f.Args()
-	if *dsl == "" || (mode == "exec" && len(command) == 0) || (mode == "serve" && len(command) > 0) {
-		fmt.Fprintln(os.Stderr, "specify --lmcode FILE; exec requires -- COMMAND")
+	if (*dsl == "") == (*builtin == "") || (mode == "exec" && len(command) == 0) || (mode == "serve" && len(command) > 0) {
+		fmt.Fprintln(os.Stderr, "specify exactly one of --lmcode FILE or --builtin NAME; exec requires -- COMMAND")
 		return lmcode.FailureFrame(os.Stdout, "cli", lmcode.NewError(lmcode.CLI_USAGE, "invalid execution arguments"))
 	}
-	results, err := lmcode.InvocationResultsFromCommand([]string{*dsl})
+	// Embedded programs have a stable virtual registration; never ignore invocation
+	// metadata, including its dry flag, just because no program file is read.
+	registration := *dsl
+	if *builtin != "" {
+		var err error
+		registration, err = filepath.Abs(filepath.Join("builtin", *builtin+".lmcode"))
+		if err != nil {
+			return lmcode.FailureFrame(os.Stdout, "cli", err)
+		}
+	}
+	results, err := lmcode.InvocationResultsFromCommand([]string{registration})
 	if err != nil {
 		return lmcode.FailureFrame(os.Stdout, "cli", err)
 	}
@@ -122,7 +133,12 @@ func run(args []string) (exitCode int) {
 			exitCode = status
 		}
 	}()
-	code, err := os.ReadFile(*dsl)
+	var code []byte
+	if *builtin != "" {
+		code, err = builtinProgram(*builtin)
+	} else {
+		code, err = os.ReadFile(*dsl)
+	}
 	if err != nil {
 		return hostFailure(err)
 	}
@@ -238,6 +254,8 @@ func usage() {
   lmmock schema > schema.json
   lmmock serve --lmcode FILE [--listen 127.0.0.1:0] [--ready-file ready.json]
   lmmock exec --lmcode FILE -- COMMAND [ARG...]
+  lmmock serve --builtin llm-api [--listen 127.0.0.1:0]
+  lmmock exec --builtin llm-api [--config cfg.json] -- COMMAND [ARG...]
   serve/exec: [--tls] [--tls-host DNS_NAME] [--upstream http(s)://host/base/] [--upstream-timeout 2m]
               [--upstream-read-only] [--audit-log requests.jsonl]
   lmmock check --suite assertions.json [--url URL]
