@@ -623,6 +623,12 @@ fn native_error(x: Exchange, provider: string, status: int, kind: string, messag
 fn native_allowed(x: Exchange, provider: string) -> bool {
  let c = json_parse(config()); let mode = field(c,"mode"); let ok = true;
  let credential = x.header("x-api-key");
+ if (provider == "anthropic" && credential == "") {
+  credential = x.header("Authorization");
+  if (str_starts_with(credential, "Bearer ")) {
+   credential = str_substr(credential, 7, str_len(credential));
+  }
+ }
  if (provider == "gemini") {
   credential = x.header("x-goog-api-key");
   if (credential == "") { credential = x.query("key"); }

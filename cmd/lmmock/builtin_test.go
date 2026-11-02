@@ -176,3 +176,40 @@ func TestBuiltinRejectsInvalidInvocation(t *testing.T) {
 		t.Fatalf("ignored registration mismatch: %d %s", code, out)
 	}
 }
+
+// Claude Code authenticates with Authorization: Bearer (ANTHROPIC_AUTH_TOKEN);
+// the Anthropic API accepts that as well as x-api-key.
+func TestBuiltinAnthropicAcceptsBearerCredential(t *testing.T) {
+	code, err := builtinProgram("llm-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := filepath.Join(t.TempDir(), "cfg.json")
+	os.WriteFile(cfg, []byte(`{"apiKey":"good-key","toolCalls":false}`), 0600)
+	engine, err := mock.NewWithOptions(code, mock.Options{ConfigFile: cfg})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(engine)
+	defer server.Close()
+	post := func(header, value string) int {
+		req, _ := http.NewRequest("POST", server.URL+"/v1/messages", strings.NewReader(`{"model":"m","max_tokens":5,"messages":[{"role":"user","content":"hi"}]}`))
+		req.Header.Set("anthropic-version", "2023-06-01")
+		req.Header.Set("content-type", "application/json")
+		req.Header.Set(header, value)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	for _, c := range []struct {
+		header, value string
+		want          int
+	}{{"x-api-key", "good-key", 200}, {"Authorization", "Bearer good-key", 200}, {"Authorization", "Bearer bad", 401}, {"x-api-key", "bad", 401}} {
+		if got := post(c.header, c.value); got != c.want {
+			t.Errorf("%s %q: got %d want %d", c.header, c.value, got, c.want)
+		}
+	}
+}
