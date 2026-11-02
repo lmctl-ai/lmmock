@@ -464,6 +464,7 @@ fn render_response(name: string, model: string, item: Json, reason: string) -> s
 # (a retry scenario can then prove the 429 attempt really happened). Both are plain state strings.
 fn record(x: Exchange) -> void { x.set("last",x.request_json()); x.set("count",str(x.increment("llm-requests"))); }
 fn tools_off(c: Json) -> bool { let off = false; if (c.has("toolCalls")) { off = !c.get("toolCalls").as_bool(); } return off; }
+fn bearer_ok(c: Json) -> bool { let ok = false; if (c.has("anthropicBearer")) { ok = c.get("anthropicBearer").as_bool(); } return ok; }
 fn field(j: Json, key: string) -> string { let value = ""; if (j.has(key)) { value = j.get(key).as_string(); } return value; }
 @chat
 fn completion(x: Exchange) -> void implements Handler {
@@ -623,7 +624,7 @@ fn native_error(x: Exchange, provider: string, status: int, kind: string, messag
 fn native_allowed(x: Exchange, provider: string) -> bool {
  let c = json_parse(config()); let mode = field(c,"mode"); let ok = true;
  let credential = x.header("x-api-key");
- if (provider == "anthropic" && credential == "") {
+ if (provider == "anthropic" && credential == "" && bearer_ok(c)) {
   credential = x.header("Authorization");
   if (str_starts_with(credential, "Bearer ")) {
    credential = str_substr(credential, 7, str_len(credential));
