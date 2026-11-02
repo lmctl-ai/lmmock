@@ -35,4 +35,5 @@ fn rpc(x: Exchange) -> void implements Handler {
 }
 route("GET","/","cookie");route("POST","/api/{method...}","rpc");
 end _lmcode_
-savedsl(p,ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

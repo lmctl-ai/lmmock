@@ -11,29 +11,32 @@ Download the executable for your platform from
 [Releases](https://github.com/lmctl-ai/lmmock/releases), or build it with Go 1.26:
 
 ```sh
-lmmock exec --script examples/api.lms -- node examples/client.mjs
+lmscript examples/api.lms node examples/client.mjs
 ```
 
 Run these examples from a checkout, or extract `examples.tar.gz` from a release.
-The npm package @lmctl-ai/lmctl supplies both `lmscript` and `lmctl`; keep a matching compiler on your PATH. Source mode uses `lmscript`
-(or `LMSCRIPT_BIN`) to compile the script before opening the listener.
-
-`exec` binds `127.0.0.1:0`, starts the client command with `LMMOCK_URL` set to the
-allocated URL, forwards its input/output, returns its exit code, and closes the
-server when it finishes. Pass your own client test command after `--`:
+The npm package @lmctl-ai/lmctl supplies lmscript (0.2.454+). A source program
+constructs an opaque `_lmcode_` value, then calls `run_lmcode`. The interpreter writes
+and removes the private program file; there is no public compile/export step.
 
 ```sh
-lmmock exec --script examples/faults.lms -- go test ./integration/...
-lmmock exec --script examples/stateful.lms -- npm test
+lmscript examples/faults.lms go test ./integration/...
+lmscript examples/stateful.lms npm test
 ```
 
-The executable can run precompiled bytecode without Node or lmscript installed:
+The source's command template is `lmmock exec --lmcode $DSLFILE -- CLIENT...`.
+`exec` binds loopback, gives the client LMMOCK_URL, and closes the listener when it
+exits. Under run_lmcode, client stdout is returned as result.stdout (with result.code = 0), and stdout ends in exactly
+one SDK invocation frame. Host load/run failures exit 3; client failures are
+application failures (exit 4). Standalone exec retains the client's exit status.
+Dry invocation validates bytecode but starts no listener/client and creates no audit log.
+The low-level `--lmcode FILE` input is owned by lmscript, not a filename returned to scripts.
 
-```sh
-mkdir -p build
-lmscript examples/api.lms build/api.dslb
-lmmock exec --lmcode build/api.dslb -- node examples/client.mjs
-```
+Build/test tooling uses `node scripts/capture-fixture.mjs SOURCE.lms OUTPUT.lmcode`
+to capture the private host input for embedded presets and byte-level mutation tests.
+This is a trusted fixture adapter, not a production compiler API. Non-HTTP handler
+sources use caller-supplied invocation command argv; their native stdio/wire protocol
+engines consume embedded/captured fixtures rather than the HTTP exec command.
 
 ## Write handlers in lmcode
 
@@ -59,7 +62,7 @@ fn echo_body(x: Exchange) -> void implements Handler {
 route("GET", "/health", "health");
 route("POST", "/echo", "echo");
 end _lmcode_
-savedsl(program, ARGV[0]);
+r = run_lmcode(program, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
 ```
 
 Annotations are identifiers. `route(method, path, annotation)` binds the endpoint
@@ -149,7 +152,7 @@ upstream with the `serve`/`exec` options below. No lmcode or schema change is ne
 so existing precompiled scripts remain compatible:
 
 ```sh
-lmmock serve --script mock.lms --upstream http://127.0.0.1:8080/repository/public/ \
+lmmock serve --lmcode "$PRIVATE_PROGRAM_FILE" --upstream http://127.0.0.1:8080/repository/public/ \
   --upstream-timeout 2m --upstream-read-only --audit-log requests.jsonl
 ```
 
@@ -194,7 +197,7 @@ within the server and are best effort. Client disconnects are audited as
 `client closed request`. The CLI prints the audit-log path to stderr at startup.
 
 ```sh
-lmmock serve --script examples/api.lms --ready-file ready.json
+lmmock serve --lmcode "$PRIVATE_PROGRAM_FILE" --ready-file ready.json
 ```
 
 `serve` prints one readiness JSON line, for example
@@ -222,7 +225,7 @@ command in one step; no background shell process or fixed port is needed:
 
 ```yaml
 - name: Test against mock API
-  run: lmmock exec --script test/mocks/api.lms -- npm run test:integration
+  run: lmscript test/mocks/api.lms npm run test:integration
 ```
 
 This repository's workflow builds and tests Linux x64/arm64, macOS x64/arm64 and
@@ -306,7 +309,7 @@ Each preset ships an assertion suite, `examples/<service>-client.json`, run by
 `tests/protocols.mjs`:
 
 ```sh
-lmmock exec --lmcode build/slack.dslb -- lmmock check --suite examples/slack-client.json
+lmmock exec --lmcode build/slack.lmcode -- lmmock check --suite examples/slack-client.json
 ```
 
 ## LLM and agent workflow tests
@@ -381,7 +384,7 @@ complete tool-call round trip.
 lmmock includes its own native assertion client:
 
 ```sh
-lmmock exec --script examples/llm.lms --config examples/llm-config.json -- lmmock check --suite examples/llm-client.json
+lmmock exec --lmcode "$PRIVATE_PROGRAM_FILE" --config examples/llm-config.json -- lmmock check --suite examples/llm-client.json
 # For a server started with the same llm-config.json:
 lmmock check --url http://127.0.0.1:8080 --suite examples/llm-client.json
 ```
@@ -395,12 +398,9 @@ Redirects are not followed. Responses are limited to 4 MiB. Output is one JSON
 summary with a pass count and exit 0/1; response bodies and captured tokens are
 never printed. Invalid CLI usage exits 2.
 
-[examples/lmcurl-client.lms](examples/lmcurl-client.lms) independently checks chat
-and SSE using released lmcurl v0.1.2. That release reads bytecode v5, so its test
-uses an isolated `@lmctl-ai/lmctl@0.2.426` compiler. Compile the lmmock server with
-the current compiler first; do not replace it with the v5 compiler. Linux CI
-runs this compatibility check against downloaded, checksum-verified lmcurl
-binaries. macOS/Windows run the native lmmock client and protocol suites.
+[examples/lmcurl-client.lms](examples/lmcurl-client.lms) checks chat and SSE with a
+current lmcode-protocol lmcurl host. The retired v0.1.2/v5 binary cannot consume the
+current protocol; its immutable-version compatibility gate is no longer run.
 
 ### GitHub Copilot CLI Integration
 
@@ -408,7 +408,7 @@ binaries. macOS/Windows run the native lmmock client and protocol suites.
 
 ```sh
 # Run Copilot CLI against lmmock
-lmmock exec --lmcode build/copilot.dslb --config examples/copilot-config.json -- \
+lmmock exec --lmcode build/copilot.lmcode --config examples/copilot-config.json -- \
   node tests/copilot.mjs
 ```
 
@@ -463,7 +463,7 @@ mock for clients whose prompts differ from this exact captured conversation.
 Compile examples/scenario.lms with the matching examples/schema.json, then replay:
 
 ```sh
-lmmock exec --lmcode build/scenario.dslb --config captures/copilot/scenario.json -- YOUR_TEST_COMMAND
+lmmock exec --lmcode build/scenario.lmcode --config captures/copilot/scenario.json -- YOUR_TEST_COMMAND
 ```
 
 Handlers remain annotated lmcode entries implementing the Handler single-method
@@ -531,8 +531,8 @@ temporary directory; private keys stay in memory. Close/shutdown removes the CA
 file. Readiness JSON adds `ca_cert` and its URL uses https.
 
 ```sh
-lmmock exec --tls --tls-host fixed.mock.test --script examples/streaming.lms -- YOUR_CLIENT
-lmmock serve --tls --tls-host fixed.mock.test --script examples/streaming.lms --ready-file ready.json
+lmmock exec --tls --tls-host fixed.mock.test --lmcode "$PRIVATE_PROGRAM_FILE" -- YOUR_CLIENT
+lmmock serve --tls --tls-host fixed.mock.test --lmcode "$PRIVATE_PROGRAM_FILE" --ready-file ready.json
 ```
 
 The exec child receives LMMOCK_URL, LMMOCK_CA_CERT, SSL_CERT_FILE,

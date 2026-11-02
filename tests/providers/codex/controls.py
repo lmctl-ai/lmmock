@@ -17,15 +17,15 @@ cases=[
 pkg=Path(os.environ['LMCTL_PACKAGE_ROOT']);node=shutil.which('node');assert node
 with tempfile.TemporaryDirectory(prefix='codex-controls-') as temp:
  work=Path(temp)/'repo';shutil.copytree(root,work,ignore=shutil.ignore_patterns('.git','build','node_modules','__pycache__'))
- source=(work/source_path).read_text();code=(work/'internal/rpcstdio/presets/codex.dslb').read_bytes()
+ source=(work/source_path).read_text();code=(work/'internal/rpcstdio/presets/codex.lmcode').read_bytes()
  def run(pattern):
   r=subprocess.run(['go','test','./internal/rpcstdio','-count=1','-run',pattern],cwd=work,capture_output=True,text=True)
   return r,r.stdout+r.stderr
  r,out=run('^TestCodexProvider');assert r.returncode==0,out;print('BASELINE Codex handlers PASS',flush=True)
  for name,before,after,test in cases:
   assert source.count(before)==1,('stale mutation anchor',name,source.count(before))
-  (work/source_path).write_text(source.replace(before,after));(work/'internal/rpcstdio/presets/codex.dslb').write_bytes(code)
-  r=subprocess.run([node,str(pkg/'bin/lmscript'),'--no-preflight',source_path,'internal/rpcstdio/presets/codex.dslb'],cwd=work,capture_output=True,text=True);assert r.returncode==0,(name,r.stdout,r.stderr)
+  (work/source_path).write_text(source.replace(before,after));(work/'internal/rpcstdio/presets/codex.lmcode').write_bytes(code)
+  r=subprocess.run([node,'scripts/capture-fixture.mjs',source_path,'internal/rpcstdio/presets/codex.lmcode'],cwd=work,capture_output=True,text=True);assert r.returncode==0,(name,r.stdout,r.stderr)
   r,out=run('^'+test+'$');assert r.returncode!=0 and '--- FAIL:' in out and '[build failed]' not in out and 'panic:' not in out,(name,out)
   print('CAUGHT '+name+' at '+test,flush=True)
   if name=='usage event':

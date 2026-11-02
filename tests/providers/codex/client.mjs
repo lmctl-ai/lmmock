@@ -35,7 +35,7 @@ export function prepareCase(selected,{model='gpt-5.6-sol',resume=false,batch=fal
  return evidence;
  }};
 }
-export function runCase(selected,options={}){const c=prepareCase(selected,options);return c.collect(spawnSync(process.execPath,[path.join(c.pkg,"bin/lmscript"),"--no-preflight",c.script],{cwd:c.dir,env:c.env,encoding:"utf8"}));}
+export function runCase(selected,options={}){const c=prepareCase(selected,options);return c.collect(spawnSync(process.execPath,[path.join(c.pkg,"bin/lmscript"),c.script],{cwd:c.dir,env:c.env,encoding:"utf8"}));}
 
 if(process.argv.includes('--probe')){
  for(const selected of ['success','malformed-usage','wrong-turn-id','app-error','rpc-error']){const e=runCase(selected);console.log(JSON.stringify(e,(k,v)=>k==='cleanup'?undefined:v));e.cleanup();}

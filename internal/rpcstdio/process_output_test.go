@@ -9,7 +9,7 @@ import (
 )
 
 func TestProcessStdoutStderrAndExit(t *testing.T) {
-	code, err := os.ReadFile("testdata/process-output.dslb")
+	code, err := os.ReadFile("testdata/process-output.lmcode")
 	if err != nil {
 		t.Fatal("read protocol fixture", err)
 	}

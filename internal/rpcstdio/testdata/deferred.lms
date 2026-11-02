@@ -3,4 +3,4 @@ p = _lmcode_ schema="../presets/schema.json";
 @finish fn finish(x: RPC) -> void implements RPCHandler { x.reply_to(x.get("pending"),"{\"done\":true}"); }
 bind("wait","wait");bind("finish","finish");
 end _lmcode_
-savedsl(p,ARGV[0]);
+r = run_lmcode(p, {command: ARGV}); require(r.ok, "fixture host failed");

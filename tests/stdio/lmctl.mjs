@@ -22,10 +22,10 @@ try{
  'r = lm_prompt('+JSON.stringify(team)+', "Worker", "ping"); assert(r.status == "ok"); assert(r.reply == "pong"); println("PASS published lm_agent and lm_prompt through ACP");\n');
  const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.startsWith('LMCTL_')&&!key.startsWith('LMBEE_')&&!/TOKEN|API_KEY|SECRET|PASSWORD/.test(key)));
  Object.assign(env,{HOME:dir,USERPROFILE:dir,LMCTL_HOME:path.join(dir,'profile'),LMCTL_DB:path.join(dir,'state.db'),XDG_CACHE_HOME:path.join(dir,'cache'),PATH:bin+path.delimiter+process.env.PATH});
- const run=spawnSync(compiler,['--no-preflight',script],{cwd:dir,env,encoding:'utf8'});assert.equal(run.status,0,run.stdout+run.stderr);assert.match(run.stdout,/PASS published/);process.stdout.write(run.stdout);
+ const run=spawnSync(compiler,[script],{cwd:dir,env,encoding:'utf8'});assert.equal(run.status,0,run.stdout+run.stderr);assert.match(run.stdout,/PASS published/);process.stdout.write(run.stdout);
  // A third turn is unscripted. It must remain a client-visible error, not an ok
  // empty reply or the last successful value.
  fs.writeFileSync(script,'r = lm_agent({provider:"miniplayer", model:"fixture-model", sessionid:"fixture-session"}, "ping"); assert(r.status != "ok"); println("PASS unscripted ACP turn remains failure");\n');
- const bad=spawnSync(compiler,['--no-preflight',script],{cwd:dir,env,encoding:'utf8'});assert.equal(bad.status,0,bad.stdout+bad.stderr);assert.match(bad.stdout,/PASS unscripted/);process.stdout.write(bad.stdout);
+ const bad=spawnSync(compiler,[script],{cwd:dir,env,encoding:'utf8'});assert.equal(bad.status,0,bad.stdout+bad.stderr);assert.match(bad.stdout,/PASS unscripted/);process.stdout.write(bad.stdout);
  console.log('MCP service integration not claimed: npm lmctl 0.2.448 ships no lmbee/mcp service entrypoint; standalone owned MCP peer test covers protocol.');
 }finally{fs.rmSync(dir,{recursive:true,force:true});}

@@ -101,19 +101,19 @@ if(process.argv[3]==='client') {
  try {for(const scenario of ['oauth','llm','github','bitbucket','circleci','paypal']) {
   const config=path.join(dir,scenario+'.json');const logFile=path.join(dir,'audit.jsonl');fs.writeFileSync(logFile,'');
   fs.writeFileSync(config,JSON.stringify({clients:{test:{clientSecret:'fixture-secret',redirectUris:['http://127.0.0.1:1/callback'],authStyle:'header'}},requirePkce:true,rotateRefreshTokens:true,logFile}));
-  const r=spawnSync(binary,['exec','--lmcode',`build/${scenario}.dslb`,'--config',config,'--',process.execPath,import.meta.filename,binary,'client',scenario],{env:{...process.env,MOCK_CONFIG:config},encoding:'utf8',timeout:30000});assert.equal(r.status,0,r.stdout+r.stderr);process.stdout.write(r.stdout);
+  const r=spawnSync(binary,['exec','--lmcode',`build/${scenario}.lmcode`,'--config',config,'--',process.execPath,import.meta.filename,binary,'client',scenario],{env:{...process.env,MOCK_CONFIG:config},encoding:'utf8',timeout:30000});assert.equal(r.status,0,r.stdout+r.stderr);process.stdout.write(r.stdout);
  }
   // n8n connector presets: each fixture serves its own suite through `exec` + `check`.
   for(const preset of ['slack','discord','telegram','jira','stripe','notion','airtable','hubspot','gitlab','asana','trello','pagerduty','datadog','linear','twilio','sendgrid','mailchimp','bitbucket','circleci','paypal','dropbox','box','cloudflare','shopify','wordpress','woocommerce','clickup','typeform']) {
-   const r=spawnSync(binary,['exec','--lmcode',`build/${preset}.dslb`,'--',binary,'check','--suite',`examples/${preset}-client.json`],{encoding:'utf8',timeout:60000});
-   assert.equal(r.status,0,preset+': '+r.stdout+r.stderr);const result=JSON.parse(r.stdout.trim().split('\n').pop());assert.equal(result.ok,true,preset);
+   const r=spawnSync(binary,['exec','--lmcode',`build/${preset}.lmcode`,'--',binary,'check','--suite',`examples/${preset}-client.json`],{encoding:'utf8',timeout:60000});
+   assert.equal(r.status,0,preset+': '+r.stdout+r.stderr);assert.match(r.stdout,/LMCODE_RETURN_BEGIN\n\{"ok":true,"result":null\}\nLMCODE_RETURN_END\n$/);const result=JSON.parse(r.stdout.split('LMCODE_RETURN_BEGIN')[0].trim().split('\n').pop());assert.equal(result.ok,true,preset);
    console.log(`PASS ${preset} connector preset (${result.passed} checks)`);
   }
   for (const preset of ['shopify','wordpress','woocommerce']) {
    const config=path.join(dir,preset+'.json');
    fs.writeFileSync(config,JSON.stringify({token:'override-token',username:'override-user',password:'override-secret',consumerKey:'override-user',consumerSecret:'override-secret'}));
    for (const mode of ['paging','override']) {
-    const args=['exec','--lmcode',`build/${preset}.dslb`,...(mode==='override'?['--config',config]:[]),'--',process.execPath,'tests/commerce.mjs',preset,mode];
+    const args=['exec','--lmcode',`build/${preset}.lmcode`,...(mode==='override'?['--config',config]:[]),'--',process.execPath,'tests/commerce.mjs',preset,mode];
     const r=spawnSync(binary,args,{encoding:'utf8',timeout:30000});
     assert.equal(r.status,0,r.stdout+r.stderr);process.stdout.write(r.stdout);
    }

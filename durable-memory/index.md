@@ -1,14 +1,14 @@
 # lmmock notes
 
-Go HTTP mock host backed by lmcode-go v0.6.38. Public repo lmctl-ai/lmmock, MIT.
+Go HTTP mock host backed by lmcode-go 06cd9ae991d9. Public repo lmctl-ai/lmmock, MIT.
 
 - **Start here for new HTTP services:** [Handler implementation and n8n expansion workflow](adding-n8n-http-services.md). Includes a working annotated Handler, language constraints, n8n source inspection, suite registration, lmconn fixture sync and Actions verification.
 
 - `internal/mock/schema.json` is the exact embedded compiler schema. Keep `examples/schema.json` byte-identical; schema changes require recompilation.
 - `@annotation fn name(x: Exchange) -> void implements Handler` entries are bound by top-level `route(method,path,annotation)`. Body runs only at startup. Startup validates every entry, binding and ServeMux route before listening.
 - `internal/mock/mock.go` owns HTTP, shared state and VM adapters. Per-request registry/program loading avoids SDK registry run-state sharing. State operations are mutex-protected; increment is atomic.
-- `cmd/lmmock` implements source/bytecode modes, loopback-only listeners, readiness, signal shutdown and `exec` client lifetime. Source mode invokes current npm lmscript, including Windows shim resolution. Scripts are trusted, not sandboxed; VM loops have no instruction deadline.
-- `test.lms` compiles all examples/negative fixtures, runs Go tests, builds with CGO disabled, and runs Node real-process/client integration checks. No Python test driver. `go test` requires those generated build fixtures.
+- `cmd/lmmock` consumes private --lmcode program files and implements loopback-only listeners, readiness, signal shutdown and `exec` client lifetime. Source programs invoke it through run_lmcode; test/build fixture capture resolves Windows npm shims. Scripts are trusted, not sandboxed; VM loops have no instruction deadline.
+- `test.lms` compiles all examples/negative fixtures, runs Go tests, builds with CGO disabled, and runs Node real-process/client integration checks. The driver also runs Python mutation controls. `go test` requires those generated build fixtures.
 - Actions tests five native platforms and a Linux race check across all internal packages. Only successful main builds publish binaries, example archive, licenses and checksums.
 - Workspace operator files (`*.lmc`, p1.txt, p2.txt) are local and intentionally excluded from the public repository.
 
@@ -27,7 +27,7 @@ Go HTTP mock host backed by lmcode-go v0.6.38. Public repo lmctl-ai/lmmock, MIT.
 
 - [Case Study: GitHub Copilot CLI Mock & Integration](copilot-case-study.md): Design and implementation of the `@github/copilot` mock fixture (`examples/copilot.lms`). Covers OpenAI Streaming Responses protocol sequence order, monotonic sequence numbers, Anthropic Messages streaming, tool execution (`bash` calling), declarative suite (`examples/copilot-client.json`), live integration (`tests/copilot.mjs`), and 5-platform GitHub Actions CI matrix verification.
 
-- [Runtime JSON data flow](../docs/runtime-json.md): response objects are constructed in lmscript and passed through existing interpolation into lmcode. Rendering uses the SDK standard `template_render(string, Json) -> string`; lmmock has no local template engine. Arbitrary text, nested context maps, indexed lists, loops and boolean conditions are supported. Substitution is one pass; inserted strings stay literal. JSON string tokens must be explicitly encoded with `json_quote`, then the rendered output validated with `json_parse`. `json_with` remains a host helper for immutable JSON Pointer updates. This is response data, not schema.json. --script captures values at startup; --lmcode uses previously captured values. No Go rebuild for data changes. Host schema v3 accepts frozen v1 bytecode; v2 fixtures must be recompiled because local `json_render` was removed. Keep both host schema copies byte-identical. Schema remains explicitly maintained, not reflection-generated.
+- [Runtime JSON data flow](../docs/runtime-json.md): response objects are constructed in lmscript and passed through existing interpolation into lmcode. Rendering uses the SDK standard `template_render(string, Json) -> string`; lmmock has no local template engine. Arbitrary text, nested context maps, indexed lists, loops and boolean conditions are supported. Substitution is one pass; inserted strings stay literal. JSON string tokens must be explicitly encoded with `json_quote`, then the rendered output validated with `json_parse`. `json_with` remains a host helper for immutable JSON Pointer updates. This is response data, not schema.json. --lmcode "$PRIVATE_PROGRAM_FILE" values at startup; --lmcode uses previously captured values. No Go rebuild for data changes. Host schema v3 accepts frozen v1 bytecode; v2 fixtures must be recompiled because local `json_render` was removed. Keep both host schema copies byte-identical. Schema remains explicitly maintained, not reflection-generated.
 
 - [Streaming, TLS and request observations](streaming-tls.md): direct event flush, framing faults, per-run public CA exports, fixed HTTPS client routing, request-log/reset primitives and causal compiled controls.
 - [Stdio protocol boundary](stdio.md): annotated ACP/MCP/agent presets, framing, controls and published-client proof.
@@ -38,3 +38,5 @@ Go HTTP mock host backed by lmcode-go v0.6.38. Public repo lmctl-ai/lmmock, MIT.
 
 - [Print and sidecar provider fixtures](provider-lane-e.md): shared P0 manifests, actual published Agy/Pi/lmplayer/DSH/Muse adapters, native IO/exit/model facts, zstd/MSP session resume, compiled controls and explicit unqualified empty-output client defects.
 - [WebSocket, HTTP/2 and descriptor-driven gRPC](wire-protocols.md): protocol-only Go adapters, SAM application dispatch, pinned descriptors, real clients, controls and the runnable LF extension.
+
+- [Invocation protocol](invocation-protocol.md): SDK collector, dry passivity, source execution and fixture capture.

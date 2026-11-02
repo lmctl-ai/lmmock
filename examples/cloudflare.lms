@@ -30,4 +30,5 @@ route("POST","/client/v4/zones/{zone}/origin_tls_client_auth","upload_certificat
 route("GET","/client/v4/zones/{zone}/origin_tls_client_auth/{id}","get_certificate");
 route("DELETE","/client/v4/zones/{zone}/origin_tls_client_auth/{id}","delete_certificate");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

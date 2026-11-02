@@ -13,7 +13,7 @@ GitHub Copilot CLI (`@github/copilot@1.0.105`) supports multiple wire protocols 
 4. **Tool Execution Flow**: Structured assistant tool calling triggering local shell/bash execution.
 5. **Model Catalog & Discovery**: Platform endpoints (`/models`, `/auto`) queried prior to model execution.
 
-The mock implementation is authored in lmcode DSL at [`examples/copilot.lms`](file:///home/ubuntu/repos/lmctl-ai/lmmock/examples/copilot.lms) and compiled to standalone bytecode `build/copilot.dslb`.
+The mock implementation is authored in lmcode DSL at [`examples/copilot.lms`](file:///home/ubuntu/repos/lmctl-ai/lmmock/examples/copilot.lms) and compiled to standalone bytecode `build/copilot.lmcode`.
 
 ---
 
@@ -68,7 +68,7 @@ A Node.js test driver that spawns the real `@github/copilot` executable against 
 
 Ran via `lmmock exec`:
 ```bash
-lmmock exec --lmcode build/copilot.dslb --config examples/copilot-config.json -- node tests/copilot.mjs
+lmmock exec --lmcode build/copilot.lmcode --config examples/copilot-config.json -- node tests/copilot.mjs
 ```
 
 ---
@@ -80,7 +80,7 @@ The Copilot CLI integration test is registered in [`.github/workflows/release.ym
 - name: GitHub Copilot CLI integration test
   run: |
     npm install -g @github/copilot
-    ./build/lmmock exec --lmcode build/copilot.dslb --config examples/copilot-config.json -- node tests/copilot.mjs
+    ./build/lmmock exec --lmcode build/copilot.lmcode --config examples/copilot-config.json -- node tests/copilot.mjs
 ```
 
 Executed across all 5 runner targets:

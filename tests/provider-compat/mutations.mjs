@@ -58,7 +58,7 @@ try {
     const baseScript = path.join(dir, `${h.family}-base.lms`);
     const baseBin = path.join(dir, `${h.family}-base.bin`);
     fs.writeFileSync(baseScript, sourceWithSchema);
-    const compileBase = spawnSync(lmscript.command, [...lmscript.args, '--no-preflight', baseScript, baseBin], {encoding: 'utf8'});
+    const compileBase = spawnSync(process.execPath, [path.resolve('scripts/capture-fixture.mjs'), baseScript, baseBin], {encoding: 'utf8'});
     assert.equal(compileBase.status, 0, `Baseline compile failed for ${h.family}: ${compileBase.stderr}`);
 
     const runBase = spawnSync(binary, ['exec', '--lmcode', baseBin, '--config', tempConfig, '--', process.execPath, 'tests/provider-compat/failing-controls.mjs'], {
@@ -74,7 +74,7 @@ try {
     const mutantScript = path.join(dir, `${h.family}-mutant.lms`);
     const mutantBin = path.join(dir, `${h.family}-mutant.bin`);
     fs.writeFileSync(mutantScript, mutatedSource);
-    const compileMutant = spawnSync(lmscript.command, [...lmscript.args, '--no-preflight', mutantScript, mutantBin], {encoding: 'utf8'});
+    const compileMutant = spawnSync(process.execPath, [path.resolve('scripts/capture-fixture.mjs'), mutantScript, mutantBin], {encoding: 'utf8'});
     assert.equal(compileMutant.status, 0, `Mutant compile failed for ${h.family}: ${compileMutant.stderr}`);
 
     // Re-copy fresh config for the mutant run
@@ -96,7 +96,7 @@ try {
   const mutantBin = path.join(dir, 'ollama-tool-args-mutant.bin');
   const mutantConfig = path.join(dir, 'ollama-tool-args-config.json');
   fs.writeFileSync(mutantScript, ollamaMutant);
-  const compileMutant = spawnSync(lmscript.command, [...lmscript.args, '--no-preflight', mutantScript, mutantBin], {encoding: 'utf8'});
+  const compileMutant = spawnSync(process.execPath, [path.resolve('scripts/capture-fixture.mjs'), mutantScript, mutantBin], {encoding: 'utf8'});
   assert.equal(compileMutant.status, 0, `Ollama tool-argument mutant compile failed: ${compileMutant.stderr}`);
   fs.copyFileSync('fixtures/ollama/wire.json', mutantConfig);
   const runMutant = spawnSync(binary, ['exec', '--lmcode', mutantBin, '--config', mutantConfig, '--', process.execPath, 'tests/provider-compat/failing-controls.mjs'], {

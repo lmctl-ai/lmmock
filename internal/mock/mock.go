@@ -42,6 +42,7 @@ type store struct {
 	history *requestHistory
 }
 type Engine struct {
+	result    *lmcode.ResultSink
 	options   Options
 	code      []byte
 	schema    []byte
@@ -67,6 +68,11 @@ type exchange struct {
 func New(code []byte) (*Engine, error) { return NewWithOptions(code, Options{}) }
 
 func NewWithOptions(code []byte, options Options) (*Engine, error) {
+	return NewWithInvocation(code, options, nil)
+}
+
+// NewWithInvocation verifies and registers the program in its run-owned result collector.
+func NewWithInvocation(code []byte, options Options, results *lmcode.InvocationResults) (*Engine, error) {
 	e := &Engine{options: options, code: append([]byte(nil), code...), state: &store{values: map[string]string{}, counts: map[string]int64{}}, mux: http.NewServeMux()}
 	if options.RequestLog || options.RequestLogBodies {
 		e.state.history = &requestHistory{bodies: options.RequestLogBodies}
@@ -103,6 +109,15 @@ func NewWithOptions(code []byte, options Options) (*Engine, error) {
 	if err != nil {
 		return nil, err
 	}
+	if results != nil {
+		contract, err := lmcode.ResultContractFromSchema(e.schema)
+		if err != nil {
+			return nil, err
+		}
+		if e.result, err = results.Select(0, reg, contract); err != nil {
+			return nil, err
+		}
+	}
 	entries := map[string]int{}
 	for i, v := range p.Entries() {
 		if v.Annotation == "" || v.Iface != "interface Handler(Exchange) -> void" || len(v.Params) != 1 || v.Params[0] != "Exchange" || v.Returns != "void" {
@@ -112,6 +127,10 @@ func NewWithOptions(code []byte, options Options) (*Engine, error) {
 			return nil, fmt.Errorf("duplicate annotation @%s", v.Annotation)
 		}
 		entries[v.Annotation] = i
+	}
+	// Dry mode validates handlers but never runs initialization closures.
+	if results != nil && results.Dry() {
+		return e, nil
 	}
 	if err = p.Run(lmcode.NewContext(), reg); err != nil {
 		return nil, err
@@ -389,4 +408,15 @@ func (s *Server) Close() error {
 		<-s.done
 	})
 	return s.closeError
+}
+
+// SetClientOutput records captured stdout after the owned client exits successfully.
+func (e *Engine) SetClientOutput(stdout string) error {
+	if e.result == nil {
+		return errors.New("missing invocation result sink")
+	}
+	if err := e.result.Put("stdout", lmcode.String(stdout)); err != nil {
+		return err
+	}
+	return e.result.Put("code", lmcode.Int(0))
 }

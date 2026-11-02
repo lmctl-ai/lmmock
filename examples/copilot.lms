@@ -279,4 +279,5 @@ route("POST", "/mcp/readonly", "platform_empty_obj");
 route("POST", "/telemetry", "platform_empty_obj");
 
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

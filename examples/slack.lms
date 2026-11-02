@@ -69,4 +69,5 @@ route("GET", "/api/conversations.list", "channels"); route("POST", "/api/convers
 route("GET", "/api/users.list", "users"); route("POST", "/api/users.list", "users");
 route("GET", "/api/users.info", "user_info"); route("POST", "/api/users.info", "user_info");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

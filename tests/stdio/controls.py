@@ -17,7 +17,7 @@ cases=[
 with tempfile.TemporaryDirectory(prefix='stdio-controls-') as tmp:
  work=pathlib.Path(tmp)/'repo';shutil.copytree(root,work,ignore=shutil.ignore_patterns('.git','build','node_modules','__pycache__'))
  originals={name:(work/name).read_bytes() for _,name,_,_,_,_ in cases}
- bins={name:(work/'internal/rpcstdio/presets'/name).read_bytes() for name in ['acp.dslb','claude.dslb']}
+ bins={name:(work/'internal/rpcstdio/presets'/name).read_bytes() for name in ['acp.lmcode','claude.lmcode']}
  def run(pattern,package):
   p=subprocess.run(['go','test',package,'-count=1','-run',pattern],cwd=work,capture_output=True,text=True)
   return p.returncode,p.stdout+p.stderr
@@ -35,7 +35,7 @@ with tempfile.TemporaryDirectory(prefix='stdio-controls-') as tmp:
    if os.name=='nt':
     resolved=pathlib.Path(shutil.which(compiler) or compiler)
     if resolved.suffix.lower()=='.cmd':command=['node',str(resolved.parent.parent/'@lmctl-ai/lmctl/bin/lmscript')]
-   p=subprocess.run(command+['--no-preflight','internal/rpcstdio/presets/'+preset+'.lms','internal/rpcstdio/presets/'+preset+'.dslb'],cwd=work,capture_output=True,text=True)
+   p=subprocess.run(['node','scripts/capture-fixture.mjs','internal/rpcstdio/presets/'+preset+'.lms','internal/rpcstdio/presets/'+preset+'.lmcode'],cwd=work,capture_output=True,text=True)
    assert p.returncode==0,(label,p.stdout,p.stderr)
   code,out=run(pattern,'./cmd/lmmock' if name.startswith('cmd/') else './internal/rpcstdio')
   assert code!=0 and '--- FAIL:' in out and '[build failed]' not in out and 'panic:' not in out,(label,out)

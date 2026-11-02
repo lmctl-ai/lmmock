@@ -24,8 +24,10 @@ jobs:
       - name: Private published compiler and pinned real HTTP client
         run: |
           npm install --prefix "$RUNNER_TEMP/lmctl" @lmctl-ai/lmctl@0.2.448
-          echo "$RUNNER_TEMP/lmctl/node_modules/.bin" >> "$GITHUB_PATH"
-          echo "LMSCRIPT_BIN=$RUNNER_TEMP/lmctl/node_modules/.bin/lmscript" >> "$GITHUB_ENV"
+          npm install --prefix "$RUNNER_TEMP/lmcode-compiler" @lmctl-ai/lmctl@0.2.454
+          echo "LMSCRIPT_BIN=$RUNNER_TEMP/lmcode-compiler/node_modules/.bin/lmscript" >> "$GITHUB_ENV"
+          echo "LMMOCK_LMCTL_PACKAGE=$RUNNER_TEMP/lmctl/node_modules/@lmctl-ai/lmctl" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/lmcode-compiler/node_modules/.bin" >> "$GITHUB_PATH"
           echo "MINIPLAYER_TEST_BIN=$GITHUB_WORKSPACE/.ci-miniplayer/bin/miniplayer.js" >> "$GITHUB_ENV"
           npm ci --prefix .ci-miniplayer --ignore-scripts
           npm ci --prefix tests/vercel --ignore-scripts
@@ -33,7 +35,7 @@ jobs:
         run: |
           mkdir -p build
           go build -o build/lmmock ./cmd/lmmock
-          lmscript --no-preflight fixtures/openai/handler.lms build/openai.dslb
+          node scripts/capture-fixture.mjs fixtures/openai/handler.lms build/openai.lmcode
           node tests/openai/run.mjs build/lmmock
           node tests/openai/controls.mjs build/lmmock
           node tests/openai/run.mjs build/lmmock --published

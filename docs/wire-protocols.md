@@ -52,13 +52,13 @@ are relative to the scenario file. The legacy `proto KIND` entrypoint also expos
 these adapters but resolves paths against cwd; use absolute paths there.
 
 ```json
-{"program":"chat.dslb","protocol":{"subprotocols":["fixture-v1"]},"data":{}}
+{"program":"chat.lmcode","protocol":{"subprotocols":["fixture-v1"]},"data":{}}
 ```
 
 Export a kind schema with `lmmock wire schema ws`; the standard query form is
 `lmmock wire ws --lmcode-schema --json`, and `--lmcode-signatures` lists the registry.
 Save the schema next to the handler. From a checkout/examples archive, use
-`node examples/wire/compile.mjs SCHEMA.json HANDLER.lm PROGRAM.dslb` with the
+`node examples/wire/compile.mjs SCHEMA.json HANDLER.lm PROGRAM.lmcode` with the
 repository's npm compiler pin (0.2.448), optionally selected by LMSCRIPT_BIN.
 The adapter uses that published compiler's existing compile-only surface solely
 to materialize fixtures; it does not invent a language export alias or promise
@@ -97,7 +97,7 @@ client and bidirectional streams. Pin the exact bytes, not normalized JSON.
 
 ```json
 {
-  "program":"grpc.dslb",
+  "program":"grpc.lmcode",
   "protocol":{
     "descriptor_set":"echo.pb",
     "descriptor_sha256":"REPLACE_WITH_THE_EXACT_FILE_SHA256"

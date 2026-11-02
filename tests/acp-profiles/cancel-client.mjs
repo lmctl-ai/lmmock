@@ -15,7 +15,7 @@ try{
  const team=path.join(dir,'team.lmctl');fs.writeFileSync(team,`_MEMBER_ alias=Worker provider=miniplayer model=${cfg.model} sessionid=${cfg.session} sessiondir=${dir}\n`);
  const script=path.join(dir,'run.lms');fs.writeFileSync(script,`r=lm_prompt(${JSON.stringify('team.lmctl')},"Worker","ping");println(json_stringify(r));\n`);
  const env=Object.fromEntries(Object.entries(process.env).filter(([k])=>!/^LMCTL_|^LMBEE_|^XDG_|^MINIPLAYER|TOKEN|API_KEY|SECRET|PASSWORD|AUTHORIZATION/.test(k)));
- Object.assign(env,{HOME:dir,USERPROFILE:dir,LMCTL_HOME:path.join(dir,'profile'),LMCTL_DB:path.join(dir,'state.db'),XDG_CACHE_HOME:path.join(dir,'cache'),XDG_DATA_HOME:path.join(dir,'data'),XDG_CONFIG_HOME:path.join(dir,'config'),LMCTL_NO_UPDATE_NOTIFIER:'1',NODE_NO_WARNINGS:'1',PATH:bin+':'+process.env.PATH,LMMOCK_ACP_CASE_DIR:dir,LMMOCK_TEST_BINARY:path.join(root,'build/lmmock'),LMMOCK_ACP_BYTECODE:path.join(root,'build/acp-profiles.dslb')});
+ Object.assign(env,{HOME:dir,USERPROFILE:dir,LMCTL_HOME:path.join(dir,'profile'),LMCTL_DB:path.join(dir,'state.db'),XDG_CACHE_HOME:path.join(dir,'cache'),XDG_DATA_HOME:path.join(dir,'data'),XDG_CONFIG_HOME:path.join(dir,'config'),LMCTL_NO_UPDATE_NOTIFIER:'1',NODE_NO_WARNINGS:'1',PATH:bin+':'+process.env.PATH,LMMOCK_ACP_CASE_DIR:dir,LMMOCK_TEST_BINARY:path.join(root,'build/lmmock'),LMMOCK_ACP_BYTECODE:path.join(root,'build/acp-profiles.lmcode')});
  const compiler=process.env.PATH.split(path.delimiter).map(d=>path.resolve(d,'../@lmctl-ai/lmctl/bin/lmscript')).find(fs.existsSync);assert.ok(compiler);
  let cancelled=false,stdout='',stderr='';
  watcher=fs.watch(dir,()=>{
@@ -26,7 +26,7 @@ try{
   const partial=packets.some(p=>p.direction==='server'&&p.message.method==='session/update'&&p.message.params?.update?.sessionUpdate==='agent_message_chunk'&&p.message.params.update.content?.text==='po');
   if(prompted&&partial){cancelled=true;child.kill('SIGTERM');}
  });
- child=spawn(process.execPath,[compiler,'--no-preflight',script],{cwd:dir,env,stdio:['ignore','pipe','pipe']});closed=new Promise(resolve=>child.once('close',(code,signal)=>resolve({code,signal})));child.stdout.on('data',b=>stdout+=b);child.stderr.on('data',b=>stderr+=b);
+ child=spawn(process.execPath,[compiler,script],{cwd:dir,env,stdio:['ignore','pipe','pipe']});closed=new Promise(resolve=>child.once('close',(code,signal)=>resolve({code,signal})));child.stdout.on('data',b=>stdout+=b);child.stderr.on('data',b=>stderr+=b);
  const result=await closed;assert.ok(cancelled,'cancel only after the partial update');assert.equal(result.code,143,stdout+stderr);assert.equal(result.signal,null);assert.ok(!stdout.includes('"status":"ok"'));
  const db=new DatabaseSync(path.join(dir,'state.db'),{readOnly:true});try{const rows=db.prepare('SELECT * FROM team_chat_log').all();assert.equal(rows.length,1);assert.equal(rows[0].native_session_id,cfg.session);assert.notEqual(rows[0].status,'ok');assert.equal(rows[0].tok_output,null);}finally{db.close();}
  console.log('PASS published lmctl SIGTERM after partial ACP output: exit 143, no success, private session/token facts preserved');

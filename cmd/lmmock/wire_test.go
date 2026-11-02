@@ -47,12 +47,12 @@ func TestWireExecOwnsListenerAndClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Exercise the documented fixture adapter on the native CI platform too.
-	compile := exec.Command("node", "../../examples/wire/compile.mjs", schemaFile, handlerFile, filepath.Join(dir, "program.dslb"))
+	compile := exec.Command("node", "../../examples/wire/compile.mjs", schemaFile, handlerFile, filepath.Join(dir, "program.lmcode"))
 	if output, err := compile.CombinedOutput(); err != nil {
 		t.Fatalf("compile adapter: %v\n%s", err, output)
 	}
 	config := filepath.Join(dir, "scenario.json")
-	b, _ := json.Marshal(wire.Config{Program: "program.dslb"})
+	b, _ := json.Marshal(wire.Config{Program: "program.lmcode"})
 	os.WriteFile(config, b, 0600)
 	result := filepath.Join(dir, "result")
 	t.Setenv("LMMOCK_WIRE_CLIENT", "1")

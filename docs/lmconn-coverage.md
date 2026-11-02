@@ -42,7 +42,7 @@ local OAuth tests verify the shared grant implementation, not each live vendor.
 ## Running in Actions or locally
 
 In lmconn, install `npm i -g @lmctl-ai/lmctl`, put the checksum-verified lmmock
-release on PATH (or set LMMOCK_BIN), then run `lmscript --no-preflight test.lms`.
+release on PATH (or set LMMOCK_BIN), then run `lmscript  test.lms`.
 `lmctl test.lms` is also supported. Actions executes this on Linux, macOS and
 Windows before building/publishing. No external service credentials are needed.
 Fixtures are vendored from a committed lmmock revision with SHA-256 hashes;

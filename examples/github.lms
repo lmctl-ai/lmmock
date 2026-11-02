@@ -1,4 +1,4 @@
-# GitHub REST fixture for lmclient github user/repos. Compile: lmscript examples/github.lms build/github.dslb
+# GitHub REST fixture for lmclient github user/repos. Fixture capture: node scripts/capture-fixture.mjs examples/github.lms build/github.lmcode
 # Config: {"apiKey":"test-token","strictHeaders":false}. Public repos allow anonymous access.
 # Routes: /user, /orgs/{owner}/repos, /users/{owner}/repos. Canned owners:
 # acme (two repos), paged (two pages), mike (user fallback), forbidden (403),
@@ -47,4 +47,5 @@ route("GET","/user","user");
 route("GET","/orgs/{owner}/repos","repos");
 route("GET","/users/{owner}/repos","repos");
 end _lmcode_
-savedsl(p,ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

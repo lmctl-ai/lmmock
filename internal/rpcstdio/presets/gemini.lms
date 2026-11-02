@@ -22,4 +22,4 @@ fn sid() -> string { return json_parse(config()).get("session").as_string(); }
 }
 bind("$start","start");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: ARGV}); require(r.ok, "fixture host failed");

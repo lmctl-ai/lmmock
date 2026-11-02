@@ -50,4 +50,5 @@ route("DELETE", "/{rest...}", "scenario");
 # GET already handles HEAD; a separate HEAD catch-all conflicts with the GET admin route.
 route("OPTIONS", "/{rest...}", "scenario");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

@@ -26,7 +26,7 @@ additional operations, but this adapter does not promise their production parity
 
 ## Reproduce verification
 
-The standard `lmscript --no-preflight test.lms` includes Go network round trips
+The standard `lmscript  test.lms` includes Go network round trips
 using franz-go. `go test -race ./internal/proto/kafka` additionally checks races.
 For the actual Java kafka-clients 3.9.1 driver, build a current lmclient jar with
 `mvn -q -B package -DskipTests` in its checkout, then run:

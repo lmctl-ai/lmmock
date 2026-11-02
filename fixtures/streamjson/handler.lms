@@ -28,4 +28,5 @@ fn emit_events(x: RPC, c: Json) -> void {
 }
 bind("$start","start");bind("version","version");bind("seed","seed");bind("open","open");bind("$message","message");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: ARGV}); require(r.ok, "fixture host failed");
+if (r.result != null) { print(r.result.stdout); }

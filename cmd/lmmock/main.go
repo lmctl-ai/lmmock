@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,12 +12,11 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"regexp"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
 
+	lmcode "github.com/lmctl-ai/lmcode-go"
 	"github.com/lmctl-ai/lmmock/internal/mock"
 )
 
@@ -29,7 +29,7 @@ func main() {
 	}
 	os.Exit(run(args))
 }
-func run(args []string) int {
+func run(args []string) (exitCode int) {
 	if os.Getenv("LMMOCK_JSONLINES_SCENARIO") != "" {
 		return jsonLinesProcess(args)
 	}
@@ -79,8 +79,7 @@ func run(args []string) int {
 	}
 	mode := args[0]
 	f := flag.NewFlagSet(mode, flag.ContinueOnError)
-	script := f.String("script", "", "trusted .lms source (requires lmscript)")
-	dsl := f.String("lmcode", "", "precompiled .dslb file")
+	dsl := f.String("lmcode", "", "private program file supplied by run_lmcode")
 	listen := f.String("listen", "127.0.0.1:0", "loopback IP:port; 0 chooses a free port")
 	config := f.String("config", "", "trusted JSON configuration file, read by config()")
 	ready := f.String("ready-file", "", "write readiness JSON and remove it on exit")
@@ -92,56 +91,67 @@ func run(args []string) int {
 	requestBodies := f.Bool("request-log-bodies", false, "also record scrubbed request bodies (implies --request-log)")
 	tlsOptions := addTLSFlags(f)
 	if err := f.Parse(args[1:]); err != nil {
-		return 2
+		return lmcode.FailureFrame(os.Stdout, "cli", lmcode.NewError(lmcode.CLI_USAGE, "invalid execution flags"))
 	}
 	command := f.Args()
-	if (*script == "") == (*dsl == "") || (mode == "exec" && len(command) == 0) || (mode == "serve" && len(command) > 0) {
-		fmt.Fprintln(os.Stderr, "specify exactly one of --script or --lmcode; exec requires -- COMMAND")
-		return 2
+	if *dsl == "" || (mode == "exec" && len(command) == 0) || (mode == "serve" && len(command) > 0) {
+		fmt.Fprintln(os.Stderr, "specify --lmcode FILE; exec requires -- COMMAND")
+		return lmcode.FailureFrame(os.Stdout, "cli", lmcode.NewError(lmcode.CLI_USAGE, "invalid execution arguments"))
 	}
-	if *script != "" {
-		folder, err := os.MkdirTemp("", "lmmock-compile-")
-		if err != nil {
-			return fail(err)
-		}
-		defer os.RemoveAll(folder)
-		*dsl = filepath.Join(folder, "mock.dslb")
-		compiler := os.Getenv("LMSCRIPT_BIN")
-		if compiler == "" {
-			compiler = "lmscript"
-		}
-		cmd, err := compilerCommand(ctx, compiler, "--no-preflight", *script, *dsl)
-		if err != nil {
-			return fail(err)
-		}
-		cmd.Stdout = os.Stderr
-		cmd.Stderr = os.Stderr
-		if err = cmd.Run(); err != nil {
-			return fail(fmt.Errorf("compile source: %w", err))
-		}
+	results, err := lmcode.InvocationResultsFromCommand([]string{*dsl})
+	if err != nil {
+		return lmcode.FailureFrame(os.Stdout, "cli", err)
 	}
+	phase := "load"
+	var invocationErr error
+	hostFailure := func(err error) int { invocationErr = err; return fail(err) }
+	defer func() {
+		if exitCode != 0 {
+			if invocationErr == nil {
+				invocationErr = lmcode.NewHostError(fmt.Sprintf("lmmock failed (exit %d)", exitCode))
+			}
+			if phase == "app" {
+				invocationErr = lmcode.NewError(lmcode.APP_FAIL, fmt.Sprintf("client failed (exit %d): %v", exitCode, invocationErr))
+			}
+			_ = results.Fail(nil, phase, invocationErr)
+		} else if err := results.Complete(0); err != nil {
+			_ = results.Fail(nil, "run", err)
+		}
+		status := results.WriteFrame(os.Stdout)
+		if os.Getenv("LMCODE_INVOCATION_FILE") != "" || exitCode == 0 || phase != "app" {
+			exitCode = status
+		}
+	}()
 	code, err := os.ReadFile(*dsl)
 	if err != nil {
-		return fail(err)
+		return hostFailure(err)
 	}
 	var audit io.Writer
-	if *auditLog != "" {
+	if *auditLog != "" && !results.Dry() {
 		file, err := os.OpenFile(*auditLog, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 		if err != nil {
-			return fail(err)
+			return hostFailure(err)
 		}
 		defer file.Close()
 		audit = file
 		fmt.Fprintln(os.Stderr, "lmmock audit log:", *auditLog)
 	}
-	engine, err := mock.NewWithOptions(code, mock.Options{ConfigFile: *config, RequestLog: *requestLog, RequestLogBodies: *requestBodies, Upstream: *upstream,
-		UpstreamTimeout: *upstreamTimeout, UpstreamReadOnly: *upstreamReadOnly, AuditWriter: audit})
+	engine, err := mock.NewWithInvocation(code, mock.Options{ConfigFile: *config, RequestLog: *requestLog, RequestLogBodies: *requestBodies, Upstream: *upstream,
+		UpstreamTimeout: *upstreamTimeout, UpstreamReadOnly: *upstreamReadOnly, AuditWriter: audit}, results)
 	if err != nil {
-		return fail(err)
+		var native *lmcode.Error
+		if errors.As(err, &native) && strings.HasPrefix(native.Code, "RUN_") {
+			phase = "run"
+		}
+		return hostFailure(err)
+	}
+	phase = "run"
+	if results.Dry() {
+		return 0
 	}
 	server, err := tlsOptions.start(engine, *listen)
 	if err != nil {
-		return fail(err)
+		return hostFailure(err)
 	}
 	defer func() {
 		if err := server.Close(); err != nil {
@@ -158,7 +168,7 @@ func run(args []string) int {
 		data = append(data, '\n')
 		file, err := os.CreateTemp(filepath.Dir(*ready), ".lmmock-ready-")
 		if err != nil {
-			return fail(err)
+			return hostFailure(err)
 		}
 		name := file.Name()
 		defer os.Remove(name)
@@ -171,27 +181,43 @@ func run(args []string) int {
 			err = os.Rename(name, *ready)
 		}
 		if err != nil {
-			return fail(err)
+			return hostFailure(err)
 		}
 		defer os.Remove(*ready)
 	}
 	if mode == "serve" {
 		if err = json.NewEncoder(os.Stdout).Encode(info); err != nil {
-			return fail(err)
+			return hostFailure(err)
 		}
 		<-ctx.Done()
 		return 0
 	}
 	child := exec.CommandContext(ctx, command[0], command[1:]...)
 	child.Env = server.ClientEnv(os.Environ())
+	// Invocation metadata belongs to this host, never to its unrelated client process.
+	for i := len(child.Env) - 1; i >= 0; i-- {
+		if strings.HasPrefix(child.Env[i], "LMCODE_INVOCATION_FILE=") {
+			child.Env = append(child.Env[:i], child.Env[i+1:]...)
+		}
+	}
 	child.Stdin = os.Stdin
+	var clientOutput boundedOutput
 	child.Stdout = os.Stdout
+	if os.Getenv("LMCODE_INVOCATION_FILE") != "" {
+		child.Stdout = &clientOutput
+	}
 	child.Stderr = os.Stderr
+	phase = "app"
 	err = child.Run()
 	if ctx.Err() != nil {
 		return 130
 	}
 	if err == nil {
+		if os.Getenv("LMCODE_INVOCATION_FILE") != "" {
+			if err := engine.SetClientOutput(clientOutput.String()); err != nil {
+				return hostFailure(err)
+			}
+		}
 		return 0
 	}
 	var exit *exec.ExitError
@@ -201,25 +227,7 @@ func run(args []string) int {
 		}
 		return 1
 	}
-	return fail(err)
-}
-func compilerCommand(ctx context.Context, name string, args ...string) (*exec.Cmd, error) {
-	path, err := exec.LookPath(name)
-	if err != nil {
-		return nil, fmt.Errorf("compiler %s: install npm -g @lmctl-ai/lmctl or use --lmcode: %w", name, err)
-	}
-	if runtime.GOOS == "windows" && strings.HasSuffix(strings.ToLower(path), ".cmd") {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		match := regexp.MustCompile(`(?i)%dp0%[\\/]([^"\r\n]+)"\s+%\*`).FindSubmatch(data)
-		if len(match) != 2 {
-			return nil, errors.New("unsupported npm compiler shim")
-		}
-		return exec.CommandContext(ctx, "node", append([]string{filepath.Join(filepath.Dir(path), string(match[1]))}, args...)...), nil
-	}
-	return exec.CommandContext(ctx, path, args...), nil
+	return hostFailure(err)
 }
 func fail(err error) int { fmt.Fprintln(os.Stderr, "lmmock:", err); return 1 }
 func usage() {
@@ -228,9 +236,8 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "       lmmock scenario import|scrub|verify --input FLOWS [--output FILE | --target URL]")
 	_, _ = io.WriteString(os.Stderr, `lmmock - scriptable loopback HTTP mocks
   lmmock schema > schema.json
-  lmmock serve --script mock.lms [--listen 127.0.0.1:0] [--ready-file ready.json]
-  lmmock exec --script mock.lms -- COMMAND [ARG...]
-  lmmock exec --lmcode mock.dslb -- COMMAND [ARG...]
+  lmmock serve --lmcode FILE [--listen 127.0.0.1:0] [--ready-file ready.json]
+  lmmock exec --lmcode FILE -- COMMAND [ARG...]
   serve/exec: [--tls] [--tls-host DNS_NAME] [--upstream http(s)://host/base/] [--upstream-timeout 2m]
               [--upstream-read-only] [--audit-log requests.jsonl]
   lmmock check --suite assertions.json [--url URL]
@@ -240,4 +247,16 @@ func usage() {
 exec sets LMMOCK_URL for the client and propagates its exit code.
 serve prints readiness JSON and stops on SIGINT/SIGTERM.
 `)
+}
+
+// Captured client stdout is returned as data, never mistaken for a host frame.
+type boundedOutput struct{ buffer bytes.Buffer }
+
+func (b *boundedOutput) String() string { return b.buffer.String() }
+
+func (b *boundedOutput) Write(p []byte) (int, error) {
+	if b.buffer.Len()+len(p) > 10*1024*1024 {
+		return 0, errors.New("client stdout exceeds 10 MiB")
+	}
+	return b.buffer.Write(p)
 }

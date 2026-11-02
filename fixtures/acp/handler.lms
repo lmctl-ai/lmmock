@@ -74,4 +74,5 @@ fn update(x: RPC,event: Json) -> void { x.notify("session/update","{\"sessionId\
 bind("$response","permission_result");bind("$start","startup");bind("initialize","initialize");bind("notifications/initialized","ready");bind("authenticate","authenticate");
 bind("session/new","open");bind("session/load","open");bind("session/set_config_option","configure");bind("session/set_model","configure");bind("session/set_mode","configure");bind("session/prompt","prompt");bind("session/cancel","cancel");
 end _lmcode_
-savedsl(p,ARGV[0]);
+r = run_lmcode(p, {command: ARGV}); require(r.ok, "fixture host failed");
+if (r.result != null) { print(r.result.stdout); }

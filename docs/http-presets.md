@@ -38,7 +38,7 @@ Use oauth.lms to test the shared authorization flow.
 Install the compiler and run from the repository root:
 
     npm i -g @lmctl-ai/lmctl
-    lmmock exec --script examples/notion.lms -- lmmock check --suite examples/notion-client.json
+    lmscript examples/notion.lms lmmock check --suite examples/notion-client.json
 
 The same command works with any service name from the table. lmmock opens an
 ephemeral loopback port, exports LMMOCK_URL to the client, and shuts down when the

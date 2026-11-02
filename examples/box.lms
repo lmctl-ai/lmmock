@@ -27,4 +27,5 @@ route("POST","/2.0/folders","create_folder");
 route("GET","/2.0/folders/{id}","folder");
 route("GET","/2.0/files/{id}","file");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

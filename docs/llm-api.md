@@ -39,7 +39,7 @@ Install the compiler and start a server:
 
 ~~~sh
 npm i -g @lmctl-ai/lmctl
-lmmock serve --script examples/llm-api.lms --listen 127.0.0.1:4000
+lmmock serve --lmcode "$PRIVATE_PROGRAM_FILE" --listen 127.0.0.1:4000
 ~~~
 
 Configure a normal Vercel AI SDK provider with the local base URL:
@@ -168,7 +168,7 @@ Run the normal suite after installing the test-only npm packages:
 
 ~~~sh
 npm ci --prefix tests/vercel
-lmscript --no-preflight test.lms
+lmscript  test.lms
 ~~~
 
 test.lms drives the real Vercel client on all five release platforms. The mock

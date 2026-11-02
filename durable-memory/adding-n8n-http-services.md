@@ -43,7 +43,7 @@ fn read_widget(x: Exchange) -> void implements Handler {
 
 route("GET", "/v1/widgets/{id}", "read_widget");
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
 ~~~
 
 The annotation is an identifier, not a URL. The third route argument must match
@@ -135,8 +135,8 @@ actual service name:
 
 ~~~sh
 npm i -g @lmctl-ai/lmctl
-lmmock exec --script examples/<service>.lms -- lmmock check --suite examples/<service>-client.json
-lmscript --no-preflight test.lms
+lmscript examples/<service>.lms lmmock check --suite examples/<service>-client.json
+lmscript  test.lms
 ~~~
 
 npm installs both lmctl and lmscript. lmctl test.lms is another supported entry.
@@ -156,7 +156,7 @@ Read its AGENTS.md. Its branch is master; lmmock uses main.
 3. Run node scripts/sync-lmmock.mjs ../lmmock. It vendors source/schema/suites and
    records the source commit and SHA-256 hashes in test/mocks/lmmock.lock.json.
 4. Run with the local host:
-   LMMOCK_BIN=/absolute/path/to/lmmock/build/lmmock lmscript --no-preflight test.lms
+   LMMOCK_BIN=/absolute/path/to/lmmock/build/lmmock lmscript  test.lms
 5. Keep Actions' npm install -g @lmctl-ai/lmctl step before the lmscript runner.
    It downloads a pinned, checksum-verified lmmock binary. Bump that pin if host
    features change; script-only additions can use a compatible older host.

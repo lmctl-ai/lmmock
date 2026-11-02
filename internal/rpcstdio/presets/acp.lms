@@ -43,4 +43,4 @@ bind("initialize","init"); bind("notifications/initialized","noop");
 bind("session/new","open");bind("session/load","open");bind("session/set_config_option","configure");bind("session/set_mode","configure");bind("session/set_model","configure");bind("session/prompt","prompt");
 
 end _lmcode_
-savedsl(p, ARGV[0]);
+r = run_lmcode(p, {command: ARGV}); require(r.ok, "fixture host failed");
