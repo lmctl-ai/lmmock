@@ -1,0 +1,987 @@
+# Jira/Confluence MCP and Xray selected contracts. Synthetic data only.
+# See docs/jira-xray.md for protocol, reset, faults and client setup.
+seed = {
+  "issues": {
+    "TEST-1": {
+      "id": "10001",
+      "key": "TEST-1",
+      "self": "https://mock-site.example.test/rest/api/3/issue/10001",
+      "fields": {
+        "summary": "Synthetic Task 1",
+        "description": "A synthetic example.",
+        "status": {
+          "id": "1",
+          "name": "To Do",
+          "statusCategory": {
+            "key": "new",
+            "name": "To Do"
+          }
+        },
+        "issuetype": {
+          "id": "1",
+          "name": "Task"
+        },
+        "project": {
+          "id": "10000",
+          "key": "TEST",
+          "name": "Demo project"
+        },
+        "assignee": null,
+        "reporter": {
+          "accountId": "000000:00000000-0000-4000-8000-000000000001",
+          "displayName": "Test User",
+          "emailAddress": "user@example.test",
+          "active": true
+        },
+        "priority": {
+          "name": "Medium"
+        },
+        "components": [],
+        "labels": [
+          "demo"
+        ],
+        "fixVersions": [],
+        "parent": null,
+        "subtasks": [],
+        "issuelinks": [],
+        "created": "2026-01-01T00:00:00.000+0000",
+        "updated": "2026-01-01T00:00:00.000+0000",
+        "resolutiondate": null,
+        "comment": {
+          "comments": [],
+          "total": 0,
+          "maxResults": 50,
+          "startAt": 0
+        },
+        "attachment": []
+      }
+    },
+    "TEST-2": {
+      "id": "10002",
+      "key": "TEST-2",
+      "self": "https://mock-site.example.test/rest/api/3/issue/10002",
+      "fields": {
+        "summary": "Synthetic Task 2",
+        "description": "A synthetic example.",
+        "status": {
+          "id": "1",
+          "name": "To Do",
+          "statusCategory": {
+            "key": "new",
+            "name": "To Do"
+          }
+        },
+        "issuetype": {
+          "id": "2",
+          "name": "Task"
+        },
+        "project": {
+          "id": "10000",
+          "key": "TEST",
+          "name": "Demo project"
+        },
+        "assignee": null,
+        "reporter": {
+          "accountId": "000000:00000000-0000-4000-8000-000000000001",
+          "displayName": "Test User",
+          "emailAddress": "user@example.test",
+          "active": true
+        },
+        "priority": {
+          "name": "Medium"
+        },
+        "components": [],
+        "labels": [
+          "demo"
+        ],
+        "fixVersions": [],
+        "parent": null,
+        "subtasks": [],
+        "issuelinks": [],
+        "created": "2026-01-01T00:00:00.000+0000",
+        "updated": "2026-01-01T00:00:00.000+0000",
+        "resolutiondate": null,
+        "comment": {
+          "comments": [],
+          "total": 0,
+          "maxResults": 50,
+          "startAt": 0
+        },
+        "attachment": []
+      }
+    },
+    "TEST-3": {
+      "id": "10003",
+      "key": "TEST-3",
+      "self": "https://mock-site.example.test/rest/api/3/issue/10003",
+      "fields": {
+        "summary": "Synthetic Test 3",
+        "description": "A synthetic example.",
+        "status": {
+          "id": "1",
+          "name": "To Do",
+          "statusCategory": {
+            "key": "new",
+            "name": "To Do"
+          }
+        },
+        "issuetype": {
+          "id": "3",
+          "name": "Test"
+        },
+        "project": {
+          "id": "10000",
+          "key": "TEST",
+          "name": "Demo project"
+        },
+        "assignee": null,
+        "reporter": {
+          "accountId": "000000:00000000-0000-4000-8000-000000000001",
+          "displayName": "Test User",
+          "emailAddress": "user@example.test",
+          "active": true
+        },
+        "priority": {
+          "name": "Medium"
+        },
+        "components": [],
+        "labels": [
+          "demo"
+        ],
+        "fixVersions": [],
+        "parent": null,
+        "subtasks": [],
+        "issuelinks": [],
+        "created": "2026-01-01T00:00:00.000+0000",
+        "updated": "2026-01-01T00:00:00.000+0000",
+        "resolutiondate": null,
+        "comment": {
+          "comments": [],
+          "total": 0,
+          "maxResults": 50,
+          "startAt": 0
+        },
+        "attachment": []
+      }
+    },
+    "TEST-4": {
+      "id": "10004",
+      "key": "TEST-4",
+      "self": "https://mock-site.example.test/rest/api/3/issue/10004",
+      "fields": {
+        "summary": "Synthetic Test Execution 4",
+        "description": "A synthetic example.",
+        "status": {
+          "id": "1",
+          "name": "To Do",
+          "statusCategory": {
+            "key": "new",
+            "name": "To Do"
+          }
+        },
+        "issuetype": {
+          "id": "4",
+          "name": "Test Execution"
+        },
+        "project": {
+          "id": "10000",
+          "key": "TEST",
+          "name": "Demo project"
+        },
+        "assignee": null,
+        "reporter": {
+          "accountId": "000000:00000000-0000-4000-8000-000000000001",
+          "displayName": "Test User",
+          "emailAddress": "user@example.test",
+          "active": true
+        },
+        "priority": {
+          "name": "Medium"
+        },
+        "components": [],
+        "labels": [
+          "demo"
+        ],
+        "fixVersions": [],
+        "parent": null,
+        "subtasks": [],
+        "issuelinks": [],
+        "created": "2026-01-01T00:00:00.000+0000",
+        "updated": "2026-01-01T00:00:00.000+0000",
+        "resolutiondate": null,
+        "comment": {
+          "comments": [],
+          "total": 0,
+          "maxResults": 50,
+          "startAt": 0
+        },
+        "attachment": []
+      }
+    }
+  },
+  "keys": [
+    "TEST-1",
+    "TEST-2",
+    "TEST-3",
+    "TEST-4"
+  ],
+  "pages": {
+    "20001": {
+      "id": "20001",
+      "title": "Demo home",
+      "spaceId": "20000",
+      "status": "current",
+      "body": "# Demo home\n\nSynthetic documentation.",
+      "version": {
+        "number": 1
+      },
+      "_links": {
+        "webui": "/spaces/DEMO/pages/20001"
+      }
+    },
+    "20002": {
+      "id": "20002",
+      "title": "Demo child",
+      "spaceId": "20000",
+      "parentId": "20001",
+      "status": "current",
+      "body": "# Demo child\n\nSynthetic child page.",
+      "version": {
+        "number": 1
+      },
+      "_links": {
+        "webui": "/spaces/DEMO/pages/20002"
+      }
+    }
+  },
+  "runs": {
+    "000000000000000000000001": {
+      "id": "000000000000000000000001",
+      "status": {
+        "name": "TODO"
+      },
+      "comment": "",
+      "evidence": [],
+      "test": {
+        "issueId": "10003",
+        "jira": {
+          "key": "TEST-3",
+          "summary": "Synthetic Test 3"
+        }
+      }
+    },
+    "000000000000000000000002": {
+      "id": "000000000000000000000002",
+      "status": {
+        "name": "TODO"
+      },
+      "comment": "",
+      "evidence": [],
+      "test": {
+        "issueId": "10003",
+        "jira": {
+          "key": "TEST-3",
+          "summary": "Synthetic Test 3"
+        }
+      }
+    }
+  },
+  "test": {
+    "issueId": "10003",
+    "testType": {
+      "name": "Manual",
+      "kind": "Steps"
+    },
+    "steps": [
+      {
+        "id": "step-demo-1",
+        "action": "Open the demo page",
+        "data": "Synthetic input",
+        "result": "Demo page appears"
+      }
+    ]
+  }
+};
+tool_contracts = [
+  {
+    "name": "atlassianUserInfo",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getAccessibleAtlassianResources",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getJiraIssue",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "issueIdOrKey": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expand": {
+          "type": "string"
+        },
+        "responseContentFormat": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "searchJiraIssuesUsingJql",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "jql": {
+          "type": "string"
+        },
+        "maxResults": {
+          "type": "integer"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        },
+        "startAt": {
+          "type": "integer"
+        },
+        "responseContentFormat": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getTransitionsForJiraIssue",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "issueIdOrKey": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "transitionJiraIssue",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "issueIdOrKey": {
+          "type": "string"
+        },
+        "transition": {
+          "type": "object"
+        },
+        "fields": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "addCommentToJiraIssue",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "issueIdOrKey": {
+          "type": "string"
+        },
+        "commentBody": {
+          "type": "string"
+        },
+        "contentFormat": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "createJiraIssue",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "projectKey": {
+          "type": "string"
+        },
+        "issueTypeName": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "contentFormat": {
+          "type": "string"
+        },
+        "additional_fields": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "editJiraIssue",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "issueIdOrKey": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "object"
+        },
+        "contentFormat": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "lookupJiraAccountId",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "searchString": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getConfluencePage",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "pageId": {
+          "type": "string"
+        },
+        "contentFormat": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "searchConfluenceUsingCql",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "cql": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getConfluenceSpaces",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "limit": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getPagesInConfluenceSpace",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "spaceId": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getConfluencePageDescendants",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "pageId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getConfluencePageFooterComments",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "pageId": {
+          "type": "string"
+        },
+        "contentFormat": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getConfluencePageInlineComments",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "pageId": {
+          "type": "string"
+        },
+        "contentFormat": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "getConfluenceCommentChildren",
+    "description": "Selected synthetic contract",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cloudId": {
+          "type": "string"
+        },
+        "commentId": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+];
+p = _lmcode_ schema="schema.json";
+fn text(j: Json, k: string, fallback: string) -> string {
+ let value = fallback;
+ if (j.kind() == "object" && j.has(k) && j.get(k).kind() == "string") { value = j.get(k).as_string(); }
+ return value;
+}
+fn number(j: Json, k: string, fallback: int) -> int {
+ let value = fallback; if (j.kind() == "object" && j.has(k) && j.get(k).kind() == "int") { value = j.get(k).as_int(); } return value;
+}
+fn member(j: Json, k: string) -> Json { let value = json_parse("{}"); if (j.kind() == "object" && j.has(k) && j.get(k).kind() != "null") { value = j.get(k); } return value; }
+fn string_json(s: string) -> Json { return json_parse(json_quote(s)); }
+fn pointer(s: string) -> string { return str_replace(str_replace(s,"~","~0"),"/","~1"); }
+fn put(j: Json, k: string, value: Json) -> Json { return json_with(j,"/" + pointer(k),value); }
+fn append(j: Json, value: Json) -> Json { return json_with(j,"/-",value); }
+fn database(x: Exchange) -> Json {
+ let raw = x.get("database"); if (raw == "") { raw = ${json_stringify(seed)}; x.set("database",raw); } return json_parse(raw);
+}
+fn save(x: Exchange, db: Json) -> void { x.set("database",db.to_json()); }
+fn rpc(x: Exchange, id: Json, result: Json) -> void {
+ let body = "{\"jsonrpc\":\"2.0\",\"id\":" + id.to_json() + ",\"result\":" + result.to_json() + "}";
+ let c = json_parse(config()); let stream = false; if (c.has("mcpSse")) { stream = c.get("mcpSse").as_bool(); }
+ if (stream) { x.set_header("Content-Type","text/event-stream"); x.stream_event("event: message\ndata: " + body + "\n\n"); }
+ else { x.json(body); }
+}
+fn rpc_error(x: Exchange, id: Json, code: int, message: string) -> void {
+ x.json("{\"jsonrpc\":\"2.0\",\"id\":" + id.to_json() + ",\"error\":{\"code\":" + str(code) + ",\"message\":" + json_quote(message) + "}}");
+}
+fn tool_result(x: Exchange, id: Json, value: Json) -> void {
+ rpc(x,id,json_parse("{\"content\":[{\"type\":\"text\",\"text\":" + json_quote(value.to_json()) + "}],\"isError\":false}"));
+}
+fn tool_error(x: Exchange, id: Json, code: int, message: string) -> void {
+ let error = "{\"error\":true,\"message\":" + json_quote(message) + ",\"statusCode\":" + str(code) + ",\"errorMessages\":[" + json_quote(message) + "],\"errors\":{}}";
+ rpc(x,id,json_parse("{\"content\":[{\"type\":\"text\",\"text\":" + json_quote(error) + "}],\"isError\":true}"));
+}
+fn http_error(x: Exchange, status: int, message: string) -> void { x.status(status); x.json("{\"error\":" + json_quote(message) + "}"); }
+fn authorized(x: Exchange, token: string) -> bool {
+ let ok = secure_equal(x.header("Authorization"),"Bearer " + token);
+ if (!ok) { x.set_header("WWW-Authenticate","Bearer"); http_error(x,401,"invalid_token"); } return ok;
+}
+fn fault(x: Exchange) -> bool {
+ let c = json_parse(config()); let delay = number(c,"delayMs",0); if (delay > 0) { x.delay(delay); }
+ let status = 0; let failures = number(c,"failures",0);
+ if (failures > 0 && x.increment("attempt:" + x.path()) <= failures) { status = number(c,"failureStatus",503); }
+ let requested = x.header("X-Lmmock-Fault");
+ if (requested == "403" || requested == "429" || requested == "500") { status = str_to_int(requested); }
+ if (status == 429) { x.set_header("Retry-After","1"); }
+ if (status != 0) { http_error(x,status,"Injected synthetic failure"); }
+ return status != 0;
+}
+fn issue_key(db: Json, key: string) -> string {
+ let found = ""; let keys = db.get("keys");
+ for (i in range(0,keys.len())) { let k = keys.at(i).as_string(); if (k == key || text(db.get("issues").get(k),"id","") == key) { found = k; } }
+ return found;
+}
+fn project_issue(issue: Json, args: Json) -> Json {
+ let out = issue;
+ if (args.has("fields") && args.get("fields").kind() == "array") {
+  let fields = json_parse("{}"); let wanted = args.get("fields"); let all = false;
+  for (i in range(0,wanted.len())) {
+   let key = wanted.at(i).as_string(); if (key == "*all" || key == "*navigable") { all = true; }
+   if (issue.get("fields").has(key)) { fields = put(fields,key,issue.get("fields").get(key)); }
+  }
+  if (!all) { out = put(out,"fields",fields); }
+ }
+ if (args.has("expand")) {
+  out = put(out,"expand",args.get("expand"));
+  let expanded = text(args,"expand","");
+  if (str_contains(expanded,"names")) {
+   let names = json_parse("{}"); let keys = issue.get("fields").keys();
+   for (i in range(0,keys.len())) { names = put(names,keys.at(i),string_json(keys.at(i))); }
+   out = put(out,"names",names);
+  }
+  if (str_contains(expanded,"renderedFields")) { out = put(out,"renderedFields",json_parse("{\"description\":\"<p>Synthetic description</p>\"}")); }
+ }
+ return out;
+}
+fn valid_clause(s: string) -> bool {
+ let ok = true;
+ if (s != "") {
+  let sep = "="; if (str_starts_with(s,"text")) { sep = "~"; }
+  let parts = str_split(s,sep); ok = parts.len() == 2;
+  if (ok) {
+   let key = str_trim(parts.at(0)); let value = str_trim(parts.at(1));
+   ok = (sep == "=" && (key == "project" || key == "key" || key == "status")) || (sep == "~" && key == "text");
+   if (str_starts_with(value,"\"")) { ok = ok && str_ends_with(value,"\"") && str_split(value,"\"").len() == 3 && str_len(value) > 2; }
+   else {
+    ok = ok && sep == "=" && value != "";
+    for (i in range(0,str_len(value))) { ok = ok && str_contains("abcdefghijklmnopqrstuvwxyz0123456789_-",str_substr(value,i,1)); }
+   }
+  }
+ }
+ return ok;
+}
+fn valid_jql(query: string) -> bool {
+ let q = str_lower(str_trim(query)); let order = str_split(q," order by ");
+ if (str_starts_with(q,"order by ")) { order = str_split(" " + q," order by "); }
+ let ok = order.len() <= 2;
+ if (order.len() == 2) { let o = str_trim(order.at(1)); ok = ok && (o == "key" || o == "key asc" || o == "key desc" || o == "updated asc" || o == "updated desc"); }
+ let clauses = str_split(str_trim(order.at(0))," and ");
+ for (i in range(0,clauses.len())) {
+  let s = str_trim(clauses.at(i));
+  if (!valid_clause(s)) { ok = false; }
+ }
+ return ok && q != "";
+}
+fn matches_jql(issue: Json, query: string) -> bool {
+ let q = str_lower(str_trim(query)); let order = str_split(q," order by ");
+ if (str_starts_with(q,"order by ")) { order = str_split(" " + q," order by "); }
+ let clauses = str_split(str_trim(order.at(0))," and "); let ok = true;
+ for (i in range(0,clauses.len())) {
+  let s = str_trim(clauses.at(i)); let sep = "="; if (str_starts_with(s,"text")) { sep = "~"; }
+  let pair = str_split(s,sep);
+  if (pair.len() == 2) {
+   let key = str_trim(pair.at(0)); let value = str_trim(str_replace(pair.at(1),"\"","")); let f = issue.get("fields"); let actual = "";
+   if (key == "project") { actual = text(f.get("project"),"key",""); }
+   if (key == "key") { actual = text(issue,"key",""); }
+   if (key == "status") { actual = text(f.get("status"),"name",""); }
+   if (key == "text") { actual = text(f,"summary","") + " " + text(f,"description",""); ok = ok && str_contains(str_lower(actual),value); }
+   else { ok = ok && str_lower(actual) == value; }
+  }
+ }
+ return ok;
+}
+fn search(x: Exchange, id: Json, args: Json, db: Json) -> void {
+ let q = text(args,"jql",""); let token = text(args,"nextPageToken",""); let start = number(args,"startAt",0); let limit = number(args,"maxResults",25);
+ if (token != "" && str_is_int(token)) { start = str_to_int(token); }
+ if (!valid_jql(q) || limit < 1 || limit > 100 || start < 0 || (token != "" && !str_is_int(token))) { tool_error(x,id,400,"Unsupported or invalid JQL/pagination"); }
+ else {
+  let keys = db.get("keys"); let results = json_parse("[]"); let total = 0;
+  for (i in range(0,keys.len())) {
+   let pos = i; if (str_contains(str_lower(q)," desc")) { pos = keys.len() - i - 1; }
+   let item = db.get("issues").get(keys.at(pos).as_string());
+   if (matches_jql(item,q)) { if (total >= start && results.len() < limit) { results = append(results,project_issue(item,args)); } total = total + 1; }
+  }
+  let next = "null"; if (start + results.len() < total) { next = json_quote(str(start + results.len())); }
+  tool_result(x,id,json_parse("{\"issues\":" + results.to_json() + ",\"total\":" + str(total) + ",\"maxResults\":" + str(limit) + ",\"startAt\":" + str(start) + ",\"nextPageToken\":" + next + ",\"isLast\":" + str(start + results.len() >= total) + "}"));
+ }
+}
+fn transitions(issue: Json) -> Json {
+ let current = text(issue.get("fields").get("status"),"name",""); let out = json_parse("[]");
+ if (current == "To Do") { out = json_parse("[{\"id\":\"21\",\"name\":\"Start Progress\",\"to\":{\"id\":\"3\",\"name\":\"In Progress\"}}]"); }
+ if (current == "In Progress") { out = json_parse("[{\"id\":\"31\",\"name\":\"Done\",\"to\":{\"id\":\"5\",\"name\":\"Done\"}}]"); }
+ return out;
+}
+fn jira_tool(x: Exchange, id: Json, name: string, args: Json, db: Json) -> void {
+ let key = issue_key(db,text(args,"issueIdOrKey",""));
+ if (name == "createJiraIssue") {
+  if (text(args,"projectKey","") != "TEST" || text(args,"summary","") == "" || text(args,"issueTypeName","") == "") { tool_error(x,id,400,"projectKey TEST, issueTypeName and summary are required"); }
+  else {
+   let n = x.increment("issue-id") + 4; let item = db.get("issues").get("TEST-1"); let newkey = "TEST-" + str(n);
+   item = put(item,"id",string_json(str(10000 + n))); item = put(item,"key",string_json(newkey)); item = put(item,"self",string_json("https://mock-site.example.test/rest/api/3/issue/" + str(10000 + n)));
+   let fields = item.get("fields"); fields = put(fields,"summary",args.get("summary")); fields = put(fields,"description",string_json(text(args,"description",""))); fields = put(fields,"issuetype",json_parse("{\"name\":" + json_quote(text(args,"issueTypeName","Task")) + "}"));
+   fields = put(fields,"comment",json_parse("{\"comments\":[],\"total\":0,\"startAt\":0,\"maxResults\":50}")); fields = put(fields,"status",json_parse("{\"id\":\"1\",\"name\":\"To Do\",\"statusCategory\":{\"key\":\"new\"}}"));
+   let extra = member(args,"additional_fields"); let names = extra.keys(); for (i in range(0,names.len())) { fields = put(fields,names.at(i),extra.get(names.at(i))); }
+   item = put(item,"fields",fields); db = put(db,"issues",put(db.get("issues"),newkey,item)); db = put(db,"keys",append(db.get("keys"),string_json(newkey))); save(x,db); tool_result(x,id,item);
+  }
+ } else if (name == "searchJiraIssuesUsingJql") { search(x,id,args,db); }
+ else if (key == "") { tool_error(x,id,404,"Issue does not exist or you do not have permission to see it."); }
+ else {
+  let issue = db.get("issues").get(key); let fields = issue.get("fields"); let ok = true;
+  if (name == "getJiraIssue") { tool_result(x,id,project_issue(issue,args)); }
+  else if (name == "getTransitionsForJiraIssue") { tool_result(x,id,put(json_parse("{}"),"transitions",transitions(issue))); }
+  else {
+   if (name == "transitionJiraIssue") {
+    let list = transitions(issue); let found = false;
+    for (i in range(0,list.len())) { if (text(list.at(i),"id","") == text(member(args,"transition"),"id","")) { fields = put(fields,"status",list.at(i).get("to")); found = true; } }
+    if (!found) { ok = false; tool_error(x,id,400,"Transition is not available"); }
+   } else if (name == "addCommentToJiraIssue") {
+    let body = text(args,"commentBody",""); if (body == "") { ok = false; tool_error(x,id,400,"commentBody is required"); }
+    else {
+     let c = member(fields,"comment"); let comments = c.get("comments");
+     comments = append(comments,json_parse("{\"id\":" + json_quote(str(x.increment("comment-id"))) + ",\"body\":" + json_quote(body) + ",\"author\":{\"displayName\":\"Test User\"},\"created\":\"2026-01-01T00:00:00Z\"}"));
+     c = put(c,"comments",comments); c = put(c,"total",json_parse(str(comments.len()))); fields = put(fields,"comment",c);
+    }
+   } else if (name != "editJiraIssue") { ok = false; rpc_error(x,id,-32602,"Unsupported tool"); }
+   if (ok) {
+    let changes = member(args,"fields"); let names = changes.keys(); for (i in range(0,names.len())) { fields = put(fields,names.at(i),changes.get(names.at(i))); }
+    issue = put(issue,"fields",fields); db = put(db,"issues",put(db.get("issues"),key,issue)); save(x,db); tool_result(x,id,issue);
+   }
+  }
+ }
+}
+fn wiki_tool(x: Exchange, id: Json, name: string, args: Json, db: Json) -> void {
+ let pages = db.get("pages"); let pageid = text(args,"pageId",""); let result = json_parse("{\"results\":[],\"_links\":{}}"); let rows = json_parse("[]"); let names = pages.keys();
+ if (name == "getConfluencePage") {
+  if (!pages.has(pageid)) { tool_error(x,id,404,"Page not found"); }
+  else { let page = pages.get(pageid); if (text(args,"contentFormat","") == "html") { page = put(page,"body",string_json("<h1>Demo</h1><p>Synthetic documentation.</p>")); } tool_result(x,id,page); }
+ } else {
+  if (name == "getConfluenceSpaces") {
+   let include = true; if (args.has("keys")) { include = str_contains(args.get("keys").to_json(),"DEMO"); }
+   if (include) { rows = json_parse("[{\"id\":\"20000\",\"key\":\"DEMO\",\"name\":\"Demo space\",\"type\":\"global\"}]"); }
+  } else if (name == "searchConfluenceUsingCql" || name == "getPagesInConfluenceSpace" || name == "getConfluencePageDescendants") {
+   for (i in range(0,names.len())) {
+    let page = pages.get(names.at(i)); let include = true;
+    if (name == "getPagesInConfluenceSpace") { include = text(args,"spaceId","") == "20000"; }
+    if (name == "getConfluencePageDescendants") { include = text(page,"parentId","") == pageid; }
+    if (name == "searchConfluenceUsingCql") {
+     let cql = str_lower(text(args,"cql","")); include = str_contains(cql,"type = page") || str_contains(cql,"type=page") || str_contains(cql,"space");
+     if (str_contains(cql,"text ~")) { let terms = str_split(cql,"text ~"); let term = str_trim(str_replace(terms.at(1),"\"","")); include = include && str_contains(str_lower(text(page,"title","") + " " + text(page,"body","")),term); }
+    }
+    if (include) { let item = page; if (name == "searchConfluenceUsingCql") { item = put(json_parse("{}"),"content",page); item = put(item,"title",page.get("title")); item = put(item,"excerpt",string_json("Synthetic documentation.")); item = put(item,"url",string_json("/spaces/DEMO/pages/" + text(page,"id",""))); } rows = append(rows,item); }
+   }
+  } else if (name == "getConfluencePageFooterComments" || name == "getConfluencePageInlineComments" || name == "getConfluenceCommentChildren") {
+   if (pageid == "20001" && name == "getConfluencePageFooterComments") { rows = json_parse("[{\"id\":\"30001\",\"body\":\"Synthetic page comment\",\"author\":{\"displayName\":\"Test User\"}}]"); }
+  }
+  let start = 0; let cursor = text(args,"cursor",""); if (str_is_int(cursor)) { start = str_to_int(cursor); }
+  let limit = number(args,"limit",25); let selected = json_parse("[]");
+  for (i in range(0,rows.len())) { if (i >= start && selected.len() < limit) { selected = append(selected,rows.at(i)); } }
+  result = put(result,"results",selected); result = put(result,"size",json_parse(str(selected.len()))); result = put(result,"limit",json_parse(str(limit))); result = put(result,"start",json_parse(str(start)));
+  if (start + selected.len() < rows.len()) { result = put(result,"_links",json_parse("{\"next\":" + json_quote("/pages?cursor=" + str(start + selected.len())) + "}")); }
+  tool_result(x,id,result);
+ }
+}
+@cloud_mcp
+fn cloud_mcp(x: Exchange) -> void implements Handler {
+ if (authorized(x,"fixture-token") && !fault(x)) {
+  let body = json_parse(x.body()); let id = json_parse("null"); if (body.has("id")) { id = body.get("id"); }
+  let method = text(body,"method","");
+  if (method == "notifications/initialized") { x.status(202); x.send(""); }
+  else if (method == "initialize") { x.set_header("Mcp-Session-Id","session-demo"); rpc(x,id,json_parse("{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"jira-xray-fixture\",\"version\":\"1.0.0\"}}")); }
+  else if (method == "tools/list") {
+   let tools = json_parse(${json_stringify(tool_contracts)});
+   rpc(x,id,put(json_parse("{}"),"tools",tools));
+  } else if (method == "tools/call") {
+   let params = member(body,"params"); let name = text(params,"name",""); let args = member(params,"arguments"); let db = database(x);
+   if (name == "atlassianUserInfo") { tool_result(x,id,json_parse("{\"account_id\":\"000000:00000000-0000-4000-8000-000000000001\",\"account_status\":\"active\",\"name\":\"Test User\",\"picture\":\"https://mock-site.example.test/avatar.png\",\"created_at\":\"2026-01-01T00:00:00Z\",\"last_updated\":\"2026-01-01T00:00:00Z\",\"email\":\"user@example.test\",\"characteristics\":{\"not_mentionable\":false},\"extended_profile\":{\"job_title\":\"Test role\",\"department\":\"Demo\",\"phone_numbers\":[]},\"locale\":\"en-US\",\"nickname\":\"test-user\",\"account_type\":\"atlassian\",\"email_verified\":true}"));
+   } else if (name == "lookupJiraAccountId") { tool_result(x,id,json_parse("{\"data\":{\"users\":{\"users\":[{\"accountId\":\"000000:00000000-0000-4000-8000-000000000001\",\"accountType\":\"atlassian\",\"html\":\"Test User\",\"displayName\":\"Test User\"}],\"total\":1,\"header\":\"Users\"},\"groups\":{\"header\":\"Groups\",\"total\":0,\"groups\":[]}},\"statusCode\":200}"));
+   } else if (name == "getAccessibleAtlassianResources") { tool_result(x,id,json_parse("[{\"id\":\"00000000-0000-4000-8000-000000000001\",\"url\":\"https://mock-site.example.test\",\"name\":\"Demo site\",\"scopes\":[]}]")); }
+   else if (name == "getConfluencePage" || name == "getConfluenceSpaces" || name == "getConfluencePageDescendants" || name == "getConfluencePageFooterComments" || name == "getConfluencePageInlineComments" || name == "getConfluenceCommentChildren" || name == "searchConfluenceUsingCql" || name == "getPagesInConfluenceSpace") { wiki_tool(x,id,name,args,db); }
+   else if (name == "getJiraIssue" || name == "searchJiraIssuesUsingJql" || name == "getTransitionsForJiraIssue" || name == "transitionJiraIssue" || name == "addCommentToJiraIssue" || name == "createJiraIssue" || name == "editJiraIssue") { jira_tool(x,id,name,args,db); }
+   else { rpc_error(x,id,-32602,"Unsupported tool"); }
+  } else { rpc_error(x,id,-32601,"Method not found"); }
+ }
+}
+fn graphql_error(x: Exchange, message: string) -> void { x.json("{\"data\":null,\"errors\":[{\"message\":" + json_quote(message) + "}]}"); }
+@cloud_xray
+fn cloud_xray(x: Exchange) -> void implements Handler {
+ if (authorized(x,"fixture-xray-token") && !fault(x)) {
+  let body = json_parse(x.body()); let query = text(body,"query",""); let args = member(body,"variables"); let id = text(args,"id",""); let db = database(x); let result = json_parse("{}"); let ok = true;
+  if (str_contains(query,"addTestStep(")) {
+   if (id != "10003" || text(member(args,"s"),"action","") == "") { ok = false; graphql_error(x,"Invalid test or step"); }
+   else { let test = db.get("test"); let step = put(args.get("s"),"id",string_json("step-demo-" + str(x.increment("step-id") + 1))); test = put(test,"steps",append(test.get("steps"),step)); db = put(db,"test",test); result = put(result,"addTestStep",step); }
+  } else if (str_contains(query,"updateTestRunStatus(") || str_contains(query,"updateTestRunComment(") || str_contains(query,"addEvidenceToTestRun(")) {
+   if (!db.get("runs").has(id)) { ok = false; graphql_error(x,"Test run not found"); }
+   else {
+    let run = db.get("runs").get(id);
+    if (str_contains(query,"updateTestRunStatus(")) {
+     let status = text(args,"status",""); if (status != "TODO" && status != "TO DO" && status != "EXECUTING" && status != "PASSED" && status != "FAILED" && status != "ABORTED") { ok = false; graphql_error(x,"Invalid run status"); }
+     else { run = put(run,"status",json_parse("{\"name\":" + json_quote(status) + "}")); result = put(result,"updateTestRunStatus",json_parse("true")); }
+    } else if (str_contains(query,"updateTestRunComment(")) { run = put(run,"comment",string_json(text(args,"comment",""))); result = put(result,"updateTestRunComment",json_parse("true")); }
+    else { let items = member(args,"ev"); if (items.kind() != "array") { ok = false; graphql_error(x,"Evidence must be an array"); } else { let ev = run.get("evidence"); for (i in range(0,items.len())) { ev = append(ev,items.at(i)); } run = put(run,"evidence",ev); result = put(result,"addEvidenceToTestRun",json_parse("{\"warnings\":[]}")); } }
+    db = put(db,"runs",put(db.get("runs"),id,run));
+   }
+  } else if (str_contains(query,"getTestExecution(")) {
+   if (id != "10004") { result = put(result,"getTestExecution",json_parse("null")); }
+   else { let runs = db.get("runs"); let names = runs.keys(); let rows = json_parse("[]"); let start = number(args,"start",0); let limit = number(args,"limit",100); let cap = number(json_parse(config()),"runPageSize",100); if (cap > 0 && cap < limit) { limit = cap; }
+    if (start < 0 || limit < 1 || limit > 100) { ok = false; graphql_error(x,"Invalid pagination"); }
+    else { for (i in range(0,names.len())) { if (i >= start && rows.len() < limit) { rows = append(rows,runs.get(names.at(i))); } } result = put(result,"getTestExecution",json_parse("{\"issueId\":\"10004\",\"testRuns\":{\"total\":" + str(names.len()) + ",\"results\":" + rows.to_json() + "}}")); }
+   }
+  } else if (str_contains(query,"getTest(")) { let test = json_parse("null"); if (id == "10003") { test = db.get("test"); } result = put(result,"getTest",test); }
+  else { ok = false; graphql_error(x,"Unsupported selected GraphQL operation"); }
+  if (ok) { save(x,db); x.json(put(json_parse("{}"),"data",result).to_json()); }
+ }
+}
+@cloud_xray_auth
+fn cloud_xray_auth(x: Exchange) -> void implements Handler {
+ let body = json_parse(x.body());
+ if (secure_equal(text(body,"client_id",""),"fixture-client") && secure_equal(text(body,"client_secret",""),"fixture-secret")) { x.json(json_quote("fixture-xray-token")); }
+ else { http_error(x,401,"Invalid synthetic client credentials"); }
+}
+@cloud_discovery
+fn cloud_discovery(x: Exchange) -> void implements Handler {
+ let base = "http://" + x.header("Host");
+ x.json("{\"issuer\":" + json_quote(base) + ",\"authorization_endpoint\":" + json_quote(base + "/v1/authorize") + ",\"token_endpoint\":" + json_quote(base + "/v1/token") + ",\"registration_endpoint\":" + json_quote(base + "/v1/register") + ",\"response_types_supported\":[\"code\"],\"grant_types_supported\":[\"authorization_code\",\"refresh_token\"],\"code_challenge_methods_supported\":[\"S256\"]}");
+}
+@cloud_register
+fn cloud_register(x: Exchange) -> void implements Handler { x.status(201); x.json("{\"client_id\":\"fixture-client\",\"token_endpoint_auth_method\":\"none\"}"); }
+@cloud_authorize
+fn cloud_authorize(x: Exchange) -> void implements Handler {
+ let redirect = x.query("redirect_uri");
+ if (x.query("client_id") != "fixture-client" || x.query("code_challenge_method") != "S256" || x.query("code_challenge") == "" || !(str_starts_with(redirect,"http://127.0.0.1:") || str_starts_with(redirect,"http://localhost:"))) { http_error(x,400,"Invalid synthetic authorization request"); }
+ else { let code = "code-demo-" + str(x.increment("oauth-code")); x.set("code:" + code,json_parse("{\"challenge\":" + json_quote(x.query("code_challenge")) + ",\"redirect\":" + json_quote(redirect) + "}").to_json()); x.status(302); x.set_header("Location",redirect + "?code=" + code + "&state=" + url_encode(x.query("state"))); x.send(""); }
+}
+@cloud_token
+fn cloud_token(x: Exchange) -> void implements Handler {
+ let body = x.body(); let grant = form_get(body,"grant_type"); let ok = false;
+ if (form_get(body,"client_id") == "fixture-client") {
+  if (grant == "refresh_token" && form_get(body,"refresh_token") == "fixture-refresh") { ok = true; }
+  if (grant == "authorization_code") { let raw = x.take("code:" + form_get(body,"code")); if (raw != "") { let rec = json_parse(raw); ok = text(rec,"redirect","") == form_get(body,"redirect_uri") && secure_equal(text(rec,"challenge",""),sha256_url(form_get(body,"code_verifier"))); } }
+ }
+ if (ok) { x.json("{\"access_token\":\"fixture-token\",\"refresh_token\":\"fixture-refresh\",\"token_type\":\"Bearer\",\"expires_in\":3600}"); }
+ else { http_error(x,400,"invalid_grant"); }
+}
+@cloud_reset
+fn cloud_reset(x: Exchange) -> void implements Handler { if (authorized(x,"fixture-token")) { x.reset(); x.json("{\"ok\":true}"); } }
+@cloud_state
+fn cloud_state(x: Exchange) -> void implements Handler { if (authorized(x,"fixture-token")) { x.json(database(x).to_json()); } }
+route("POST","/v1/mcp","cloud_mcp");
+route("POST","/api/v2/authenticate","cloud_xray_auth");
+route("POST","/api/v2/graphql","cloud_xray");
+route("GET","/.well-known/oauth-authorization-server","cloud_discovery");
+route("POST","/v1/register","cloud_register");
+route("GET","/v1/authorize","cloud_authorize");
+route("POST","/v1/token","cloud_token");
+route("POST","/__reset","cloud_reset");
+route("GET","/__state","cloud_state");
+end _lmcode_
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

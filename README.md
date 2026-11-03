@@ -131,6 +131,7 @@ is not a transaction. Each concurrent request uses its own VM registry and arena
 | [api.lms](examples/api.lms) | `/health`, binary `/echo`, and `/users/{id}` with bearer authentication and query parameters |
 | [faults.lms](examples/faults.lms) | `/retry` fails twice with 503 then succeeds; `/slow`, `/disconnect`, `/malformed`, and `/error` simulate client failures |
 | [stateful.lms](examples/stateful.lms) | POST `/webhook`, GET `/last-event`, and atomic `/count` |
+| [jira-xray.lms](examples/jira-xray.lms) | Stateful Jira/Confluence MCP, OAuth stubs and Xray GraphQL; [contracts and setup](docs/jira-xray.md) |
 
 Copy and modify these scripts for your tests. The standard lmcode string, math,
 JSON, collection, codec, and file functions are available as well.
