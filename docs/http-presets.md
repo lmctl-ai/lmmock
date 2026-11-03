@@ -4,6 +4,8 @@ Each .lms file specializes the generic HTTP host with annotated functions that
 implement Handler. The Go host does not contain service-specific dispatch code.
 Edit the handlers to change the fixture behavior.
 
+`examples/jira-xray.lms` (MCP/OAuth/Xray, stateful): see [docs/jira-xray.md](jira-xray.md).
+
 | Script | Authentication | Implemented subset |
 | --- | --- | --- |
 | notion.lms | Bearer token and Notion-Version header | users/me, paged search, create/read pages |

@@ -816,8 +816,8 @@ fn search(x: Exchange, id: Json, args: Json, db: Json) -> void {
 }
 fn transitions(issue: Json) -> Json {
  let current = text(issue.get("fields").get("status"),"name",""); let out = json_parse("[]");
- if (current == "To Do") { out = json_parse("[{\"id\":\"21\",\"name\":\"Start Progress\",\"to\":{\"id\":\"3\",\"name\":\"In Progress\"}}]"); }
- if (current == "In Progress") { out = json_parse("[{\"id\":\"31\",\"name\":\"Done\",\"to\":{\"id\":\"5\",\"name\":\"Done\"}}]"); }
+ if (current == "To Do") { out = json_parse("[{\"id\":\"21\",\"name\":\"Start Progress\",\"to\":{\"id\":\"3\",\"name\":\"In Progress\",\"statusCategory\":{\"key\":\"indeterminate\",\"name\":\"In Progress\"}}}]"); }
+ if (current == "In Progress") { out = json_parse("[{\"id\":\"31\",\"name\":\"Done\",\"to\":{\"id\":\"5\",\"name\":\"Done\",\"statusCategory\":{\"key\":\"done\",\"name\":\"Done\"}}}]"); }
  return out;
 }
 fn jira_tool(x: Exchange, id: Json, name: string, args: Json, db: Json) -> void {
@@ -828,7 +828,7 @@ fn jira_tool(x: Exchange, id: Json, name: string, args: Json, db: Json) -> void 
    let n = x.increment("issue-id") + 4; let item = db.get("issues").get("TEST-1"); let newkey = "TEST-" + str(n);
    item = put(item,"id",string_json(str(10000 + n))); item = put(item,"key",string_json(newkey)); item = put(item,"self",string_json("https://mock-site.example.test/rest/api/3/issue/" + str(10000 + n)));
    let fields = item.get("fields"); fields = put(fields,"summary",args.get("summary")); fields = put(fields,"description",string_json(text(args,"description",""))); fields = put(fields,"issuetype",json_parse("{\"name\":" + json_quote(text(args,"issueTypeName","Task")) + "}"));
-   fields = put(fields,"comment",json_parse("{\"comments\":[],\"total\":0,\"startAt\":0,\"maxResults\":50}")); fields = put(fields,"status",json_parse("{\"id\":\"1\",\"name\":\"To Do\",\"statusCategory\":{\"key\":\"new\"}}"));
+   fields = put(fields,"comment",json_parse("{\"comments\":[],\"total\":0,\"startAt\":0,\"maxResults\":50}")); fields = put(fields,"status",json_parse("{\"id\":\"1\",\"name\":\"To Do\",\"statusCategory\":{\"key\":\"new\",\"name\":\"To Do\"}}"));
    let extra = member(args,"additional_fields"); let names = extra.keys(); for (i in range(0,names.len())) { fields = put(fields,names.at(i),extra.get(names.at(i))); }
    item = put(item,"fields",fields); db = put(db,"issues",put(db.get("issues"),newkey,item)); db = put(db,"keys",append(db.get("keys"),string_json(newkey))); save(x,db); tool_result(x,id,item);
   }

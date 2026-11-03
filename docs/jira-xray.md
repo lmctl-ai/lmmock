@@ -60,7 +60,8 @@ serverInfo and a Mcp-Session-Id header. `notifications/initialized` returns empt
 Tool failures use isError=true and JSON text with error/message/statusCode, errorMessages and
 errors. Unknown methods/tools use JSON-RPC -32601/-32602. The selected shape is
 compatible with JSON responses. Config `mcpSse: true` streams each result as an
-SSE message event and closes the response. Long-lived SSE, session expiry, protocol
+SSE message event and closes the response. JSON-RPC error responses are always
+plain JSON, even in SSE mode. Long-lived SSE, session expiry, protocol
 negotiation and arbitrary malformed input validation are not modeled.
 
 ## Jira tools
@@ -80,6 +81,10 @@ All issue tools accept cloudId (synthetic site `mock-site.example.test` or UUID
 | addCommentToJiraIssue | issueIdOrKey, commentBody | Appends a comment, visible on later get |
 | createJiraIssue | projectKey, issueTypeName, summary, description, additional_fields | Creates the next TEST key; readable and searchable |
 | editJiraIssue | issueIdOrKey, fields | Persists selected fields |
+
+Write tools other than `createJiraIssue` return the full updated issue as a
+diagnostic convenience; the vendor returns the created comment or an empty
+result. Clients that only check `isError` and, for create, `key` are unaffected.
 
 Seeds: TEST-1 and TEST-2 Tasks, TEST-3 Manual Test (issue ID 10003), TEST-4 Test
 Execution (10004). The names expansion uses identity field labels; renderedFields is a canned synthetic
@@ -148,6 +153,7 @@ Config `{"failures":2,"failureStatus":503,"delayMs":10}` fails
 the first two requests per MCP/GraphQL path, then succeeds; delay is milliseconds.
 Use the ordinary --config option in standalone mode. Reset clears counters too.
 Faults occur before mutations, so denied requests do not change fixture state.
+Non-JSON request bodies return HTTP 500 from the host, not a JSON-RPC parse error.
 
 `lmscript test.lms` compiles this preset and runs HTTP-level Go contract tests
 alongside the other fixtures. Tests require no jiracli installation, credentials
@@ -158,9 +164,12 @@ contracts after `scripts/compile-examples.sh` has generated fixtures.
 
 The inspected CLI supports JIRACLI_HOME and JIRA_CLOUDID, but has no CLI/env
 base-URL override. The MCP/Xray clients expose constructor test options, while
-CLI entry points use hard-coded endpoint constants. A CLI-level test therefore
-needs a throwaway source copy with only those endpoint constants redirected to
-the loopback preset, or a future explicit test-only override in the client.
+CLI entry points use hard-coded endpoint constants. Until jiracli exposes
+test-only URL overrides for the MCP, OAuth discovery and Xray endpoints, a
+CLI-level test needs a throwaway source copy with only those endpoint constants
+redirected to the loopback preset. A jiracli follow-up should add loopback-only
+`JIRACLI_MCP_URL`, `JIRACLI_OAUTH_DISCOVERY_URL`, `XRAY_AUTH_URL` and
+`XRAY_GRAPHQL_URL` overrides; it is outside this preset change.
 Never patch an operator's normal checkout or route real credentials to this mock.
 
 Use a private 0700 JIRACLI_HOME and 0600 credentials.json, version 1, with client
@@ -171,8 +180,7 @@ in the test copy. Draft → preview → submit can then exercise local-only writ
 keep that approval gate in the client. This mock itself does not implement a
 preview or irreversible-action gate because all its writes are ephemeral.
 
-Protocol sources: jiracli's mcp/client.ts, mcp/tools.ts, wiki/client.ts,
-auth/oauth.ts, auth/store.ts, xray/auth.ts, xray/client.ts and form/build.ts.
+Protocol sources: jiracli's MCP, OAuth, wiki, Xray and form modules.
 Public references: [Atlassian MCP tools](https://developer.atlassian.com/cloud/rovo-mcp/guides/supported-tools/)
 and [Xray GraphQL schema](https://xray.cloud.getxray.app/doc/graphql/).
 Only synthetic structures are included here; no live captures are fixtures.
