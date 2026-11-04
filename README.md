@@ -263,8 +263,8 @@ command in one step; no background shell process or fixed port is needed:
 ```
 
 This repository's workflow builds and tests Linux x64/arm64, macOS x64/arm64 and
-Windows x64. Pushes to main validate the native binaries; a successful manual workflow dispatch publishes the tested native binaries,
-example scripts, licenses and SHA256SUMS. Pull requests validate without publishing.
+Windows x64. Pushes to main (unless `[skip ci]` is in the commit message) and manual workflow dispatches publish the tested native binaries,
+example scripts, licenses and SHA256SUMS as a rolling `v0.1.<run_number>` release. Downstream consumers should pin a specific release tag and verify `SHA256SUMS`. Pull requests validate without publishing.
 All binaries use CGO_ENABLED=0. Linux x64 also runs the Go race detector.
 
 ## Develop
@@ -535,8 +535,8 @@ The Capture fixture fidelity Actions job downloads a pinned npm compiler and a
 checksummed lminspect release, records only the local stand-in, and compares its
 regenerated scenario to the committed preset. It builds the candidate lmmock because
 the new streaming primitive must be tested before release; it does not substitute an
-older release binary. The normal test matrix also runs the fidelity suite. Publishing
-requires the separate manual workflow dispatch; pushes run tests only. Native
+older release binary. The normal test matrix also runs the fidelity suite. Pushes to main
+and manual workflow dispatches publish a rolling release after all five platform builds and tests pass; downstream repositories should pin an explicit release tag and checksum. Native
 Copilot CLI live integration is not part of the default offline gate.
 
 

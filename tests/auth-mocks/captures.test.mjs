@@ -19,7 +19,10 @@ requirePath(github,'/user');
 requirePath(github,'/repos/fixture-org/fixture-repo');
 const inspected=github.filter(record=>record.request.headers.Authorization!==undefined);
 assert.ok(inspected.length>=2,'GitHub captures include authenticated REST calls');
-for(const record of inspected) assert.equal(record.request.headers.Authorization[0],'<redacted:credential>','lminspect redacts synthetic Bearer credentials');
+for(const record of inspected) {
+  assert.equal(record.request.headers.Authorization[0],'<redacted:credential>','lminspect redacts synthetic Bearer credentials');
+  assert.equal(record.response.headers['Github-Authentication-Token-Expiration'][0],'2030-01-01 00:00:00 UTC','GitHub capture uses UTC expiration header format');
+}
 
 const oauth=read('oauth2-pkce');
 requirePath(oauth,'/authorize');

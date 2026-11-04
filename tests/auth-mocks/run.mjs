@@ -40,11 +40,13 @@ for(const scenario of ['pending','web-login','unauth']) pass('npm-web-login',sce
 
 // Verify direct lmscript execution of examples/auth/<provider>/server.lms (P2-5)
 const cli=resolveLmscriptCommand();
-const env={...process.env,PATH:`${path.dirname(binary)}${path.delimiter}${process.env.PATH||''}`};
+const pathDirs=[path.dirname(binary)];
+if(process.env.LMSCRIPT_BIN&&process.env.LMSCRIPT_BIN.includes(path.sep)) pathDirs.push(path.dirname(path.resolve(process.env.LMSCRIPT_BIN)));
+if(process.env.PATH) pathDirs.push(process.env.PATH);
+const env={...process.env,PATH:pathDirs.join(path.delimiter)};
 for(const [provider,scenario] of [['github-device-flow','json-format'],['oauth2-pkce','client-credentials'],['npm-web-login','pending']]) {
   const script=path.join(root,'examples/auth',provider,'server.lms');
-  const config=path.join(root,'examples/auth',provider,'config.json');
-  const direct=spawnSync(cli.command,[...cli.args,script,'--config',config,'--',process.execPath,client,provider,scenario],{cwd:root,env,encoding:'utf8'});
+  const direct=spawnSync(cli.command,[...cli.args,script,process.execPath,client,provider,scenario],{cwd:root,env,encoding:'utf8'});
   if(direct.error) throw direct.error;
   assert.equal(direct.status,0,`direct lmscript ${provider} failed\n${direct.stdout}\n${direct.stderr}`);
   assert.ok(direct.stdout.includes(`PASS auth mock ${provider}/${scenario}`),`direct lmscript ${provider} must execute the client command instead of exiting as a no-op`);

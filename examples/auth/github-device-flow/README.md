@@ -11,8 +11,11 @@ Routes:
   `application/json`, otherwise URL-encoded fields.
 - `POST /login/oauth/access_token`: `authorization_pending`, `slow_down` (+ five seconds),
   `expired_token`, `access_denied`, or a synthetic Bearer token.
-- `GET /user` and `GET /repos/{owner}/{repo}`: fake identity, OAuth scope/expiration
-  headers, accepted permissions and the repository `permissions` object.
+- `GET /user` and `GET /repos/{owner}/{repo}`: fake identity, OAuth scope headers for
+  classic/OAuth tokens (`X-OAuth-Scopes` omitted for fine-grained PATs), UTC token
+  expiration (`2030-01-01 00:00:00 UTC`), accepted permissions, and private
+  (`fixture-org/fixture-repo`) plus public (`lmctl-ai/lmpdf`, `fixture-org/public-repo`)
+  repository `permissions` objects.
 - `POST /__mock/clock`: test-only `{"advance_seconds":N}`.
 
 Wire shapes follow GitHub's public [OAuth device flow](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app)

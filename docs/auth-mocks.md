@@ -22,9 +22,11 @@ protocol assertions to catch each mutation.
 Device-code responses are JSON when `Accept` requests JSON and form-encoded otherwise.
 The poll endpoint exercises `authorization_pending`, `slow_down` with a five-second
 interval increase, `expired_token`, `access_denied`, and the approved synthetic Bearer
-token. The REST routes return `X-OAuth-Scopes`, `X-Accepted-OAuth-Scopes`,
-`X-Accepted-GitHub-Permissions`, `github-authentication-token-expiration`, and a
-repository response with a `permissions` object.
+token. The REST routes return `X-OAuth-Scopes` and `X-Accepted-OAuth-Scopes` for classic/OAuth
+tokens, omit `X-OAuth-Scopes` for fine-grained PATs (`fineGrainedToken` or `"tokenKind": "fine-grained"`),
+emit `X-Accepted-GitHub-Permissions` and `github-authentication-token-expiration` (`YYYY-MM-DD HH:MM:SS UTC`),
+and serve both private (`fixture-org/fixture-repo`) and public (`lmctl-ai/lmpdf`, `fixture-org/public-repo`)
+repository responses with a `permissions` object.
 
 The `GET /login/device` page and `POST /__mock/approve` control represent the user's
 approval action. `POST /__mock/clock` is enabled only in the fixture config so interval
@@ -43,13 +45,16 @@ and `GitHub-Authentication-Token-Expiration` in its
 
 ## OAuth 2 authorization code + PKCE
 
-`examples/auth/oauth2-pkce/server.lms` registers one synthetic public client and one
-callback URI. `/authorize` requires a state value and an S256 challenge, then returns a
-302 to the registered callback with a one-time code and the original state. The token
-endpoint checks client ID, callback URI, code expiry, one-time use and
-`BASE64URL(SHA256(code_verifier))`. It also supports a synthetic `client_credentials`
-grant for clients that use a plain token endpoint. The userinfo route accepts only
-tokens minted by this server.
+`examples/auth/oauth2-pkce/server.lms` registers one synthetic client and allow-lists both
+`http://client.example.test/callback` and RFC 8252 ephemeral loopback callbacks
+(`http://127.0.0.1:<port>/callback`). `/authorize` requires a state value and an S256
+challenge, returns a 302 redirect with `?error=...&state=...` when parameters are invalid
+after `client_id`/`redirect_uri` validation (RFC 6749 §4.1.2.1), and issues a one-time
+code on success. The token endpoint supports both POST body credentials and HTTP Basic
+authentication (`Authorization: Basic`), checks client ID, callback URI, code expiry,
+one-time use, RFC 7636 `code_verifier` grammar (43–128 characters in `[A-Za-z0-9-._~]`),
+and `BASE64URL(SHA256(code_verifier))`. It also supports a synthetic `client_credentials`
+grant. The userinfo route accepts only tokens minted by this server.
 
 ## npm registry web login
 
@@ -57,8 +62,9 @@ tokens minted by this server.
 `POST /-/v1/login` returns absolute `loginUrl` and `doneUrl`; GET on the login URL
 serves a mock approval form; GET on `doneUrl` returns `202` with `Retry-After` while
 pending and `200 {"token":...}` once the test approval control is used. A completed
-session cannot be replayed. Authenticated `GET /-/npm/v1/user` and
-`GET /-/npm/v1/tokens` return synthetic profile and token-list values.
+session cannot be replayed. Authenticated `GET /-/whoami`, `GET /-/npm/v1/user` and
+`GET /-/npm/v1/tokens` return synthetic identity, profile and token-list values (both after
+web login and directly with the configured fixture token).
 
 These documented routes and payloads follow npm's
 [registry authentication API](https://github.com/npm/registry/blob/main/docs/user/authentication.md)
