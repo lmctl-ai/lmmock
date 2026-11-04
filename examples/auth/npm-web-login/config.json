@@ -1,0 +1,8 @@
+{
+  "username": "fixture-npm-user",
+  "email": "fixture-npm-user@example.test",
+  "created": "2026-11-04T00:00:00.000Z",
+  "token": "npm_mock_access_token",
+  "tokenKey": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "testClock": true
+}
