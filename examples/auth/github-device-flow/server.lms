@@ -4,6 +4,19 @@ p = _lmcode_ schema="../../schema.json";
 fn text(j: Json, key: string, fallback: string) -> string { let v = fallback; if (j.has(key)) { v = j.get(key).as_string(); } return v; }
 fn num(j: Json, key: string, fallback: int) -> int { let v = fallback; if (j.has(key)) { v = j.get(key).as_int(); } return v; }
 fn flag(j: Json, key: string, fallback: bool) -> bool { let v = fallback; if (j.has(key)) { v = j.get(key).as_bool(); } return v; }
+fn html_escape(s: string) -> string {
+ let out = "";
+ for (i in range(0, str_len(s))) {
+  let ch = str_substr(s, i, 1);
+  if (ch == "&") { out = out + "&amp;"; }
+  else if (ch == "<") { out = out + "&lt;"; }
+  else if (ch == ">") { out = out + "&gt;"; }
+  else if (ch == "\"") { out = out + "&quot;"; }
+  else if (ch == "'") { out = out + "&#39;"; }
+  else { out = out + ch; }
+ }
+ return out;
+}
 fn field(x: Exchange, name: string) -> string {
  let body = x.body(); let value = "";
  if (str_starts_with(str_trim(body), "{")) { let j = json_parse(body); if (j.has(name)) { if (name == "advance_seconds") { value = j.get(name).to_json(); } else { value = j.get(name).as_string(); } } }
@@ -32,10 +45,15 @@ fn device_code(x: Exchange) -> void implements Handler {
  let c = json_parse(config()); let client = field(x, "client_id");
  if (client == "" || client != text(c, "clientId", "fixture-github-client")) { x.status(401); oauth_error(x, "incorrect_client_credentials", 0); }
  else {
-  let code = random_token(); let user = "MOCK-" + str_substr(random_token(), 0, 4); if (c.has("userCode")) { user = text(c, "userCode", ""); } let interval = num(c, "interval", 5); let issued = mock_now(x, c);
+  let code = random_token(); let user = "MOCK-" + str_substr(random_token(), 0, 4);
+  if (c.has("userCode")) {
+   let cfgUser = text(c, "userCode", ""); let existing = x.get("user:" + cfgUser);
+   if (cfgUser != "" && (existing == "" || x.get("device:" + existing) == "")) { user = cfgUser; }
+  }
+  let interval = num(c, "interval", 5); let issued = mock_now(x, c);
   let scope = field(x, "scope"); if (scope == "") { scope = text(c, "scope", "repo, workflow"); }
-  let record = "{\"clientId\":" + json_quote(client) + ",\"userCode\":" + json_quote(user) + ",\"scope\":" + json_quote(scope) + ",\"expiresAt\":" + str(issued + num(c, "expiresIn", 900) * 1000) + ",\"interval\":" + str(interval) + ",\"lastPollAt\":" + str(issued) + "}";
-  x.set("device:" + code, record); x.set("user:" + user, code);
+  let record = "{\"clientId\":" + json_quote(client) + ",\"userCode\":" + json_quote(user) + ",\"scope\":" + json_quote(scope) + ",\"expiresAt\":" + str(issued + num(c, "expiresIn", 900) * 1000) + ",\"interval\":" + str(interval) + ",\"lastPollAt\":0,\"lastRealAt\":0}";
+  x.set("device:" + code, record); x.set("user:" + user, code); x.set("latest_user_code", user);
   let host = x.header("Host"); let scheme = text(c, "scheme", "http");
   let uri = scheme + "://" + host + "/login/device";
   let payload = "{\"device_code\":" + json_quote(code) + ",\"user_code\":" + json_quote(user) + ",\"verification_uri\":" + json_quote(uri) + ",\"expires_in\":" + str(num(c, "expiresIn", 900)) + ",\"interval\":" + str(interval) + "}";
@@ -52,26 +70,34 @@ fn poll_token(x: Exchange) -> void implements Handler {
   let rec = json_parse(recText); let client = field(x, "client_id");
   if (client != text(rec, "clientId", "")) { oauth_error(x, "incorrect_client_credentials", 0); }
   else {
-   let now = mock_now(x, c); let expires = rec.get("expiresAt").as_int(); let interval = rec.get("interval").as_int(); let last = rec.get("lastPollAt").as_int();
-   if (now >= expires) { x.take("device:" + code); x.take("user:" + text(rec, "userCode", "")); oauth_error(x, "expired_token", 0); }
-   else if (now - last < interval * 1000) {
+   let now = mock_now(x, c); let realNow = now_ms(); let expires = rec.get("expiresAt").as_int(); let interval = rec.get("interval").as_int(); let last = rec.get("lastPollAt").as_int(); let lastReal = rec.get("lastRealAt").as_int();
+   if (now >= expires) { x.take("device:" + code); x.take("decision:" + code); x.take("user:" + text(rec, "userCode", "")); oauth_error(x, "expired_token", 0); }
+   else if (last > 0 && now - last < interval * 1000 && (x.get("mock:now") != "" || realNow - lastReal < interval * 1000)) {
     interval = interval + 5;
     rec = json_with(rec, "/interval", json_parse(str(interval)));
     rec = json_with(rec, "/lastPollAt", json_parse(str(now)));
+    rec = json_with(rec, "/lastRealAt", json_parse(str(realNow)));
     x.set("device:" + code, rec.to_json()); oauth_error(x, "slow_down", interval);
    }
    else {
-    rec = json_with(rec, "/lastPollAt", json_parse(str(now))); x.set("device:" + code, rec.to_json());
     let decision = x.get("decision:" + code);
-    if (decision == "deny") { x.take("device:" + code); x.take("user:" + text(rec, "userCode", "")); oauth_error(x, "access_denied", 0); }
-    else if (decision != "approve") { oauth_error(x, "authorization_pending", 0); }
+    if (decision == "deny") { x.take("device:" + code); x.take("decision:" + code); x.take("user:" + text(rec, "userCode", "")); oauth_error(x, "access_denied", 0); }
+    else if (decision != "approve") {
+     rec = json_with(rec, "/lastPollAt", json_parse(str(now)));
+     rec = json_with(rec, "/lastRealAt", json_parse(str(realNow)));
+     x.set("device:" + code, rec.to_json()); oauth_error(x, "authorization_pending", 0);
+    }
     else {
-     let token = "gho_mock_" + random_token(); let scope = text(rec, "scope", "");
-     x.set("token:" + token, "{\"scope\":" + json_quote(scope) + "}");
-     x.take("device:" + code); x.take("user:" + text(rec, "userCode", ""));
-     let body = "{\"access_token\":" + json_quote(token) + ",\"token_type\":\"bearer\",\"scope\":" + json_quote(scope) + "}";
-     if (wants_json(x)) { x.json(body); }
-     else { x.set_header("Content-Type", "application/x-www-form-urlencoded"); x.send("access_token=" + url_encode(token) + "&token_type=bearer&scope=" + url_encode(scope)); }
+     let claimed = x.take("device:" + code); x.take("decision:" + code); x.take("user:" + text(rec, "userCode", ""));
+     if (claimed == "") { oauth_error(x, "incorrect_device_code", 0); }
+     else {
+      let kind = text(c, "tokenKind", "oauth"); let prefix = "gho_mock_";
+      if (kind == "fine-grained") { prefix = "github_pat_mock_"; }
+      let token = prefix + random_token(); let scope = text(rec, "scope", "");
+      x.set("token:" + token, "{\"scope\":" + json_quote(scope) + ",\"kind\":" + json_quote(kind) + "}");
+      if (wants_json(x)) { x.json("{\"access_token\":" + json_quote(token) + ",\"token_type\":\"bearer\",\"scope\":" + json_quote(scope) + "}"); }
+      else { x.set_header("Content-Type", "application/x-www-form-urlencoded"); x.send("access_token=" + url_encode(token) + "&token_type=bearer&scope=" + url_encode(scope)); }
+     }
     }
    }
   }
@@ -79,37 +105,60 @@ fn poll_token(x: Exchange) -> void implements Handler {
 }
 @approve
 fn approve(x: Exchange) -> void implements Handler {
- let user = field(x, "user_code"); let code = x.get("user:" + user); let decision = field(x, "decision");
- if (code == "") { x.status(404); x.json("{\"error\":\"unknown_user_code\"}"); }
- else if (decision != "approve" && decision != "deny") { x.status(400); x.json("{\"error\":\"invalid_decision\"}"); }
- else { x.set("decision:" + code, decision); x.json("{\"decision\":" + json_quote(decision) + "}"); }
+ let user = field(x, "user_code"); let decision = field(x, "decision"); let code = x.get("user:" + user);
+ if (user == "" || code == "" || (decision != "approve" && decision != "deny")) { x.status(404); x.json("{\"error\":\"unknown_user_code\"}"); }
+ else {
+  x.set("decision:" + code, decision);
+  let recText = x.get("device:" + code);
+  if (recText != "") {
+   let rec = json_parse(recText);
+   rec = json_with(rec, "/lastPollAt", json_parse("0"));
+   rec = json_with(rec, "/lastRealAt", json_parse("0"));
+   x.set("device:" + code, rec.to_json());
+  }
+  x.json("{\"ok\":true,\"user_code\":" + json_quote(user) + ",\"decision\":" + json_quote(decision) + "}");
+ }
 }
 @advance_clock
 fn advance_clock(x: Exchange) -> void implements Handler {
- let c = json_parse(config());
- if (!flag(c, "testClock", false)) { x.status(404); x.json("{\"error\":\"not_found\"}"); }
- else { let delta = json_parse(field(x, "advance_seconds")).as_int(); let next = mock_now(x, c) + delta * 1000; x.set("mock:now", str(next)); x.json("{\"now_ms\":" + str(next) + "}"); }
+ let c = json_parse(config()); let rawDelta = field(x, "advance_seconds");
+ if (rawDelta == "") { x.status(400); x.json("{\"error\":\"invalid_clock_delta\"}"); }
+ else {
+  let delta = json_parse(rawDelta).as_int(); let next = mock_now(x, c) + delta * 1000;
+  x.set("mock:now", str(next)); x.json("{\"now_ms\":" + str(next) + "}");
+ }
 }
 @page
 fn page(x: Exchange) -> void implements Handler {
  let user = x.query("user_code");
+ if (user == "") { user = x.get("latest_user_code"); }
+ let safeUser = html_escape(user);
  x.set_header("Content-Type", "text/html; charset=utf-8");
- x.send("<!doctype html><title>Mock GitHub device approval</title><h1>Mock GitHub sign-in</h1><p>Code: " + user + "</p><form action='/__mock/approve' method='post'><input type='hidden' name='user_code' value='" + user + "'><button name='decision' value='approve'>Approve fixture</button><button name='decision' value='deny'>Deny fixture</button></form>");
+ x.send("<!doctype html><title>Mock GitHub device approval</title><h1>Mock GitHub sign-in</h1><p>Code: " + safeUser + "</p><form action='/__mock/approve' method='post'><input type='hidden' name='user_code' value='" + safeUser + "'><button name='decision' value='approve'>Approve fixture</button><button name='decision' value='deny'>Deny fixture</button></form>");
 }
-fn token_record(x: Exchange) -> string {
+fn token_record(x: Exchange, c: Json) -> string {
  let h = x.header("Authorization"); let token = "";
  if (str_starts_with(h, "Bearer ")) { token = str_substr(h, 7, str_len(h)); }
- return x.get("token:" + token);
+ else if (str_starts_with(h, "token ")) { token = str_substr(h, 6, str_len(h)); }
+ let rec = "";
+ if (token != "") {
+  rec = x.get("token:" + token);
+  let fg = text(c, "fineGrainedToken", "");
+  if (rec == "" && fg != "" && secure_equal(token, fg)) { rec = "{\"scope\":\"\",\"kind\":\"fine-grained\"}"; }
+ }
+ return rec;
 }
 fn auth_headers(x: Exchange, c: Json, rec: Json, accepted: string) -> void {
- x.set_header("X-OAuth-Scopes", text(rec, "scope", ""));
- x.set_header("X-Accepted-OAuth-Scopes", accepted);
- x.set_header("github-authentication-token-expiration", text(c, "tokenExpiresAt", "2030-01-01T00:00:00Z"));
+ if (text(rec, "kind", "oauth") != "fine-grained" && !flag(c, "omitOAuthScopes", false)) {
+  x.set_header("X-OAuth-Scopes", text(rec, "scope", ""));
+  x.set_header("X-Accepted-OAuth-Scopes", accepted);
+ }
+ x.set_header("github-authentication-token-expiration", text(c, "tokenExpiresAt", "2030-01-01 00:00:00 UTC"));
  x.set_header("X-Accepted-GitHub-Permissions", "metadata=read");
 }
 @user
 fn get_user(x: Exchange) -> void implements Handler {
- let c = json_parse(config()); let raw = token_record(x);
+ let c = json_parse(config()); let raw = token_record(x, c);
  if (raw == "") { x.set_header("WWW-Authenticate", "Bearer"); x.status(401); x.json("{\"message\":\"Bad credentials\"}"); }
  else {
   let rec = json_parse(raw); auth_headers(x, c, rec, "read:user, user");
@@ -118,13 +167,20 @@ fn get_user(x: Exchange) -> void implements Handler {
 }
 @repo
 fn get_repo(x: Exchange) -> void implements Handler {
- let c = json_parse(config()); let raw = token_record(x);
+ let c = json_parse(config()); let raw = token_record(x, c);
+ let owner = x.param("owner"); let repo = x.param("repo");
+ let cfgOwner = text(c, "repoOwner", "fixture-org"); let cfgRepo = text(c, "repoName", "fixture-repo");
  if (raw == "") { x.set_header("WWW-Authenticate", "Bearer"); x.status(401); x.json("{\"message\":\"Bad credentials\"}"); }
- else if (x.param("owner") != "fixture-org" || x.param("repo") != "fixture-repo") { x.status(404); x.json("{\"message\":\"Not Found\"}"); }
- else {
+ else if (owner == cfgOwner && repo == cfgRepo) {
   let rec = json_parse(raw); auth_headers(x, c, rec, "repo");
-  x.json("{\"id\":424243,\"name\":\"fixture-repo\",\"full_name\":\"fixture-org/fixture-repo\",\"private\":true,\"permissions\":{\"admin\":false,\"maintain\":false,\"push\":true,\"triage\":false,\"pull\":true}}");
+  let priv = "true"; if (!flag(c, "repoPrivate", true)) { priv = "false"; }
+  x.json("{\"id\":424243,\"name\":" + json_quote(repo) + ",\"full_name\":" + json_quote(owner + "/" + repo) + ",\"private\":" + priv + ",\"permissions\":{\"admin\":false,\"maintain\":false,\"push\":true,\"triage\":false,\"pull\":true}}");
  }
+ else if ((owner == "lmctl-ai" && repo == "lmpdf") || (owner == "fixture-org" && repo == "public-repo")) {
+  let rec = json_parse(raw); auth_headers(x, c, rec, "repo");
+  x.json("{\"id\":424244,\"name\":" + json_quote(repo) + ",\"full_name\":" + json_quote(owner + "/" + repo) + ",\"private\":false,\"permissions\":{\"admin\":false,\"maintain\":false,\"push\":true,\"triage\":false,\"pull\":true}}");
+ }
+ else { x.status(404); x.json("{\"message\":\"Not Found\"}"); }
 }
 route("POST", "/login/device/code", "device_code");
 route("POST", "/login/oauth/access_token", "poll_token");
@@ -134,3 +190,5 @@ route("POST", "/__mock/clock", "advance_clock");
 route("GET", "/user", "user");
 route("GET", "/repos/{owner}/{repo}", "repo");
 end _lmcode_
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }
