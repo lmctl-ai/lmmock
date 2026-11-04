@@ -2,7 +2,10 @@
   "clients": {
     "fixture-public-client": {
       "secret": "fixture-client-secret",
-      "redirectUris": ["http://client.example.test/callback"]
+      "redirectUris": [
+        "http://client.example.test/callback",
+        "http://127.0.0.1/callback"
+      ]
     }
   },
   "codeLifetimeMs": 60000,
