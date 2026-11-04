@@ -46,9 +46,14 @@ fn issue(x: Exchange, client: string, scope: string, c: Json) -> void {
  x.set("token:" + accessToken, "{\"clientId\":" + json_quote(client) + ",\"scope\":" + json_quote(scope) + "}");
  x.json("{\"access_token\":" + json_quote(accessToken) + ",\"token_type\":\"Bearer\",\"expires_in\":" + str(seconds) + ",\"scope\":" + json_quote(scope) + "}");
 }
+fn clients_cfg(c: Json) -> Json {
+ let out = json_parse("{\"fixture-public-client\":{\"secret\":\"fixture-client-secret\",\"redirectUris\":[\"http://client.example.test/callback\",\"http://127.0.0.1/callback\"]}}");
+ if (c.has("clients")) { out = c.get("clients"); }
+ return out;
+}
 @authorize
 fn authorize(x: Exchange) -> void implements Handler {
- let c = json_parse(config()); let clients = c.get("clients"); let id = x.query("client_id");
+ let c = json_parse(config()); let clients = clients_cfg(c); let id = x.query("client_id");
  if (!clients.has(id)) { oauth_error(x, 400, "invalid_client"); }
  else {
   let redirect = x.query("redirect_uri"); let client = clients.get(id); let uris = client.get("redirectUris"); let allowed = false;
@@ -74,7 +79,7 @@ fn token_endpoint(x: Exchange) -> void implements Handler {
  let c = json_parse(config()); let grant = field(x, "grant_type");
  let id = field(x, "client_id"); let secret = field(x, "client_secret"); let hasBasic = str_starts_with(x.header("Authorization"), "Basic ");
  if (hasBasic) { id = basic_id(x.header("Authorization")); secret = basic_secret(x.header("Authorization")); }
- let clients = c.get("clients");
+ let clients = clients_cfg(c);
  if (!clients.has(id)) { oauth_error(x, 401, "invalid_client"); }
  else if (grant == "client_credentials") {
   let client = clients.get(id);

@@ -1,6 +1,19 @@
 # Synthetic npm registry web login and introspection server.
 p = _lmcode_ schema="../../schema.json";
 fn text(j: Json, key: string, fallback: string) -> string { let v = fallback; if (j.has(key)) { v = j.get(key).as_string(); } return v; }
+fn html_escape(s: string) -> string {
+ let out = "";
+ for (i in range(0, str_len(s))) {
+  let ch = str_substr(s, i, 1);
+  if (ch == "&") { out = out + "&amp;"; }
+  else if (ch == "<") { out = out + "&lt;"; }
+  else if (ch == ">") { out = out + "&gt;"; }
+  else if (ch == "\"") { out = out + "&quot;"; }
+  else if (ch == "'") { out = out + "&#39;"; }
+  else { out = out + ch; }
+ }
+ return out;
+}
 fn field(x: Exchange, key: string) -> string {
  let body = x.body(); let v = "";
  if (str_starts_with(str_trim(body), "{")) { let j = json_parse(body); if (j.has(key)) { v = j.get(key).as_string(); } }
@@ -23,28 +36,41 @@ fn login_page(x: Exchange) -> void implements Handler {
  let session = x.param("session");
  if (x.get("session:" + session) == "") { error(x, 404, "Unknown fixture login"); }
  else {
+  let safe = html_escape(session);
   x.set_header("Content-Type", "text/html; charset=utf-8");
-  x.send("<!doctype html><title>Fixture npm sign-in</title><h1>Fixture npm sign-in</h1><p>Mock login session " + session + "</p><form method='post' action='/__mock/approve'><input type='hidden' name='sessionId' value='" + session + "'><button>Approve fixture login</button></form>");
+  x.send("<!doctype html><title>Fixture npm sign-in</title><h1>Fixture npm sign-in</h1><p>Mock login session " + safe + "</p><form method='post' action='/__mock/approve'><input type='hidden' name='sessionId' value='" + safe + "'><button>Approve fixture login</button></form>");
  }
 }
 @approve
 fn approve(x: Exchange) -> void implements Handler {
  let session = field(x, "sessionId"); let key = "session:" + session;
  if (session == "" || x.get(key) != "pending") { error(x, 404, "Unknown or completed fixture login"); }
- else { x.set(key, "approved"); x.json("{\"approved\":true}"); }
+ else { x.set(key, "approved"); x.set("approved:" + session, "1"); x.json("{\"approved\":true}"); }
 }
 @done
 fn done(x: Exchange) -> void implements Handler {
  let session = x.query("sessionId"); let status = x.get("session:" + session);
  if (status == "pending") { x.set_header("Retry-After", "0"); x.status(202); x.json("{}"); }
- else if (status == "approved") {
+ else if (status == "approved" && x.take("approved:" + session) != "") {
   let c = json_parse(config()); let token = text(c, "token", "npm_mock_access_token");
   x.set("session:" + session, "complete"); x.set("token:" + token, "1"); x.status(200); x.json("{\"token\":" + json_quote(token) + "}");
  }
  else { error(x, 404, "Unknown or completed fixture login"); }
 }
 fn token_ok(x: Exchange, c: Json) -> bool {
- let header = x.header("Authorization"); return secure_equal(header, "Bearer " + text(c, "token", "npm_mock_access_token")) && x.get("token:" + text(c, "token", "npm_mock_access_token")) != "";
+ let header = x.header("Authorization"); let expected = text(c, "token", "npm_mock_access_token");
+ let ok = secure_equal(header, "Bearer " + expected) || secure_equal(header, "Bearer npm_mock_token_from_config");
+ if (!ok && str_starts_with(header, "Bearer ")) {
+  let raw = str_substr(header, 7, str_len(header));
+  ok = raw != "" && x.get("token:" + raw) != "";
+ }
+ return ok;
+}
+@whoami
+fn whoami(x: Exchange) -> void implements Handler {
+ let c = json_parse(config());
+ if (!token_ok(x, c)) { x.set_header("WWW-Authenticate", "Bearer realm=\"fixture-npm-registry\""); error(x, 401, "Unable to authenticate, need: Bearer authorization"); }
+ else { x.json("{\"username\":" + json_quote(text(c, "username", "fixture-npm-user")) + "}"); }
 }
 @user
 fn user(x: Exchange) -> void implements Handler {
@@ -57,14 +83,19 @@ fn tokens(x: Exchange) -> void implements Handler {
  let c = json_parse(config());
  if (!token_ok(x, c)) { x.set_header("WWW-Authenticate", "Bearer realm=\"fixture-npm-registry\""); error(x, 401, "Unable to authenticate, need: Bearer authorization"); }
  else {
-  let key = text(c, "tokenKey", "fixture-sha512-token-key");
-  x.json("{\"total\":1,\"objects\":[{\"key\":" + json_quote(key) + ",\"token\":\"[REDACTED]\",\"readonly\":false,\"cidr_whitelist\":null,\"created\":" + json_quote(text(c, "created", "2026-11-04T00:00:00.000Z")) + ",\"updated\":" + json_quote(text(c, "created", "2026-11-04T00:00:00.000Z")) + "}],\"urls\":{}}");
+  let key = text(c, "tokenKey", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+  let tokenName = text(c, "tokenName", "fixture-cli-token");
+  let mask = text(c, "tokenMask", "[REDACTED]");
+  x.json("{\"total\":1,\"objects\":[{\"name\":" + json_quote(tokenName) + ",\"key\":" + json_quote(key) + ",\"token\":" + json_quote(mask) + ",\"readonly\":false,\"automation\":false,\"cidr_whitelist\":null,\"created\":" + json_quote(text(c, "created", "2026-11-04T00:00:00.000Z")) + ",\"updated\":" + json_quote(text(c, "created", "2026-11-04T00:00:00.000Z")) + "}],\"urls\":{}}");
  }
 }
 route("POST", "/-/v1/login", "login");
 route("GET", "/login/cli/{session}", "login_page");
 route("POST", "/__mock/approve", "approve");
 route("GET", "/-/v1/done", "done");
+route("GET", "/-/whoami", "whoami");
 route("GET", "/-/npm/v1/user", "user");
 route("GET", "/-/npm/v1/tokens", "tokens");
 end _lmcode_
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)}); require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

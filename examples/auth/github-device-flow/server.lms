@@ -25,7 +25,7 @@ fn field(x: Exchange, name: string) -> string {
 }
 fn mock_now(x: Exchange, c: Json) -> int {
  let now = now_ms();
- if (flag(c, "testClock", false)) {
+ if (flag(c, "testClock", true)) {
   let saved = x.get("mock:now");
   if (saved != "") { now = json_parse(saved).as_int(); }
   else { now = num(c, "initialTimeMs", 1000000); }
@@ -43,13 +43,11 @@ fn oauth_error(x: Exchange, code: string, interval: int) -> void {
 @device_code
 fn device_code(x: Exchange) -> void implements Handler {
  let c = json_parse(config()); let client = field(x, "client_id");
- if (client == "" || client != text(c, "clientId", "fixture-github-client")) { x.status(401); oauth_error(x, "incorrect_client_credentials", 0); }
+ if (client == "" || client != text(c, "clientId", "fixture-github-app-client")) { x.status(401); oauth_error(x, "incorrect_client_credentials", 0); }
  else {
   let code = random_token(); let user = "MOCK-" + str_substr(random_token(), 0, 4);
-  if (c.has("userCode")) {
-   let cfgUser = text(c, "userCode", ""); let existing = x.get("user:" + cfgUser);
-   if (cfgUser != "" && (existing == "" || x.get("device:" + existing) == "")) { user = cfgUser; }
-  }
+  let cfgUser = text(c, "userCode", "WDJB-MJHT"); let existing = x.get("user:" + cfgUser);
+  if (cfgUser != "" && (existing == "" || x.get("device:" + existing) == "")) { user = cfgUser; }
   let interval = num(c, "interval", 5); let issued = mock_now(x, c);
   let scope = field(x, "scope"); if (scope == "") { scope = text(c, "scope", "repo, workflow"); }
   let record = "{\"clientId\":" + json_quote(client) + ",\"userCode\":" + json_quote(user) + ",\"scope\":" + json_quote(scope) + ",\"expiresAt\":" + str(issued + num(c, "expiresIn", 900) * 1000) + ",\"interval\":" + str(interval) + ",\"lastPollAt\":0,\"lastRealAt\":0}";
@@ -143,7 +141,7 @@ fn token_record(x: Exchange, c: Json) -> string {
  let rec = "";
  if (token != "") {
   rec = x.get("token:" + token);
-  let fg = text(c, "fineGrainedToken", "");
+  let fg = text(c, "fineGrainedToken", "github_pat_mock_fine_grained_token");
   if (rec == "" && fg != "" && secure_equal(token, fg)) { rec = "{\"scope\":\"\",\"kind\":\"fine-grained\"}"; }
  }
  return rec;
