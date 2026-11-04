@@ -62,6 +62,51 @@ func TestProxyMockPrecedenceAndAudit(t *testing.T) {
 	}
 }
 
+func TestProxyAuditRedactsSensitiveHeaders(t *testing.T) {
+	const canary = "CANARY_AUDIT_SECRET_323"
+	var audit bytes.Buffer
+	e, err := NewWithOptions(fixture(t, "api"), Options{AuditWriter: &audit})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := httptest.NewRequest("GET", "/health", nil)
+	sensitive := []string{
+		"Authorization",
+		"Proxy-Authorization",
+		"Cookie",
+		"Set-Cookie",
+		"X-Api-Key",
+		"Api-Key",
+		"X-GitHub-Token",
+		"X-Client-Secret",
+		"X-User-Password",
+		"X-Webhook-Signature",
+	}
+	for _, h := range sensitive {
+		r.Header.Set(h, canary)
+	}
+	r.Header.Set("X-Public-Header", "visible-value")
+	w := httptest.NewRecorder()
+	e.ServeHTTP(w, r)
+	if strings.Contains(audit.String(), canary) {
+		t.Fatalf("audit log leaked sensitive header canary: %s", audit.String())
+	}
+	var event struct {
+		Headers http.Header `json:"headers"`
+	}
+	if err := json.Unmarshal(audit.Bytes(), &event); err != nil {
+		t.Fatal(err)
+	}
+	for _, h := range sensitive {
+		if got := event.Headers.Get(h); got != "[redacted]" {
+			t.Fatalf("header %s = %q, want [redacted]", h, got)
+		}
+	}
+	if got := event.Headers.Get("X-Public-Header"); got != "visible-value" {
+		t.Fatalf("X-Public-Header = %q, want visible-value", got)
+	}
+}
+
 func TestProxyPreservesRequestAndStripsHopHeaders(t *testing.T) {
 	body := strings.Repeat("binary\x00", 200000) // Larger than the mock handler's 1 MiB body limit.
 	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
