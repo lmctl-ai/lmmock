@@ -1,0 +1,136 @@
+# Synthetic GitHub OAuth device grant and REST token-inspection server.
+# No real tokens or GitHub requests. /__mock/* routes are test controls.
+p = _lmcode_ schema="../../schema.json";
+fn text(j: Json, key: string, fallback: string) -> string { let v = fallback; if (j.has(key)) { v = j.get(key).as_string(); } return v; }
+fn num(j: Json, key: string, fallback: int) -> int { let v = fallback; if (j.has(key)) { v = j.get(key).as_int(); } return v; }
+fn flag(j: Json, key: string, fallback: bool) -> bool { let v = fallback; if (j.has(key)) { v = j.get(key).as_bool(); } return v; }
+fn field(x: Exchange, name: string) -> string {
+ let body = x.body(); let value = "";
+ if (str_starts_with(str_trim(body), "{")) { let j = json_parse(body); if (j.has(name)) { if (name == "advance_seconds") { value = j.get(name).to_json(); } else { value = j.get(name).as_string(); } } }
+ else { value = form_get(body, name); }
+ return value;
+}
+fn mock_now(x: Exchange, c: Json) -> int {
+ let now = now_ms();
+ if (flag(c, "testClock", false)) {
+  let saved = x.get("mock:now");
+  if (saved != "") { now = json_parse(saved).as_int(); }
+  else { now = num(c, "initialTimeMs", 1000000); }
+ }
+ return now;
+}
+fn wants_json(x: Exchange) -> bool { return str_contains(x.header("Accept"), "application/json"); }
+fn oauth_error(x: Exchange, code: string, interval: int) -> void {
+ let body = "{\"error\":" + json_quote(code) + ",\"error_description\":" + json_quote(code);
+ if (interval > 0) { body = body + ",\"interval\":" + str(interval); }
+ body = body + "}";
+ if (wants_json(x)) { x.json(body); }
+ else { let form = "error=" + url_encode(code) + "&error_description=" + url_encode(code); if (interval > 0) { form = form + "&interval=" + str(interval); } x.set_header("Content-Type", "application/x-www-form-urlencoded"); x.send(form); }
+}
+@device_code
+fn device_code(x: Exchange) -> void implements Handler {
+ let c = json_parse(config()); let client = field(x, "client_id");
+ if (client == "" || client != text(c, "clientId", "fixture-github-client")) { x.status(401); oauth_error(x, "incorrect_client_credentials", 0); }
+ else {
+  let code = random_token(); let user = "MOCK-" + str_substr(random_token(), 0, 4); if (c.has("userCode")) { user = text(c, "userCode", ""); } let interval = num(c, "interval", 5); let issued = mock_now(x, c);
+  let scope = field(x, "scope"); if (scope == "") { scope = text(c, "scope", "repo, workflow"); }
+  let record = "{\"clientId\":" + json_quote(client) + ",\"userCode\":" + json_quote(user) + ",\"scope\":" + json_quote(scope) + ",\"expiresAt\":" + str(issued + num(c, "expiresIn", 900) * 1000) + ",\"interval\":" + str(interval) + ",\"lastPollAt\":" + str(issued) + "}";
+  x.set("device:" + code, record); x.set("user:" + user, code);
+  let host = x.header("Host"); let scheme = text(c, "scheme", "http");
+  let uri = scheme + "://" + host + "/login/device";
+  let payload = "{\"device_code\":" + json_quote(code) + ",\"user_code\":" + json_quote(user) + ",\"verification_uri\":" + json_quote(uri) + ",\"expires_in\":" + str(num(c, "expiresIn", 900)) + ",\"interval\":" + str(interval) + "}";
+  if (wants_json(x)) { x.json(payload); }
+  else { x.set_header("Content-Type", "application/x-www-form-urlencoded"); x.send("device_code=" + url_encode(code) + "&user_code=" + url_encode(user) + "&verification_uri=" + url_encode(uri) + "&expires_in=" + str(num(c, "expiresIn", 900)) + "&interval=" + str(interval)); }
+ }
+}
+@poll_token
+fn poll_token(x: Exchange) -> void implements Handler {
+ let c = json_parse(config()); let code = field(x, "device_code"); let recText = x.get("device:" + code);
+ if (field(x, "grant_type") != "urn:ietf:params:oauth:grant-type:device_code") { oauth_error(x, "unsupported_grant_type", 0); }
+ else if (recText == "") { oauth_error(x, "incorrect_device_code", 0); }
+ else {
+  let rec = json_parse(recText); let client = field(x, "client_id");
+  if (client != text(rec, "clientId", "")) { oauth_error(x, "incorrect_client_credentials", 0); }
+  else {
+   let now = mock_now(x, c); let expires = rec.get("expiresAt").as_int(); let interval = rec.get("interval").as_int(); let last = rec.get("lastPollAt").as_int();
+   if (now >= expires) { x.take("device:" + code); x.take("user:" + text(rec, "userCode", "")); oauth_error(x, "expired_token", 0); }
+   else if (now - last < interval * 1000) {
+    interval = interval + 5;
+    rec = json_with(rec, "/interval", json_parse(str(interval)));
+    rec = json_with(rec, "/lastPollAt", json_parse(str(now)));
+    x.set("device:" + code, rec.to_json()); oauth_error(x, "slow_down", interval);
+   }
+   else {
+    rec = json_with(rec, "/lastPollAt", json_parse(str(now))); x.set("device:" + code, rec.to_json());
+    let decision = x.get("decision:" + code);
+    if (decision == "deny") { x.take("device:" + code); x.take("user:" + text(rec, "userCode", "")); oauth_error(x, "access_denied", 0); }
+    else if (decision != "approve") { oauth_error(x, "authorization_pending", 0); }
+    else {
+     let token = "gho_mock_" + random_token(); let scope = text(rec, "scope", "");
+     x.set("token:" + token, "{\"scope\":" + json_quote(scope) + "}");
+     x.take("device:" + code); x.take("user:" + text(rec, "userCode", ""));
+     let body = "{\"access_token\":" + json_quote(token) + ",\"token_type\":\"bearer\",\"scope\":" + json_quote(scope) + "}";
+     if (wants_json(x)) { x.json(body); }
+     else { x.set_header("Content-Type", "application/x-www-form-urlencoded"); x.send("access_token=" + url_encode(token) + "&token_type=bearer&scope=" + url_encode(scope)); }
+    }
+   }
+  }
+ }
+}
+@approve
+fn approve(x: Exchange) -> void implements Handler {
+ let user = field(x, "user_code"); let code = x.get("user:" + user); let decision = field(x, "decision");
+ if (code == "") { x.status(404); x.json("{\"error\":\"unknown_user_code\"}"); }
+ else if (decision != "approve" && decision != "deny") { x.status(400); x.json("{\"error\":\"invalid_decision\"}"); }
+ else { x.set("decision:" + code, decision); x.json("{\"decision\":" + json_quote(decision) + "}"); }
+}
+@advance_clock
+fn advance_clock(x: Exchange) -> void implements Handler {
+ let c = json_parse(config());
+ if (!flag(c, "testClock", false)) { x.status(404); x.json("{\"error\":\"not_found\"}"); }
+ else { let delta = json_parse(field(x, "advance_seconds")).as_int(); let next = mock_now(x, c) + delta * 1000; x.set("mock:now", str(next)); x.json("{\"now_ms\":" + str(next) + "}"); }
+}
+@page
+fn page(x: Exchange) -> void implements Handler {
+ let user = x.query("user_code");
+ x.set_header("Content-Type", "text/html; charset=utf-8");
+ x.send("<!doctype html><title>Mock GitHub device approval</title><h1>Mock GitHub sign-in</h1><p>Code: " + user + "</p><form action='/__mock/approve' method='post'><input type='hidden' name='user_code' value='" + user + "'><button name='decision' value='approve'>Approve fixture</button><button name='decision' value='deny'>Deny fixture</button></form>");
+}
+fn token_record(x: Exchange) -> string {
+ let h = x.header("Authorization"); let token = "";
+ if (str_starts_with(h, "Bearer ")) { token = str_substr(h, 7, str_len(h)); }
+ return x.get("token:" + token);
+}
+fn auth_headers(x: Exchange, c: Json, rec: Json, accepted: string) -> void {
+ x.set_header("X-OAuth-Scopes", text(rec, "scope", ""));
+ x.set_header("X-Accepted-OAuth-Scopes", accepted);
+ x.set_header("github-authentication-token-expiration", text(c, "tokenExpiresAt", "2030-01-01T00:00:00Z"));
+ x.set_header("X-Accepted-GitHub-Permissions", "metadata=read");
+}
+@user
+fn get_user(x: Exchange) -> void implements Handler {
+ let c = json_parse(config()); let raw = token_record(x);
+ if (raw == "") { x.set_header("WWW-Authenticate", "Bearer"); x.status(401); x.json("{\"message\":\"Bad credentials\"}"); }
+ else {
+  let rec = json_parse(raw); auth_headers(x, c, rec, "read:user, user");
+  x.json("{\"login\":\"fixture-user\",\"id\":424242,\"type\":\"User\",\"site_admin\":false,\"public_repos\":0}");
+ }
+}
+@repo
+fn get_repo(x: Exchange) -> void implements Handler {
+ let c = json_parse(config()); let raw = token_record(x);
+ if (raw == "") { x.set_header("WWW-Authenticate", "Bearer"); x.status(401); x.json("{\"message\":\"Bad credentials\"}"); }
+ else if (x.param("owner") != "fixture-org" || x.param("repo") != "fixture-repo") { x.status(404); x.json("{\"message\":\"Not Found\"}"); }
+ else {
+  let rec = json_parse(raw); auth_headers(x, c, rec, "repo");
+  x.json("{\"id\":424243,\"name\":\"fixture-repo\",\"full_name\":\"fixture-org/fixture-repo\",\"private\":true,\"permissions\":{\"admin\":false,\"maintain\":false,\"push\":true,\"triage\":false,\"pull\":true}}");
+ }
+}
+route("POST", "/login/device/code", "device_code");
+route("POST", "/login/oauth/access_token", "poll_token");
+route("GET", "/login/device", "page");
+route("POST", "/__mock/approve", "approve");
+route("POST", "/__mock/clock", "advance_clock");
+route("GET", "/user", "user");
+route("GET", "/repos/{owner}/{repo}", "repo");
+end _lmcode_

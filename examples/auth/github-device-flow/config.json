@@ -1,0 +1,10 @@
+{
+  "clientId": "fixture-github-app-client",
+  "scope": "repo, workflow",
+  "userCode": "WDJB-MJHT",
+  "expiresIn": 900,
+  "interval": 5,
+  "testClock": true,
+  "initialTimeMs": 1000000,
+  "tokenExpiresAt": "2030-01-01T00:00:00Z"
+}
