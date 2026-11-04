@@ -133,6 +133,18 @@ is not a transaction. Each concurrent request uses its own VM registry and arena
 | [stateful.lms](examples/stateful.lms) | POST `/webhook`, GET `/last-event`, and atomic `/count` |
 | [jira-xray.lms](examples/jira-xray.lms) | Stateful Jira/Confluence MCP, OAuth stubs and Xray GraphQL; [contracts and setup](docs/jira-xray.md) |
 
+## Authentication-flow examples
+
+The mock-only auth examples cover GitHub OAuth device authorization and REST token
+inspection, OAuth 2 authorization-code + PKCE (plus a client-credentials token grant),
+and npm registry web login/profile/token inspection. They use only fixture clients and
+synthetic credentials. `/__mock/*` routes are local approval/clock controls, not public
+provider endpoints. See [docs/auth-mocks.md](docs/auth-mocks.md) and the individual
+example READMEs under [examples/auth](examples/auth).
+
+The auth protocol checks run in the normal `lmscript test.lms` gate, including deliberate
+mutants for GitHub `slow_down`, PKCE verifier validation and npm's 202 pending response.
+
 Copy and modify these scripts for your tests. The standard lmcode string, math,
 JSON, collection, codec, and file functions are available as well.
 
