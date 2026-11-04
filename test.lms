@@ -25,6 +25,8 @@ version = env("SAMPLE_VERSION") || "0.1.0";
 step(["go", "build", "-trimpath", "-ldflags=-s -w -X main.version=" + version, "-o", "build/lmmock" + ext, "./cmd/lmmock"]);
 step(["go", "build", "-o", "build/codex-fixture" + ext, "./tests/providers/codex/fakecli"]);
 step(["node", "tests/integration.mjs", "build/lmmock" + ext]);
+step(["node", "tests/auth-mocks/run.mjs", "build/lmmock" + ext]);
+step(["node", "tests/auth-mocks/captures.test.mjs"]);
 step(["node", "tests/stream-tls/run.mjs", "build/lmmock" + ext]);
 step(["python3", "tests/stream-tls/controls.py"]);
 step(["node", "tests/stdio/process.mjs", "build/lmmock" + ext]);
