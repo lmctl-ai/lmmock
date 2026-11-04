@@ -1,0 +1,66 @@
+# Synthetic OAuth 2 authorization-code + PKCE and client-credentials server.
+p = _lmcode_ schema="../../schema.json";
+fn text(j: Json, key: string, fallback: string) -> string { let v = fallback; if (j.has(key)) { v = j.get(key).as_string(); } return v; }
+fn num(j: Json, key: string, fallback: int) -> int { let v = fallback; if (j.has(key)) { v = j.get(key).as_int(); } return v; }
+fn field(x: Exchange, key: string) -> string {
+ let body = x.body(); let v = "";
+ if (str_starts_with(str_trim(body), "{")) { let j = json_parse(body); if (j.has(key)) { v = j.get(key).as_string(); } }
+ else { v = form_get(body, key); }
+ return v;
+}
+fn oauth_error(x: Exchange, status: int, code: string) -> void { x.status(status); x.json("{\"error\":" + json_quote(code) + "}"); }
+fn issue(x: Exchange, client: string, scope: string, c: Json) -> void {
+ let accessToken = "oauth_mock_" + random_token(); let seconds = num(c, "accessTokenLifetimeSeconds", 3600);
+ x.set("token:" + accessToken, "{\"clientId\":" + json_quote(client) + ",\"scope\":" + json_quote(scope) + "}");
+ x.json("{\"access_token\":" + json_quote(accessToken) + ",\"token_type\":\"Bearer\",\"expires_in\":" + str(seconds) + ",\"scope\":" + json_quote(scope) + "}");
+}
+@authorize
+fn authorize(x: Exchange) -> void implements Handler {
+ let c = json_parse(config()); let clients = c.get("clients"); let id = x.query("client_id");
+ if (!clients.has(id)) { oauth_error(x, 400, "invalid_client"); }
+ else {
+  let redirect = x.query("redirect_uri"); let client = clients.get(id); let uris = client.get("redirectUris"); let allowed = false;
+  for (i in range(0, uris.len())) { if (uris.at(i).as_string() == redirect) { allowed = true; } }
+  if (!allowed || x.query("response_type") != "code") { oauth_error(x, 400, "invalid_request"); }
+  else if (x.query("state") == "" || x.query("code_challenge") == "" || x.query("code_challenge_method") != "S256") { oauth_error(x, 400, "invalid_request"); }
+  else {
+   let code = "oauth_code_" + random_token(); let expiry = now_ms() + num(c, "codeLifetimeMs", 60000);
+   let data = "{\"clientId\":" + json_quote(id) + ",\"redirectUri\":" + json_quote(redirect) + ",\"state\":" + json_quote(x.query("state")) + ",\"scope\":" + json_quote(x.query("scope")) + ",\"challenge\":" + json_quote(x.query("code_challenge")) + ",\"expiresAt\":" + str(expiry) + "}";
+   x.set("code:" + code, data);
+   let sep = "?"; if (str_contains(redirect, "?")) { sep = "&"; }
+   x.status(302); x.set_header("Location", redirect + sep + "code=" + url_encode(code) + "&state=" + url_encode(x.query("state")));
+  }
+ }
+}
+@token_endpoint
+fn token_endpoint(x: Exchange) -> void implements Handler {
+ let c = json_parse(config()); let grant = field(x, "grant_type"); let id = field(x, "client_id"); let clients = c.get("clients");
+ if (!clients.has(id)) { oauth_error(x, 401, "invalid_client"); }
+ else if (grant == "client_credentials") {
+  let client = clients.get(id);
+  if (!secure_equal(field(x, "client_secret"), text(client, "secret", ""))) { oauth_error(x, 401, "invalid_client"); }
+  else { issue(x, id, field(x, "scope"), c); }
+ }
+ else if (grant == "authorization_code") {
+  let code = field(x, "code"); let data = x.take("code:" + code);
+  if (data == "") { oauth_error(x, 400, "invalid_grant"); }
+  else {
+   let rec = json_parse(data); let verifier = field(x, "code_verifier");
+   if (text(rec, "clientId", "") != id || text(rec, "redirectUri", "") != field(x, "redirect_uri") || now_ms() >= rec.get("expiresAt").as_int() || !secure_equal(sha256_url(verifier), text(rec, "challenge", ""))) { oauth_error(x, 400, "invalid_grant"); }
+   else { issue(x, id, text(rec, "scope", ""), c); }
+  }
+ }
+ else { oauth_error(x, 400, "unsupported_grant_type"); }
+}
+@userinfo
+fn userinfo(x: Exchange) -> void implements Handler {
+ let header = x.header("Authorization"); let tokenValue = "";
+ if (str_starts_with(header, "Bearer ")) { tokenValue = str_substr(header, 7, str_len(header)); }
+ let raw = x.get("token:" + tokenValue);
+ if (raw == "") { x.set_header("WWW-Authenticate", "Bearer realm=\"fixture-idp\""); oauth_error(x, 401, "invalid_token"); }
+ else { let rec = json_parse(raw); x.json("{\"sub\":\"fixture-user\",\"client_id\":" + json_quote(text(rec, "clientId", "")) + ",\"scope\":" + json_quote(text(rec, "scope", "")) + "}"); }
+}
+route("GET", "/authorize", "authorize");
+route("POST", "/oauth/token", "token_endpoint");
+route("GET", "/oauth/userinfo", "userinfo");
+end _lmcode_
