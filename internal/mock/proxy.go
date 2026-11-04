@@ -155,13 +155,28 @@ func (w *auditResponse) Write(b []byte) (int, error) {
 	return n, err
 }
 
+func auditSensitiveHeader(name string) bool {
+	k := strings.ReplaceAll(strings.ToLower(name), "_", "-")
+	for _, exact := range []string{"authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key", "api-key", "apikey"} {
+		if k == exact {
+			return true
+		}
+	}
+	for _, sub := range []string{"token", "secret", "key", "password", "signature", "credential"} {
+		if strings.Contains(k, sub) {
+			return true
+		}
+	}
+	return false
+}
+
 func (e *Engine) audit(r *http.Request, w *auditResponse, kind, upstream, failure string, start time.Time) {
 	if e.options.AuditWriter == nil {
 		return
 	}
 	headers := r.Header.Clone()
-	for _, name := range []string{"Authorization", "Proxy-Authorization", "Cookie"} {
-		if headers.Get(name) != "" {
+	for name := range headers {
+		if auditSensitiveHeader(name) && headers.Get(name) != "" {
 			headers.Set(name, "[redacted]")
 		}
 	}
