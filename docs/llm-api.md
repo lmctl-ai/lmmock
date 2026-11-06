@@ -164,6 +164,32 @@ declare `tools` (coding CLIs, agents) but only need a plain reply: on every
 provider route the mock then answers with the text (`pong` by default) instead of
 calling the first offered tool. Tool-result continuations are unaffected.
 
+## Ready-made configurations
+
+These files in `examples/` are used as `--config` for `--builtin llm-api` (or
+`--builtin oauth-codex-device`). `cmd/lmmock/example_configs_test.go` runs every
+one of them, so they are known to behave as described.
+
+| File | Builtin | What it gives a client |
+| --- | --- | --- |
+| `llm-config-coding-cli.json` | llm-api | The setup coding CLIs need: always-plain `pong` even though the CLI declares `tools`, API key `fixture-key`, and Anthropic `Authorization: Bearer` accepted (Claude Code's `ANTHROPIC_AUTH_TOKEN`). A wrong key is a 401. |
+| `llm-config-scripted-turns.json` | llm-api | A three-turn memory check: `Noted.`, `Noted.`, then `10` (held 200 ms), keyed on each turn's wording. |
+| `llm-config-rate-limit.json` | llm-api | Every request is a 429 with `Retry-After`. |
+| `llm-config-retry.json` | llm-api | Chat: the first request is a 429, the next succeeds. |
+| `llm-config-server-error.json` | llm-api | Anthropic 529 `overloaded_error`, and the matching error on other routes. |
+| `llm-config-unauthorized.json` | llm-api | Every request is a 401. |
+| `oauth-codex-device-slow-approval.json` | oauth-codex-device | Codex's device login stays pending for 3 polls, then succeeds. |
+| `oauth-codex-device-manual-approval.json` | oauth-codex-device | Pending until the test calls `POST /__oauth/approve {"user_code":...}`. |
+| `oauth-codex-device-denied.json` | oauth-codex-device | The user denies: poll returns 400 `access_denied`. |
+| `oauth-codex-device-expired.json` | oauth-codex-device | The code expires: poll returns 410 `expired_token`. |
+
+~~~sh
+lmmock exec --builtin llm-api --config examples/llm-config-coding-cli.json -- \
+  sh -c 'curl -s -H "Authorization: Bearer fixture-key" -H "anthropic-version: 2023-06-01" \
+    -d "{\"model\":\"m\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}" \
+    "$LMMOCK_URL/v1/messages"'
+~~~
+
 An omitted apiKey permits requests without authentication. The acceptance tests
 set it explicitly. Default text is pong; default structured output is
 {"city":"Paris"}. The fixture does not synthesize values from JSON Schema.
