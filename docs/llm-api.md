@@ -135,10 +135,26 @@ Pass --config settings.json. Available common fields:
 {
   "apiKey": "fixture-key",
   "text": "custom reply",
+  "replies": [{"contains": "What is the total", "text": "10"}],
   "structuredOutput": {"city": "Paris"},
   "mode": "",
   "toolCalls": true
 }
+~~~
+
+`replies` scripts a conversation: `[{"contains": "NEEDLE", "text": "REPLY"}, ...]`.
+Each rule's needle is searched in the raw JSON request body; the rule whose needle
+occurs latest in the body wins (clients resend their history with the newest user
+turn last, so keying each rule on a turn's wording answers each turn differently),
+ties keep the first listed rule, and a request matching no rule falls back to `text`
+and then to `pong`. It applies to chat, responses, Anthropic, Gemini and Ollama chat.
+A three-turn memory check looks like this (tests/replies.mjs exercises every route):
+
+~~~json
+{"toolCalls": false, "replies": [
+  {"contains": "first number is 3", "text": "Noted."},
+  {"contains": "second number is 7", "text": "Noted."},
+  {"contains": "What is the total", "text": "10"}]}
 ~~~
 
 `toolCalls` defaults to true. Set `"toolCalls": false` for clients that always

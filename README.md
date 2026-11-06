@@ -50,7 +50,8 @@ lmmock serve --builtin llm-api --config cfg.json --audit-log requests.jsonl
 ```
 
 `--builtin` is mutually exclusive with `--lmcode`. Every reply is
-`pong` unless `--config` sets `"text"`. Coding CLIs always send `tools`; the mock
+`pong` unless `--config` sets `"text"`, or `"replies"` scripts per-turn answers
+keyed on the request body (the rule found latest in the body wins). Coding CLIs always send `tools`; the mock
 normally answers such a request with a tool call, so pass `{"toolCalls": false}` in
 the config to always reply with plain text. See [docs/llm-api.md](docs/llm-api.md).
 Regenerate the embedded bytecode after editing the script with `scripts/compile-builtin.sh`.

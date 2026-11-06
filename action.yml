@@ -1,0 +1,38 @@
+name: lmmock scriptable HTTP mock
+description: Build the lmmock executable from this checkout (Go only; the LLM API mock is embedded) and expose it to later steps.
+inputs:
+  output-dir:
+    description: Directory for the built executable; defaults to a folder under the runner's temporary directory.
+    required: false
+outputs:
+  executable:
+    description: Absolute path of the built lmmock executable.
+    value: ${{ steps.build.outputs.executable }}
+  version:
+    description: The version the executable reports (`lmmock --version`).
+    value: ${{ steps.build.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache: false
+    - id: build
+      shell: bash
+      env:
+        ACTION_HOME: ${{ github.action_path }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+        CGO_ENABLED: '0'
+      run: |
+        out="$OUTPUT_DIR"
+        if [ -z "$out" ]; then out="$(echo "$RUNNER_TEMP" | tr '\\' '/')/lmmock-app"; fi
+        mkdir -p "$out"
+        exe="$out/lmmock"
+        if [ "$RUNNER_OS" = Windows ]; then exe="$exe.exe"; fi
+        version="source-$(git -C "$ACTION_HOME" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+        go -C "$ACTION_HOME" build -trimpath -ldflags="-s -w -X main.version=$version" -o "$exe" ./cmd/lmmock
+        "$exe" --version
+        printf '%s\n' "$out" >> "$GITHUB_PATH"
+        printf 'LMMOCK_BIN=%s\n' "$exe" >> "$GITHUB_ENV"
+        printf 'executable=%s\nversion=%s\n' "$exe" "$("$exe" --version | tr -d '\r')" >> "$GITHUB_OUTPUT"
