@@ -466,25 +466,36 @@ fn record(x: Exchange) -> void { x.set("last",x.request_json()); x.set("count",s
 fn tools_off(c: Json) -> bool { let off = false; if (c.has("toolCalls")) { off = !c.get("toolCalls").as_bool(); } return off; }
 fn bearer_ok(c: Json) -> bool { let ok = false; if (c.has("anthropicBearer")) { ok = c.get("anthropicBearer").as_bool(); } return ok; }
 fn field(j: Json, key: string) -> string { let value = ""; if (j.has(key)) { value = j.get(key).as_string(); } return value; }
-# Scripted replies. Config `"replies": [{"contains": NEEDLE, "text": REPLY}, ...]` selects the reply for a
-# request from its raw JSON body: the rule whose needle occurs LATEST in the body wins (clients serialize the
+# Scripted replies. Config `"replies": [{"contains": NEEDLE, "text": REPLY, "delayMs": N}, ...]` selects the reply
+# for a request from its raw JSON body: the rule whose needle occurs LATEST in the body wins (clients serialize the
 # newest user turn last, so a multi-turn conversation keyed on each turn's wording answers each turn differently);
-# ties keep the first listed rule. No rule matching falls back to `text`, then to the handler's default.
-fn scripted_text(c: Json, body: string, fallback: string) -> string {
- let text = fallback;
- if (c.has("text")) { text = field(c,"text"); }
+# ties keep the first listed rule. No rule matching falls back to `text`, then to the handler's default. A rule's
+# optional `delayMs` (0-60000) holds the response, so a client can be observed while a turn is still in flight.
+fn scripted_rule(c: Json, body: string) -> Json {
+ let winner = fixture("empty_object"); let best = -1;
  if (c.has("replies")) {
-  let rules = c.get("replies"); let best = -1;
+  let rules = c.get("replies");
   for (i in range(0,rules.len())) {
    let rule = rules.at(i); let needle = field(rule,"contains");
    if (needle != "" && str_contains(body,needle)) {
     let parts = str_split(body,needle);
     let position = str_len(body) - str_len(parts.at(parts.len() - 1)) - str_len(needle);
-    if (position > best) { best = position; text = field(rule,"text"); }
+    if (position > best) { best = position; winner = rule; }
    }
   }
  }
+ return winner;
+}
+fn scripted_text(c: Json, body: string, fallback: string) -> string {
+ let text = fallback;
+ if (c.has("text")) { text = field(c,"text"); }
+ let rule = scripted_rule(c,body);
+ if (rule.has("text")) { text = field(rule,"text"); }
  return text;
+}
+fn scripted_delay(x: Exchange, c: Json) -> void {
+ let rule = scripted_rule(c,x.body());
+ if (rule.has("delayMs")) { x.delay(rule.get("delayMs").as_int()); }
 }
 @chat
 fn completion(x: Exchange) -> void implements Handler {
@@ -506,7 +517,7 @@ fn completion(x: Exchange) -> void implements Handler {
   for (i in range(0,messages.len())) { if (field(messages.at(i),"role") == "tool") { tool_result = true; content = "Tool result: " + field(messages.at(i),"content"); } }
   if (request.has("tools") && !tool_result && !tools_off(c)) { tool = request.get("tools").len() > 0; }
   if (request.has("tool_choice")) { if (request.get("tool_choice").to_json() == json_quote("none")) { tool = false; } }
-  content = scripted_text(c,x.body(),content);
+  content = scripted_text(c,x.body(),content); scripted_delay(x,c);
   if (request.has("response_format")) { content = fixture("structured_city").to_json(); if (c.has("structuredOutput")) { content = c.get("structuredOutput").to_json(); } }
   if (mode == "ok" || mode == "echo") { model = "served-model"; }
   if (c.has("responseModel")) { model = field(c,"responseModel"); }
@@ -582,7 +593,7 @@ fn responses(x: Exchange) -> void implements Handler {
  if (api_allowed(x)) {
   let b = json_parse(x.body()); let c = json_parse(config());
   let model = field(b,"model"); let content = "pong";
-  content = scripted_text(c,x.body(),content);
+  content = scripted_text(c,x.body(),content); scripted_delay(x,c);
   let tool_result = false;
   if (b.has("input")) {
    if (str_starts_with(b.get("input").to_json(),"[")) {
@@ -687,7 +698,7 @@ fn anthropic_messages(x: Exchange) -> void implements Handler {
  record(x);
  if (native_allowed(x,"anthropic")) {
   let b = json_parse(x.body()); let c = json_parse(config()); let text = "pong";
-  text = scripted_text(c,x.body(),text);
+  text = scripted_text(c,x.body(),text); scripted_delay(x,c);
   let tool_result = false;
   let messages = b.get("messages");
   for (i in range(0,messages.len())) {
@@ -752,7 +763,7 @@ fn gemini_content(x: Exchange) -> void implements Handler {
    native_error(x,"gemini",404,"NOT_FOUND","Unsupported model operation");
   } else {
    let b = json_parse(x.body()); let c = json_parse(config()); let text = "pong";
-   text = scripted_text(c,x.body(),text);
+   text = scripted_text(c,x.body(),text); scripted_delay(x,c);
    let tool_result = false; let contents = b.get("contents");
    for (i in range(0,contents.len())) {
     let parts = contents.at(i).get("parts");
@@ -797,7 +808,7 @@ fn ollama_chat(x: Exchange) -> void implements Handler {
  record(x);
  if (native_allowed(x,"ollama")) {
   let b = json_parse(x.body()); let c = json_parse(config()); let text = "pong";
-  text = scripted_text(c,x.body(),text);
+  text = scripted_text(c,x.body(),text); scripted_delay(x,c);
   let model = ""; if (b.has("model")) { model = field(b,"model"); }
   if (model == "" && x.path() == "/api/generate") { model = "mock-agent"; }
   if (model == "") {

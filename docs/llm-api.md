@@ -147,7 +147,9 @@ Each rule's needle is searched in the raw JSON request body; the rule whose need
 occurs latest in the body wins (clients resend their history with the newest user
 turn last, so keying each rule on a turn's wording answers each turn differently),
 ties keep the first listed rule, and a request matching no rule falls back to `text`
-and then to `pong`. It applies to chat, responses, Anthropic, Gemini and Ollama chat.
+and then to `pong`. A rule's optional `delayMs` (0-60000) holds that response, so a
+client can be observed while its turn is still in flight. It applies to chat,
+responses, Anthropic, Gemini and Ollama chat.
 A three-turn memory check looks like this (tests/replies.mjs exercises every route):
 
 ~~~json

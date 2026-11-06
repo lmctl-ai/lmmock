@@ -106,6 +106,16 @@ if (process.argv[3] !== 'client') {
     assert.equal(none.choices[0].message.content, 'pong', 'no rules and no text keep the default reply');
     console.log('PASS fallback: text, first-listed tie rule, then the default pong');
   }
+  // delayMs holds the response: a client can observe an in-flight turn.
+  {
+    fs.writeFileSync(process.env.MOCK_CONFIG, JSON.stringify({ apiKey: 'fixture-key', toolCalls: false, replies: [{ contains: 'slow turn', text: 'late', delayMs: 700 }] }));
+    const started = Date.now();
+    const r = await json('/v1/chat/completions', { model: 'mock-agent', messages: [{ role: 'user', content: 'a slow turn please' }] }, { Authorization: 'Bearer fixture-key' });
+    const elapsed = Date.now() - started;
+    assert.equal(r.choices[0].message.content, 'late');
+    assert.ok(elapsed >= 600, `delayMs must hold the reply (took ${elapsed} ms)`);
+    console.log('PASS delayMs: the scripted reply is held for the configured time');
+  }
   // Control: the expected reply of the last turn must be observable; a wrong expectation fails here.
   const wrong = process.env.REPLIES_EXPECT_TOTAL;
   if (wrong !== undefined) {
