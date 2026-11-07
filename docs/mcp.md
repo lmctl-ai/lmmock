@@ -21,7 +21,7 @@ lmmock stdio mcp --scenario tests/stdio/mcp-conversation.json --alias Tools
 | `prompts/list`, `prompts/get` | `fixture` → one user message `fixture prompt`. |
 | `ping` | `{}` |
 
-Unknown tools, resources and prompts fail with -32602. `expect` (substring of the
+Unknown resources and prompts fail with -32602; an unknown tool name is an unscripted method (-32099) and the server stops. `expect` (substring of the
 call params), duplicate/missing cells and exhausted scripts abort loudly; there is
 no default reply. Paging, sampling, elicitation and subscriptions are not claimed.
 
