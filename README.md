@@ -848,3 +848,10 @@ Python harness requests port zero and discovers the actual listener through the
 owned child PID's procfs socket descriptors. It never releases a reserved port or
 accepts an unrelated process's listener as readiness. This Linux capture-job
 restriction does not affect the native mock or provider fixtures on macOS/Windows.
+
+## MCP over HTTP fixtures
+
+lmmock includes scriptable current and legacy MCP HTTP fixtures. See
+[`docs/mcp-http.md`](docs/mcp-http.md) for transport-version scope, controls,
+commands, schemas, and consumer pin guidance. These examples use synthetic
+state only and bind to loopback.
