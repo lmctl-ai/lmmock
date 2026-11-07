@@ -93,6 +93,12 @@
             "returns": "void"
           }
         ],
+        "queue_response": [
+          { "params": ["string"], "returns": "void" }
+        ],
+        "next_queued_response": [
+          { "params": ["string"], "returns": "string" }
+        ],
         "get": [
           {
             "params": [
@@ -158,6 +164,14 @@
           {
             "params": [],
             "returns": "string"
+          }
+        ],
+        "pause": [
+          {
+            "params": [
+              "int"
+            ],
+            "returns": "bool"
           }
         ]
       }

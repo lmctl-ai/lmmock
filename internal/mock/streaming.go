@@ -78,6 +78,10 @@ func (s *responseStream) fault(x *exchange, kind string) error {
 }
 func streamMethods(method exchangeMethod) {
 	method("stream_event", []string{"string"}, "void", func(x *exchange, args []lmcode.Value) (lmcode.Value, error) {
+		if x.responseQueue != "" {
+			enqueueResponse(x, "E"+args[0].Str)
+			return lmcode.None(), nil
+		}
 		return lmcode.None(), x.stream.event(x, args[0].Str)
 	})
 	method("stream_fault", []string{"string"}, "void", func(x *exchange, args []lmcode.Value) (lmcode.Value, error) {

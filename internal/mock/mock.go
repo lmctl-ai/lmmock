@@ -53,15 +53,57 @@ type Engine struct {
 	auditMu   sync.Mutex
 }
 type exchange struct {
-	request *http.Request
-	body    string
-	status  int
-	headers http.Header
-	output  string
-	stream  *responseStream
-	delay   time.Duration
-	drop    bool
-	state   *store
+	request       *http.Request
+	body          string
+	status        int
+	headers       http.Header
+	output        string
+	stream        *responseStream
+	delay         time.Duration
+	drop          bool
+	responseQueue string
+	state         *store
+}
+
+func enqueueResponse(x *exchange, payload string) {
+	key := "mcp:sse_queue:" + x.responseQueue
+	x.state.Lock()
+	defer x.state.Unlock()
+	if x.state.values[key] != "" {
+		x.state.values[key] += "\x1e"
+	}
+	x.state.values[key] += payload
+}
+
+func dequeueResponse(state *store, session string) string {
+	key := "mcp:sse_queue:" + session
+	state.Lock()
+	defer state.Unlock()
+	value := state.values[key]
+	if cut := strings.IndexByte(value, '\x1e'); cut >= 0 {
+		state.values[key] = value[cut+1:]
+		value = value[:cut]
+	} else {
+		delete(state.values, key)
+	}
+	return value
+}
+
+func pauseContext(ctx context.Context, millis int64) (bool, error) {
+	if millis < 0 || millis > int64(^uint64(0)>>1)/int64(time.Millisecond) {
+		return false, errors.New("pause duration must be a non-negative representable millisecond count")
+	}
+	if ctx.Err() != nil {
+		return false, nil
+	}
+	timer := time.NewTimer(time.Duration(millis) * time.Millisecond)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return true, nil
+	case <-ctx.Done():
+		return false, nil
+	}
 }
 
 // New verifies all entries and route bindings before opening any network listener.
@@ -329,6 +371,11 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 			if x.stream != nil && x.stream.committed {
 				return lmcode.None(), errors.New("response already streaming")
 			}
+			if x.responseQueue != "" {
+				enqueueResponse(x, "J"+a[0].Str)
+				x.status = http.StatusAccepted
+				return lmcode.None(), nil
+			}
 			x.output = a[0].Str
 			if name == "json" {
 				x.headers.Set("Content-Type", "application/json")
@@ -346,7 +393,27 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		x.delay = time.Duration(a[0].Int) * time.Millisecond
 		return lmcode.None(), nil
 	})
+	method("pause", []string{"int"}, "bool", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		result, err := pauseContext(x.request.Context(), a[0].Int)
+		if err != nil {
+			return lmcode.None(), err
+		}
+		return lmcode.Bool(result), nil
+	})
 	method("disconnect", nil, "void", func(x *exchange, _ []lmcode.Value) (lmcode.Value, error) { x.drop = true; return lmcode.None(), nil })
+	method("queue_response", []string{"string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		if a[0].Str == "" {
+			return lmcode.None(), errors.New("response queue session is empty")
+		}
+		x.responseQueue = a[0].Str
+		return lmcode.None(), nil
+	})
+	text("next_queued_response", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
+		if a[0].Str == "" {
+			return ""
+		}
+		return dequeueResponse(x.state, a[0].Str)
+	})
 	text("take", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
 		x.state.Lock()
 		defer x.state.Unlock()
