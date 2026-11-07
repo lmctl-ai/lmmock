@@ -640,6 +640,8 @@ An unsupported method fails loudly instead of silently succeeding. Kimi/OpenCode
 config-option and Hermes mode/model shapes are supported; vendor session files
 and identity probes remain the host adapter's responsibility.
 
+See [docs/mcp.md](docs/mcp.md) for a multi-call MCP session script.
+
 MCP targets protocol 2025-11-25: initialize, tools/list, tools/call, resources/list,
 resources/read, resources/templates/list, prompts/list, prompts/get and ping.
 The default tool is fixture. A call emits a log notification and the cell's text;
