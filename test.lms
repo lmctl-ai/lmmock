@@ -26,6 +26,7 @@ step(["go", "build", "-trimpath", "-ldflags=-s -w -X main.version=" + version, "
 step(["go", "build", "-o", "build/codex-fixture" + ext, "./tests/providers/codex/fakecli"]);
 step(["node", "tests/integration.mjs", "build/lmmock" + ext]);
 step(["node", "tests/auth-mocks/run.mjs", "build/lmmock" + ext]);
+step(["node", "tests/mcp/run.mjs", "build/lmmock" + ext]);
 step(["node", "tests/auth-mocks/captures.test.mjs"]);
 step(["node", "tests/stream-tls/run.mjs", "build/lmmock" + ext]);
 step(["python3", "tests/stream-tls/controls.py"]);

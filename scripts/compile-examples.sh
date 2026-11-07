@@ -7,3 +7,5 @@ mkdir -p build/auth
 for name in github-device-flow oauth2-pkce npm-web-login; do
   node scripts/capture-fixture.mjs "examples/auth/$name/server.lms" "build/auth/$name.lmcode"
 done
+mkdir -p build/mcp
+node scripts/capture-fixture.mjs "examples/mcp/server.lms" "build/mcp/server.lmcode"
