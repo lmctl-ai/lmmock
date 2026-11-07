@@ -635,6 +635,7 @@ ACP supports initialize, the initialized notification, session/new, session/load
 mode/model/config-option calls and session/prompt. Prompt cells emit ordered
 session/update text chunks followed by stopReason. Loading an unknown fixture
 session fails. The stock preset does not simulate cancellation or native provider persistence; the ACP profile fixtures below add event-driven cancellation.
+A ready-made multi-turn conversation script and the wire flow are in [docs/acp.md](docs/acp.md).
 An unsupported method fails loudly instead of silently succeeding. Kimi/OpenCode
 config-option and Hermes mode/model shapes are supported; vendor session files
 and identity probes remain the host adapter's responsibility.
