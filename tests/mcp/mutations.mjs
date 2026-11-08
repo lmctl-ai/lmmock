@@ -33,6 +33,18 @@ export function runMcpMutations({root,run}) {
   ['if (control_guard(x, c)) {','if (true) {','modern','control routes enforce Host, Origin, and bearer guard'],
   ['x.increment("mcp:cancelled_slow");','let skipCancelCount = 0;','legacy-cancel','cancelled slow tool increments cancelledSlow counter'],
   ['if (last != "" && seen != "" && last != seen) {','if (false) {','legacy-session','Last-Event-ID replays missed notification on GET /mcp'],
+  ['while (step < 5 && !stopped) {','while (step < 1 && !stopped) {','modern','slow SSE stream sends all 5 progress events before finishing'],
+  [String.raw`else if (!disconnected) {
+          x.set("slow:done:" + requestKey, "yes");
+          content = "[{\"type\":\"text\",\"text\":\"slow complete\"}]";
+        }`,String.raw`else if (!disconnected) {
+          x.set("slow:done:" + requestKey, "yes");
+        }`,'legacy-session','slow SSE stream finishes with the final JSON-RPC CallToolResult event'],
+  ['if (isSse && version != "2024-11-05") {\n          x.set_header("Content-Type", "text/event-stream");','if (isSse && version != "2024-11-05") {\n          x.set_header("Content-Type", "text/plain");','legacy-session','slow SSE stream keeps Content-Type text/event-stream across all progress events'],
+  ['x.increment("mcp:cancelled_slow:" + ver);','let skipByVer = 0;','legacy-cancel','cancelled slow tool increments per-revision cancelledByVersion counter'],
+  ['x.set("mcp:cancelled_req:" + str(idx), reqId);','x.set("mcp:cancelled_req:" + str(idx), "0");','legacy-cancel','cancelled slow tool records exact cancelled requestId in state'],
+  ['if (inflightVer != "" && x.get("slow:done:" + reqId) == "") {','if (inflightVer != "") {','legacy-cancel','notifications/cancelled for already-completed slow request is not counted as cancelled'],
+  ['if (inflightVer != "" && x.get("slow:done:" + reqId) == "") {\n        record_cancel(x, inflightVer, reqId);\n      }','let skipAsyncCancel = 0;','legacy-cancel','notifications/cancelled arriving after in-flight POST abort still counts cancellation'],
  ];
  const original=fs.readFileSync(path.join(root,'examples/mcp/server.lms'),'utf8');
  let index=0;

@@ -60,7 +60,8 @@ function rawReq(method,pathStr,headers={},body='') {
   const req=http.request({hostname:u.hostname,port:u.port,path:pathStr,method,headers},res=>{
    let data='';res.setEncoding('utf8');
    res.on('data',chunk=>data+=chunk);
-   res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:data}));
+   res.on('error',reject);
+   res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:data,complete:res.complete}));
   });
   req.on('error',reject);
   if(body)req.write(body);
@@ -118,6 +119,23 @@ if(scenario==='modern') {
 
  const sse=await post(request('tools/call',{name:'echo',arguments:{text:'sse fixture'}}),'sse'); valid(sse.message,'modern',sse.resultDef);
  assert.equal(sse.message.result.structuredContent.text,'sse fixture');
+
+ // Verify slow in 2026-07-28 SSE reply mode streams all 5 notifications/progress events and the final CallToolResult, terminating cleanly
+ const slowModernReq=request('tools/call',{name:'slow',arguments:{}});slowModernReq.params._meta.progressToken='modern-slow-5';
+ const slowModernRaw=await rawPost({accept:'text/event-stream, application/json','MCP-Protocol-Version':'2026-07-28','Mcp-Method':'tools/call','Mcp-Name':'slow','X-Mock-Reply-Mode':'sse'},JSON.stringify(slowModernReq));
+ assert.equal(slowModernRaw.status,200);assert.equal(slowModernRaw.complete,true,'2026-07-28 slow SSE response must terminate cleanly with zero-length chunk');
+ const slowModernEvents=slowModernRaw.body.split('\n').filter(v=>v.startsWith('data: ')).map(v=>JSON.parse(v.slice(6)));
+ assert.equal(slowModernEvents.length,6,'expected 5 progress events + 1 final result event');
+ for(let i=0;i<5;i++){
+  valid(slowModernEvents[i],'modern');
+  assert.equal(slowModernEvents[i].method,'notifications/progress');
+  assert.equal(slowModernEvents[i].params.progressToken,'modern-slow-5');
+  assert.equal(slowModernEvents[i].params.progress,i+1);
+  assert.equal(slowModernEvents[i].params.total,5);
+ }
+ valid(slowModernEvents[5],'modern','CallToolResult');
+ assert.equal(slowModernEvents[5].id,slowModernReq.id);
+ assert.equal(slowModernEvents[5].result.content[0].text,'slow complete');
 
  const add=await post(request('tools/call',{name:'add',arguments:{left:2,right:3}})); valid(add.message,'modern',add.resultDef);
  assert.equal(add.message.result.structuredContent.sum,5);
@@ -267,14 +285,33 @@ if(scenario==='modern') {
  let stream='';while(!stream.includes('"id":"legacy-ping"')){const item=await reader.read();assert.equal(item.done,false);stream+=new TextDecoder().decode(item.value);}
  const message=stream.split('\n').filter(v=>v.startsWith('data: ')).map(v=>JSON.parse(v.slice(6))).find(m=>m.id==='legacy-ping');
  valid(message,'legacy','EmptyResult');assert.equal(message.id,'legacy-ping');assert.ok(message.result);
- // Test slow with progressToken and notifications/cancelled on 2024-11-05
+ // Test uncancelled slow delivering all 5 progress events + final CallToolResult on 2024-11-05 /sse
+ const slowCompleteSent=await fetch(base+'/messages?session_id='+encodeURIComponent(session),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:87,method:'tools/call',params:{_meta:{progressToken:'legacy-sse-complete'},name:'slow',arguments:{}}})});
+ assert.equal(slowCompleteSent.status,202);
+ let completeStream='';while(!completeStream.includes('"id":87')){const item=await reader.read();assert.equal(item.done,false);completeStream+=new TextDecoder().decode(item.value);}
+ const completeMsgs=completeStream.split('\n').filter(v=>v.startsWith('data: ')).map(v=>JSON.parse(v.slice(6)));
+ const completeProgs=completeMsgs.filter(m=>m.method==='notifications/progress'&&m.params.progressToken==='legacy-sse-complete');
+ assert.equal(completeProgs.length,5,'expected 5 progress events on 2024-11-05 /sse');
+ for(let i=0;i<5;i++){
+  valid(completeProgs[i],'legacy');
+  assert.equal(completeProgs[i].params.progress,i+1);
+  assert.equal(completeProgs[i].params.total,5);
+ }
+ const completeFinal=completeMsgs.find(m=>m.id===87);
+ valid(completeFinal,'legacy','CallToolResult');assert.equal(completeFinal.result.content[0].text,'slow complete');
+ // Test slow with progressToken and notifications/cancelled on 2024-11-05 stopping within one polling step
  const slowPromise=fetch(base+'/messages?session_id='+encodeURIComponent(session),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:88,method:'tools/call',params:{_meta:{progressToken:'legacy-sse-prog'},name:'slow',arguments:{}}})});
  let progStream='';while(!progStream.includes('notifications/progress')){const item=await reader.read();assert.equal(item.done,false);progStream+=new TextDecoder().decode(item.value);}
  const progMsg=progStream.split('\n').filter(v=>v.startsWith('data: ')).map(v=>JSON.parse(v.slice(6))).find(m=>m.method==='notifications/progress');
  valid(progMsg,'legacy');assert.equal(progMsg.params.progressToken,'legacy-sse-prog');
+ const cancelStart=Date.now();
  const cancelSent=await fetch(base+'/messages?session_id='+encodeURIComponent(session),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',method:'notifications/cancelled',params:{requestId:88}})});assert.equal(cancelSent.status,202);
  const slowSent=await slowPromise;assert.equal(slowSent.status,202);
- const stLegacy=await (await fetch(base+'/__mock/state')).json();assert.ok(stLegacy.cancelledSlow>=1,'2024-11-05 notifications/cancelled cancels slow');
+ assert.ok(Date.now()-cancelStart<180,'cancelled 2024-11-05 slow must stop within one polling step');
+ const stLegacy=await (await fetch(base+'/__mock/state')).json();
+ assert.equal(stLegacy.cancelledSlow,1,'2024-11-05 notifications/cancelled cancels slow');
+ assert.equal(stLegacy.cancelledByVersion?.['2024-11-05'],1);
+ assert.deepEqual(stLegacy.cancelledRequestIds,[88]);
  await reader.cancel();console.log('PASS legacy HTTP+SSE endpoint, message POST and JSON-RPC response event');
 } else if(scenario==='legacy-session') {
  const init={jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2099-01-01',capabilities:{},clientInfo:{name:'wp351-test',version:'1'}}};
@@ -303,6 +340,21 @@ if(scenario==='modern') {
  assert.ok(c2.includes('id: '+changed.eventId)&&c2.includes('notifications/tools/list_changed'));
  await r1.cancel();await r2.cancel();
  const resume=await fetch(base+'/mcp',{headers:{accept:'text/event-stream','Mcp-Session-Id':sid,'MCP-Protocol-Version':'2025-11-25','Last-Event-ID':'previous-event'}});const resumeReader=resume.body.getReader();const resumeChunk=await resumeReader.read();const replay=new TextDecoder().decode(resumeChunk.value);assert.ok(replay.includes('id: '+changed.eventId),'Last-Event-ID replay: '+JSON.stringify(replay)+' expected '+changed.eventId);assert.ok(replay.includes('notifications/tools/list_changed'));await resumeReader.cancel();
+ // Verify slow in 2025-11-25 SSE reply mode keeps stream open, sends all 5 progress events + final result, and terminates HTTP chunked response cleanly
+ const slowSessionRaw=await rawPost({accept:'text/event-stream, application/json','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid,'X-Mock-Reply-Mode':'sse'},JSON.stringify({jsonrpc:'2.0',id:30,method:'tools/call',params:{_meta:{progressToken:'session-slow-5'},name:'slow',arguments:{}}}));
+ assert.equal(slowSessionRaw.status,200);assert.equal(slowSessionRaw.complete,true,'2025-11-25 slow SSE response must terminate cleanly with zero-length chunk');
+ const slowSessionEvents=slowSessionRaw.body.split('\n').filter(v=>v.startsWith('data: ')).map(v=>JSON.parse(v.slice(6)));
+ assert.equal(slowSessionEvents.length,6,'expected 5 progress events + 1 final result event in 2025-11-25 SSE mode');
+ for(let i=0;i<5;i++){
+  valid(slowSessionEvents[i],'session');
+  assert.equal(slowSessionEvents[i].method,'notifications/progress');
+  assert.equal(slowSessionEvents[i].params.progressToken,'session-slow-5');
+  assert.equal(slowSessionEvents[i].params.progress,i+1);
+  assert.equal(slowSessionEvents[i].params.total,5);
+ }
+ valid(slowSessionEvents[5],'session','CallToolResult');
+ assert.equal(slowSessionEvents[5].id,30);
+ assert.equal(slowSessionEvents[5].result.content[0].text,'slow complete');
  const expired=await fetch(base+'/__mock/expire-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sessionId:sid})});assert.equal(expired.status,200);
  const gone=await fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid},body:JSON.stringify({jsonrpc:'2.0',id:4,method:'tools/list',params:{}})});assert.equal(gone.status,404);
  const removed=await fetch(base+'/mcp',{method:'DELETE',headers:{'Mcp-Session-Id':sid2,'MCP-Protocol-Version':'2025-11-25'}});assert.equal(removed.status,200);assert.equal((await fetch(base+'/mcp',{method:'DELETE',headers:{'Mcp-Session-Id':sid2,'MCP-Protocol-Version':'2025-11-25'}})).status,404);
@@ -310,8 +362,15 @@ if(scenario==='modern') {
 } else if(scenario==='progress-cancel') {
  const body=request('tools/call',{name:'slow',arguments:{}});body.params._meta.progressToken='case-11';
  const response=await fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'text/event-stream, application/json','MCP-Protocol-Version':'2026-07-28','Mcp-Method':'tools/call','Mcp-Name':'slow','X-Mock-Reply-Mode':'sse'},body:JSON.stringify(body)});
- const reader=response.body.getReader();const first=await reader.read();const chunk=new TextDecoder().decode(first.value);const line=chunk.split('\n').find(v=>v.startsWith('data: '));const progress=JSON.parse(line.slice(6));valid(progress,'modern');assert.equal(progress.method,'notifications/progress');assert.equal(progress.params.progressToken,'case-11');await reader.cancel();
- const state=await (await fetch(base+'/__mock/state')).json();assert.ok(state.cancelledSlow>=1,'closing current SSE cooperatively cancels the slow handler');
+ const reader=response.body.getReader();const first=await reader.read();const chunk=new TextDecoder().decode(first.value);const line=chunk.split('\n').find(v=>v.startsWith('data: '));const progress=JSON.parse(line.slice(6));valid(progress,'modern');assert.equal(progress.method,'notifications/progress');assert.equal(progress.params.progressToken,'case-11');
+ const cancelAt=Date.now();
+ await reader.cancel();
+ let state=await (await fetch(base+'/__mock/state')).json();
+ while(state.cancelledSlow<1&&Date.now()-cancelAt<180){await new Promise(r=>setTimeout(r,10));state=await (await fetch(base+'/__mock/state')).json();}
+ assert.ok(Date.now()-cancelAt<180,'closing 2026-07-28 SSE must stop slow within one polling step');
+ assert.equal(state.cancelledSlow,1,'closing current SSE cooperatively cancels the slow handler');
+ assert.equal(state.cancelledByVersion?.['2026-07-28'],1);
+ assert.deepEqual(state.cancelledRequestIds,[body.id]);
  console.log('PASS progress token delivery and cancellation by closing Streamable HTTP response');
 } else if(scenario==='legacy-cancel') {
  const init={jsonrpc:'2.0',id:8,method:'initialize',params:{protocolVersion:'2025-11-25',capabilities:{},clientInfo:{name:'wp351-test',version:'1'}}};
@@ -320,14 +379,43 @@ if(scenario==='modern') {
  const disconnectBody={jsonrpc:'2.0',id:54,method:'tools/call',params:{_meta:{progressToken:'disc-progress'},name:'slow',arguments:{}}};
  const discResp=await fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid,'X-Mock-Reply-Mode':'sse'},body:JSON.stringify(disconnectBody)});
  const discReader=discResp.body.getReader();await discReader.read();await discReader.cancel();
- await new Promise(r=>setTimeout(r,260));
- const stBefore=await (await fetch(base+'/__mock/state')).json();assert.equal(stBefore.cancelledSlow,0,'HTTP disconnect alone in 2025-11-25 must not count as notifications/cancelled');
+ await new Promise(r=>setTimeout(r,120));
+ const stBefore=await (await fetch(base+'/__mock/state')).json();
+ assert.equal(stBefore.cancelledSlow,0,'HTTP disconnect alone in 2025-11-25 must not count as notifications/cancelled');
+ assert.equal(stBefore.cancelledByVersion?.['2025-11-25'],0);
+ assert.deepEqual(stBefore.cancelledRequestIds,[]);
+ // Cooperative cancellation while POST /mcp remains open returns 204 within one polling step
  const requestBody={jsonrpc:'2.0',id:55,method:'tools/call',params:{_meta:{progressToken:'legacy-progress'},name:'slow',arguments:{}}};
  const responsePromise=fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid},body:JSON.stringify(requestBody)});
  await new Promise(r=>setTimeout(r,40));
+ const cancelStart=Date.now();
  const cancelled=await fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid},body:JSON.stringify({jsonrpc:'2.0',method:'notifications/cancelled',params:{requestId:55}})});assert.equal(cancelled.status,202);
  const response=await responsePromise;assert.equal(response.status,204,'cancelled request must not send a JSON-RPC response');assert.equal(await response.text(),'');
- const state=await (await fetch(base+'/__mock/state')).json();assert.equal(state.cancelledSlow,1,'notifications/cancelled stops a running slow tool');console.log('PASS legacy notifications/cancelled aborts cooperative slow request without sending response');
+ assert.ok(Date.now()-cancelStart<180,'notifications/cancelled must stop slow within one polling step');
+ const state=await (await fetch(base+'/__mock/state')).json();
+ assert.equal(state.cancelledSlow,1,'notifications/cancelled stops a running slow tool');
+ assert.equal(state.cancelledByVersion?.['2025-11-25'],1);
+ assert.deepEqual(state.cancelledRequestIds,[55]);
+ // Client abort of in-flight POST followed immediately by notifications/cancelled (go-sdk / lmmcp pattern) must also count deterministically
+ const abortCtrl=new AbortController();
+ const racePromise=fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid},body:JSON.stringify({jsonrpc:'2.0',id:56,method:'tools/call',params:{name:'slow',arguments:{}}}),signal:abortCtrl.signal}).catch(()=>null);
+ await new Promise(r=>setTimeout(r,40));
+ abortCtrl.abort();
+ await racePromise;
+ const raceCancel=await fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid},body:JSON.stringify({jsonrpc:'2.0',method:'notifications/cancelled',params:{requestId:56}})});assert.equal(raceCancel.status,202);
+ const stateAfterRace=await (await fetch(base+'/__mock/state')).json();
+ assert.equal(stateAfterRace.cancelledSlow,2,'notifications/cancelled after in-flight POST abort must increment cancelledSlow');
+ assert.equal(stateAfterRace.cancelledByVersion?.['2025-11-25'],2);
+ assert.deepEqual(stateAfterRace.cancelledRequestIds,[55,56]);
+ // Sending notifications/cancelled for an already-completed slow request or unknown requestId must not increment cancelledSlow
+ const doneSlow=await fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid},body:JSON.stringify({jsonrpc:'2.0',id:57,method:'tools/call',params:{name:'slow',arguments:{}}})});
+ assert.equal(doneSlow.status,200);
+ await fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid},body:JSON.stringify({jsonrpc:'2.0',method:'notifications/cancelled',params:{requestId:57}})});
+ await fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json',accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':sid},body:JSON.stringify({jsonrpc:'2.0',method:'notifications/cancelled',params:{requestId:9999}})});
+ const stateFinal=await (await fetch(base+'/__mock/state')).json();
+ assert.equal(stateFinal.cancelledSlow,2,'completed or non-slow requestId must not increment cancelledSlow');
+ assert.deepEqual(stateFinal.cancelledRequestIds,[55,56]);
+ console.log('PASS legacy notifications/cancelled aborts cooperative slow request without sending response');
 } else if(scenario==='auth') {
  const response=await fetch(base+'/mcp',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});assert.equal(response.status,401);assert.equal(response.headers.get('www-authenticate'),'Bearer');
  const ctrlUnauth=await fetch(base+'/__mock/state');assert.equal(ctrlUnauth.status,401);

@@ -82,18 +82,45 @@ protocol behavior:
      only in `2026-07-28` (`cacheScope` and `ttlMs` only on cacheable list/read/discover
      results), and `structuredContent` is emitted only on `echo` and `add` in
      `2025-11-25` and `2026-07-28`.
-4. **Cancellation semantics per transport revision (`F4`)**:
-   - `2025-11-25`: `notifications/cancelled` aborts an in-flight `slow` request,
-     increments `cancelledSlow`, and completes the cancelled JSON request with
-     HTTP `204` and an empty body (no JSON-RPC response is sent for a cancelled
-     request). Closing an HTTP connection in `2025-11-25` without sending
-     `notifications/cancelled` does not increment `cancelledSlow`.
-   - `2024-11-05`: `POST /messages` handles `notifications/cancelled` by
-     cancelling the matching in-flight `slow` request and suppressing its final
-     JSON-RPC response; `slow` also emits `notifications/progress` onto `/sse`.
-   - `2026-07-28`: `POST /mcp` accepts `notifications/initialized` and
-     `notifications/cancelled` with `202 Accepted`.
-5. **HTTP status codes and header/resource/prompt validation (`F5`, `F6`)**:
+4. **Cancellation semantics per transport revision (`F4`, `v0.1.112`)**:
+   - `2026-07-28` (stateless Streamable HTTP): a `slow` call is counted as
+     cancelled when `notifications/cancelled` arrives with the matching
+     `requestId` for an in-flight `slow` call, or when the caller closes the
+     in-flight `POST /mcp` stream before `slow` completes.
+   - `2025-11-25` (sessionful Streamable HTTP): `notifications/cancelled`
+     aborts an in-flight `slow` request within one polling step, increments
+     `cancelledSlow` and `cancelledByVersion["2025-11-25"]`, appends the
+     `requestId` to `cancelledRequestIds`, and completes an open JSON request
+     with HTTP `204` and an empty body. If a client (such as `go-sdk` or
+     `lmmcp`) aborts the in-flight `POST /mcp` HTTP request context at the same
+     instant it sends `notifications/cancelled` asynchronously, the follow-up
+     `notifications/cancelled` for that aborted in-flight `requestId` still
+     increments the cancellation counters deterministically. Closing an HTTP
+     connection in `2025-11-25` without sending `notifications/cancelled`, or
+     sending `notifications/cancelled` for an already-completed or non-`slow`
+     request, does not increment `cancelledSlow`.
+   - `2024-11-05` (HTTP+SSE): `POST /messages` delegates
+     `notifications/initialized` and `notifications/cancelled` through `mcp()`
+     (recording them in `state.calls`), cancels the matching in-flight `slow`
+     request within one polling step, suppresses its final JSON-RPC response,
+     and records the cancellation in `cancelledSlow`,
+     `cancelledByVersion["2024-11-05"]`, and `cancelledRequestIds`.
+   - `GET /__mock/state` now includes `cancelledSlow`,
+     `cancelledByVersion` (`{"2026-07-28":0,"2025-11-25":0,"2024-11-05":0}`),
+     and `cancelledRequestIds` (`[...]`) so client integration tests can assert
+     cancellation deterministically by revision and request ID.
+5. **Multi-event `slow` SSE streaming and clean chunk termination (`v0.1.112`)**:
+   - `Exchange.set_header` is now idempotent when re-setting an already
+     committed response header to the identical value, so calling `event(x, ...)`
+     repeatedly on the same `Exchange` no longer aborts the HTTP stream after
+     the first event.
+   - In `sse` reply mode on `2026-07-28` and `2025-11-25` (and on `/sse` in
+     `2024-11-05`), `slow` flushes HTTP `200 OK` SSE headers immediately upon
+     start, emits all 5 `notifications/progress` events (`progress: 1..5`,
+     `total: 5`), finishes with the JSON-RPC `CallToolResult` (`"slow complete"`),
+     and terminates the chunked HTTP response cleanly with a zero-length last
+     chunk.
+6. **HTTP status codes and header/resource/prompt validation (`F5`, `F6`)**:
    - `2026-07-28`: unknown methods return HTTP `404` with `-32601`; missing or
      `_meta`-mismatched `MCP-Protocol-Version` returns HTTP `400` with `-32020`
      (`HeaderMismatch`); `Mcp-Name` supports `=?base64?...?=` decoding; client-sent
@@ -124,7 +151,7 @@ build/lmmock exec --lmcode build/mcp/server.lmcode \
 
 Run all 7 transport/schema scenarios in `tests/mcp/client.mjs`, the official
 `github.com/modelcontextprotocol/go-sdk` interoperability and `jsonschema-go`
-wire validation suite in `tests/mcp/gosdk`, and all 28 intentional handler
+wire validation suite in `tests/mcp/gosdk`, and all 35 intentional handler
 mutations in `tests/mcp/mutations.mjs` with:
 
 ```sh

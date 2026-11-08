@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -111,6 +112,156 @@ func setReplyMode(t *testing.T, baseURL, mode string) {
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		t.Fatalf("set reply-mode %s status=%d body=%s", mode, resp.StatusCode, string(body))
+	}
+}
+
+type mockState struct {
+	ReplyMode           string           `json:"replyMode"`
+	DeleteCalls         int              `json:"deleteCalls"`
+	CancelledSlow       int              `json:"cancelledSlow"`
+	CancelledByVersion  map[string]int   `json:"cancelledByVersion"`
+	CancelledRequestIDs []any            `json:"cancelledRequestIds"`
+	Calls               []map[string]any `json:"calls"`
+}
+
+func fetchMockState(t *testing.T, baseURL string) mockState {
+	t.Helper()
+	resp, err := http.Get(baseURL + "/__mock/state")
+	if err != nil {
+		t.Fatalf("GET /__mock/state: %v", err)
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read /__mock/state: %v", err)
+	}
+	var st mockState
+	if err := json.Unmarshal(raw, &st); err != nil {
+		t.Fatalf("unmarshal /__mock/state %q: %v", string(raw), err)
+	}
+	return st
+}
+
+type progressTracker struct {
+	mu     sync.Mutex
+	events []*mcp.ProgressNotificationParams
+	notify chan float64
+}
+
+func newProgressTracker() *progressTracker {
+	return &progressTracker{notify: make(chan float64, 32)}
+}
+
+func (p *progressTracker) handle(_ context.Context, req *mcp.ProgressNotificationClientRequest) {
+	if req == nil || req.Params == nil {
+		return
+	}
+	p.mu.Lock()
+	cp := *req.Params
+	p.events = append(p.events, &cp)
+	p.mu.Unlock()
+	select {
+	case p.notify <- req.Params.Progress:
+	default:
+	}
+}
+
+func (p *progressTracker) reset() {
+	p.mu.Lock()
+	p.events = nil
+	p.mu.Unlock()
+	for {
+		select {
+		case <-p.notify:
+		default:
+			return
+		}
+	}
+}
+
+func (p *progressTracker) snapshotForToken(tok string) []*mcp.ProgressNotificationParams {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	var out []*mcp.ProgressNotificationParams
+	for _, ev := range p.events {
+		if fmt.Sprint(ev.ProgressToken) == tok {
+			out = append(out, ev)
+		}
+	}
+	return out
+}
+
+func exerciseSlowProgressAndCancel(t *testing.T, ctx context.Context, session *mcp.ClientSession, baseURL, version, mode string, tracker *progressTracker) {
+	t.Helper()
+
+	if mode == "sse" || version == "2024-11-05" {
+		tracker.reset()
+		tok := fmt.Sprintf("prog-%s-%s", version, mode)
+		slowParams := &mcp.CallToolParams{Name: "slow"}
+		slowParams.SetProgressToken(tok)
+		slowRes, err := session.CallTool(ctx, slowParams)
+		if err != nil || slowRes.IsError {
+			t.Fatalf("%s (%s) CallTool slow failed: err=%v res=%+v", version, mode, err, slowRes)
+		}
+		deadline := time.Now().Add(500 * time.Millisecond)
+		for time.Now().Before(deadline) && len(tracker.snapshotForToken(tok)) < 5 {
+			time.Sleep(10 * time.Millisecond)
+		}
+		got := tracker.snapshotForToken(tok)
+		if len(got) != 5 {
+			t.Fatalf("%s (%s) expected 5 progress notifications for token %q, got %d", version, mode, tok, len(got))
+		}
+		for i, ev := range got {
+			wantProg := float64(i + 1)
+			if ev.Progress != wantProg || ev.Total != 5 {
+				t.Fatalf("%s (%s) progress[%d] = {progress:%v, total:%v}, want {progress:%v, total:5}", version, mode, i, ev.Progress, ev.Total, wantProg)
+			}
+		}
+	}
+
+	before := fetchMockState(t, baseURL)
+	tracker.reset()
+	cancelTok := fmt.Sprintf("cancel-%s-%s", version, mode)
+	cancelParams := &mcp.CallToolParams{Name: "slow"}
+	cancelParams.SetProgressToken(cancelTok)
+
+	callCtx, cancelCall := context.WithCancel(ctx)
+	defer cancelCall()
+
+	go func() {
+		if mode == "sse" || version == "2024-11-05" {
+			select {
+			case <-tracker.notify:
+			case <-time.After(150 * time.Millisecond):
+			}
+		} else {
+			time.Sleep(45 * time.Millisecond)
+		}
+		cancelCall()
+	}()
+
+	_, err := session.CallTool(callCtx, cancelParams)
+	if err == nil {
+		t.Fatalf("%s (%s) expected cancelled CallTool slow to return error", version, mode)
+	}
+
+	var after mockState
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		after = fetchMockState(t, baseURL)
+		if after.CancelledSlow > before.CancelledSlow {
+			break
+		}
+		time.Sleep(15 * time.Millisecond)
+	}
+	if after.CancelledSlow != before.CancelledSlow+1 {
+		t.Fatalf("%s (%s) expected cancelledSlow=%d, got %d (state=%+v)", version, mode, before.CancelledSlow+1, after.CancelledSlow, after)
+	}
+	if after.CancelledByVersion == nil || after.CancelledByVersion[version] != before.CancelledByVersion[version]+1 {
+		t.Fatalf("%s (%s) expected cancelledByVersion[%q]=%d, got %+v", version, mode, version, before.CancelledByVersion[version]+1, after.CancelledByVersion)
+	}
+	if len(after.CancelledRequestIDs) != len(before.CancelledRequestIDs)+1 {
+		t.Fatalf("%s (%s) expected cancelledRequestIds len=%d, got %+v", version, mode, len(before.CancelledRequestIDs)+1, after.CancelledRequestIDs)
 	}
 }
 
@@ -232,10 +383,12 @@ func TestGoSDK2026Stateless(t *testing.T) {
 			defer cancel()
 
 			var toolsChanged atomic.Int32
+			tracker := newProgressTracker()
 			client := mcp.NewClient(&mcp.Implementation{Name: "gosdk-2026", Version: "1.0.0"}, &mcp.ClientOptions{
 				ToolListChangedHandler: func(context.Context, *mcp.ToolListChangedRequest) {
 					toolsChanged.Add(1)
 				},
+				ProgressNotificationHandler: tracker.handle,
 			})
 			transport := &mcp.StreamableClientTransport{
 				Endpoint:   baseURL + "/mcp",
@@ -305,6 +458,8 @@ func TestGoSDK2026Stateless(t *testing.T) {
 			if toolsChanged.Load() < 1 {
 				t.Fatalf("expected ToolListChangedHandler to fire via subscriptions/listen, got %d", toolsChanged.Load())
 			}
+
+			exerciseSlowProgressAndCancel(t, ctx, session, baseURL, "2026-07-28", mode, tracker)
 		})
 	}
 }
@@ -319,10 +474,12 @@ func TestGoSDK2025Session(t *testing.T) {
 			defer cancel()
 
 			var toolsChanged atomic.Int32
+			tracker := newProgressTracker()
 			client := mcp.NewClient(&mcp.Implementation{Name: "gosdk-2025", Version: "1.0.0"}, &mcp.ClientOptions{
 				ToolListChangedHandler: func(context.Context, *mcp.ToolListChangedRequest) {
 					toolsChanged.Add(1)
 				},
+				ProgressNotificationHandler: tracker.handle,
 			})
 			httpClient := &http.Client{
 				Transport: &http.Transport{
@@ -372,6 +529,8 @@ func TestGoSDK2025Session(t *testing.T) {
 			if toolsChanged.Load() < 1 {
 				t.Fatalf("expected ToolListChangedHandler to fire over GET /mcp SSE, got %d", toolsChanged.Load())
 			}
+
+			exerciseSlowProgressAndCancel(t, ctx, session, baseURL, "2025-11-25", mode, tracker)
 		})
 	}
 }
@@ -386,10 +545,12 @@ func TestGoSDK2024LegacySSE(t *testing.T) {
 			defer cancel()
 
 			var toolsChanged atomic.Int32
+			tracker := newProgressTracker()
 			client := mcp.NewClient(&mcp.Implementation{Name: "gosdk-2024", Version: "1.0.0"}, &mcp.ClientOptions{
 				ToolListChangedHandler: func(context.Context, *mcp.ToolListChangedRequest) {
 					toolsChanged.Add(1)
 				},
+				ProgressNotificationHandler: tracker.handle,
 			})
 			transport := &mcp.SSEClientTransport{
 				Endpoint: baseURL + "/sse",
@@ -428,6 +589,8 @@ func TestGoSDK2024LegacySSE(t *testing.T) {
 			if toolsChanged.Load() < 1 {
 				t.Fatalf("expected ToolListChangedHandler to fire over GET /sse, got %d", toolsChanged.Load())
 			}
+
+			exerciseSlowProgressAndCancel(t, ctx, session, baseURL, "2024-11-05", mode, tracker)
 		})
 	}
 }
