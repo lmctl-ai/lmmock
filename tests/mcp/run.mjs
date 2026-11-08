@@ -20,8 +20,13 @@ for(const [config,scenario] of [
  ['tests/mcp/session-config.json','legacy-cancel'],
  ['examples/mcp/streamable-http/config.json','progress-cancel'],
  ['tests/mcp/auth-config.json','auth'],
+ ['examples/mcp/streamable-http/config.json','mismatch'],
 ]) {
  const result=run(scenario);assert.equal(result.status,0,`${scenario} failed\n${result.stdout}\n${result.stderr}`);process.stdout.write(result.stdout);
 }
+const gosdk=spawnSync('go',['test','-count=1','-v','./...'],{cwd:path.join(root,'tests/mcp/gosdk'),encoding:'utf8',env:{...process.env,LMMOCK_BIN:binary}});
+if(gosdk.error)throw gosdk.error;
+assert.equal(gosdk.status,0,`gosdk failed\n${gosdk.stdout}\n${gosdk.stderr}`);
+process.stdout.write(gosdk.stdout);
 runMcpMutations({root,binary,run});
 console.log('PASS MCP transport examples');

@@ -3,9 +3,9 @@
 Vendored from `modelcontextprotocol/modelcontextprotocol` commit
 `cf59bb0d8b43e711420f5f7313aa6cca3f1e1898`:
 
-- `2024-11-05.schema.json`
-- `2025-11-25.schema.json`
-- `2026-07-28.schema.json`
+- `2024-11-05.schema.json` (upstream `schema/2024-11-05/schema.json`)
+- `2025-11-25.schema.json` (upstream `schema/2025-11-25/schema.json`)
+- `2026-07-28.schema.json` (upstream `schema/draft/schema.json`, tracking the `2026-07-28` specification target at that commit)
 
 The upstream license is included as `LICENSE.modelcontextprotocol`. Schema hashes
 are recorded in `SHA256SUMS`. The 2024 schema uses JSON Schema draft-07; the

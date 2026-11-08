@@ -50,6 +50,7 @@ jobs:
           echo "LMCTL_TEST_PREFIX=$RUNNER_TEMP/lmctl" >> "$GITHUB_ENV"
           npm ci --prefix tests/vercel
           npm ci --prefix tests/mcp --ignore-scripts
+          (cd tests/mcp/gosdk && go mod download && go mod verify)
       - name: Build and test
         run: |
           lmscript  test.lms
