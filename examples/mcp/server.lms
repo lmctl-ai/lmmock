@@ -54,6 +54,15 @@ fn mcp_reply(x: Exchange, body: string) -> void {
     x.json(body);
   }
 }
+fn record_cancel(x: Exchange, ver: string, reqId: string) -> void {
+  if (x.get("cancel:counted:" + reqId) == "") {
+    x.set("cancel:counted:" + reqId, "yes");
+    x.increment("mcp:cancelled_slow");
+    x.increment("mcp:cancelled_slow:" + ver);
+    let idx = x.increment("mcp:cancelled_req_count");
+    x.set("mcp:cancelled_req:" + str(idx), reqId);
+  }
+}
 fn mcp(x: Exchange, version: string) -> void {
   let raw = x.body();
   let j = json_parse(raw);
@@ -111,7 +120,12 @@ fn mcp(x: Exchange, version: string) -> void {
   }
   else if (method == "notifications/initialized" || method == "notifications/cancelled") {
     if (method == "notifications/cancelled" && params.has("requestId")) {
-      x.set("cancel:" + params.get("requestId").to_json(), "yes");
+      let reqId = params.get("requestId").to_json();
+      x.set("cancel:" + reqId, "yes");
+      let inflightVer = x.get("slow:inflight:" + reqId);
+      if (inflightVer != "" && x.get("slow:done:" + reqId) == "") {
+        record_cancel(x, inflightVer, reqId);
+      }
     }
     x.status(202);
     x.send("");
@@ -208,11 +222,18 @@ fn mcp(x: Exchange, version: string) -> void {
         let disconnected = false;
         let requestKey = id;
         let progress = "";
+        let isSse = version == "2024-11-05" || x.header("X-Mock-Reply-Mode") == "sse" || x.get("mcp:mode") == "sse";
+        x.set("slow:inflight:" + requestKey, version);
         if (params.has("_meta") && params.get("_meta").kind() == "object" && params.get("_meta").has("progressToken")) {
           progress = params.get("_meta").get("progressToken").to_json();
         }
-        while (step < 20 && !stopped) {
-          let alive = x.pause(25);
+        if (isSse && version != "2024-11-05") {
+          x.set_header("Content-Type", "text/event-stream");
+          x.set_header("Cache-Control", "no-cache");
+          x.stream_event("");
+        }
+        while (step < 5 && !stopped) {
+          let alive = x.pause(60);
           if (x.get("cancel:" + requestKey) == "yes") {
             cancelledByNotif = true;
             stopped = true;
@@ -223,20 +244,21 @@ fn mcp(x: Exchange, version: string) -> void {
           }
           if (!stopped) {
             step = step + 1;
-            if (progress != "" && (version == "2024-11-05" || x.header("X-Mock-Reply-Mode") == "sse" || x.get("mcp:mode") == "sse")) {
-              event(x, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progressToken\":" + progress + ",\"progress\":" + str(step) + "}}");
+            if (progress != "" && isSse) {
+              event(x, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progressToken\":" + progress + ",\"progress\":" + str(step) + ",\"total\":5}}");
             }
           }
         }
         let wasCancelled = cancelledByNotif || (version == "2026-07-28" && disconnected);
         if (wasCancelled) {
-          x.increment("mcp:cancelled_slow");
-          if (version == "2025-11-25" && x.header("X-Mock-Reply-Mode") != "sse" && x.get("mcp:mode") != "sse") {
+          record_cancel(x, version, requestKey);
+          if (version == "2025-11-25" && !isSse) {
             x.status(204);
             x.send("");
           }
         }
         else if (!disconnected) {
+          x.set("slow:done:" + requestKey, "yes");
           content = "[{\"type\":\"text\",\"text\":\"slow complete\"}]";
         }
       }
@@ -560,7 +582,12 @@ fn legacy_sse(x: Exchange) -> void implements Handler {
         seen = changed;
         x.stream_event("id: " + changed + "\nevent: message\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}\n\n");
       }
-      open = x.pause(25);
+      if (reply == "") {
+        open = x.pause(25);
+      }
+      else {
+        open = x.pause(0);
+      }
       if (x.get("sse:" + sid) != "active") {
         open = false;
       }
@@ -598,11 +625,7 @@ fn messages(x: Exchange) -> void implements Handler {
         }
         let method = field(j, "method", "");
         if (method == "notifications/initialized" || method == "notifications/cancelled") {
-          if (method == "notifications/cancelled" && j.has("params") && j.get("params").kind() == "object" && j.get("params").has("requestId")) {
-            x.set("cancel:" + j.get("params").get("requestId").to_json(), "yes");
-          }
-          x.status(202);
-          x.send("");
+          mcp(x, "2024-11-05");
         }
         else if (method == "" && (j.has("result") || j.has("error"))) {
           x.status(202);
@@ -639,6 +662,32 @@ fn control(x: Exchange) -> void implements Handler {
       if (cancelled == "") {
         cancelled = "0";
       }
+      let c2026 = x.get("mcp:cancelled_slow:2026-07-28");
+      if (c2026 == "") {
+        c2026 = "0";
+      }
+      let c2025 = x.get("mcp:cancelled_slow:2025-11-25");
+      if (c2025 == "") {
+        c2025 = "0";
+      }
+      let c2024 = x.get("mcp:cancelled_slow:2024-11-05");
+      if (c2024 == "") {
+        c2024 = "0";
+      }
+      let byVer = "{\"2026-07-28\":" + c2026 + ",\"2025-11-25\":" + c2025 + ",\"2024-11-05\":" + c2024 + "}";
+      let cancelledReqCountText = x.get("mcp:cancelled_req_count");
+      if (cancelledReqCountText == "") {
+        cancelledReqCountText = "0";
+      }
+      let cancelledReqCount = json_parse(cancelledReqCountText).as_int();
+      let cancelledReqIds = "[";
+      for (i in range(1, cancelledReqCount + 1)) {
+        if (i > 1) {
+          cancelledReqIds = cancelledReqIds + ",";
+        }
+        cancelledReqIds = cancelledReqIds + x.get("mcp:cancelled_req:" + str(i));
+      }
+      cancelledReqIds = cancelledReqIds + "]";
       let countText = x.get("mcp:call_count");
       if (countText == "") {
         countText = "0";
@@ -652,7 +701,7 @@ fn control(x: Exchange) -> void implements Handler {
         calls = calls + x.get("mcp:call:" + str(i));
       }
       calls = calls + "]";
-      x.json("{\"replyMode\":\"" + mode + "\",\"deleteCalls\":" + deletes + ",\"cancelledSlow\":" + cancelled + ",\"calls\":" + calls + "}");
+      x.json("{\"replyMode\":\"" + mode + "\",\"deleteCalls\":" + deletes + ",\"cancelledSlow\":" + cancelled + ",\"cancelledByVersion\":" + byVer + ",\"cancelledRequestIds\":" + cancelledReqIds + ",\"calls\":" + calls + "}");
     }
     else if (path == "/__mock/reset") {
       x.reset();

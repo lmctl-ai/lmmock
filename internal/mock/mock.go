@@ -441,11 +441,14 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		return lmcode.None(), nil
 	})
 	method("set_header", []string{"string", "string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
-		if x.stream != nil && x.stream.committed {
-			return lmcode.None(), errors.New("response already streaming")
-		}
 		if a[0].Str == "" || strings.ContainsAny(a[0].Str, "\r\n :\t") || strings.ContainsAny(a[1].Str, "\r\n") {
 			return lmcode.None(), errors.New("invalid response header")
+		}
+		if x.stream != nil && x.stream.committed {
+			if x.headers.Get(a[0].Str) == a[1].Str {
+				return lmcode.None(), nil
+			}
+			return lmcode.None(), errors.New("response already streaming")
 		}
 		x.headers.Set(a[0].Str, a[1].Str)
 		return lmcode.None(), nil

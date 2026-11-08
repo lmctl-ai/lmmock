@@ -3,8 +3,10 @@ package mock
 import (
 	"context"
 	"crypto/tls"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -94,3 +96,53 @@ func TestPseudoHeadersSchemeBodyKindAndMcpName(t *testing.T) {
 		t.Fatalf("Mcp-Name-Decoded when missing = %q; want \\x00missing", got)
 	}
 }
+
+func TestIdempotentSetHeaderAfterStreamCommit(t *testing.T) {
+	e, err := NewWithOptions(fixture(t, "mcp/server"), Options{ConfigFile: "../../tests/mcp/session-config.json"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv, err := Start(e, "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Close()
+
+	initReq, _ := http.NewRequest("POST", srv.URL+"/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}`))
+	initReq.Header.Set("Content-Type", "application/json")
+	initReq.Header.Set("Accept", "application/json, text/event-stream")
+	initReq.Header.Set("MCP-Protocol-Version", "2025-11-25")
+	initResp, err := http.DefaultClient.Do(initReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sid := initResp.Header.Get("Mcp-Session-Id")
+	_ = initResp.Body.Close()
+	if sid == "" {
+		t.Fatal("missing Mcp-Session-Id")
+	}
+
+	slowReq, _ := http.NewRequest("POST", srv.URL+"/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"slow","arguments":{},"_meta":{"progressToken":"p1"}}}`))
+	slowReq.Header.Set("Content-Type", "application/json")
+	slowReq.Header.Set("Accept", "application/json, text/event-stream")
+	slowReq.Header.Set("MCP-Protocol-Version", "2025-11-25")
+	slowReq.Header.Set("Mcp-Session-Id", sid)
+	slowReq.Header.Set("X-Mock-Reply-Mode", "sse")
+	slowResp, err := http.DefaultClient.Do(slowReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, readErr := io.ReadAll(slowResp.Body)
+	_ = slowResp.Body.Close()
+	if readErr != nil {
+		t.Fatalf("SSE slow response body truncated: err=%v body=%q", readErr, string(body))
+	}
+	text := string(body)
+	if got := strings.Count(text, `"method":"notifications/progress"`); got != 5 {
+		t.Fatalf("expected 5 notifications/progress events, got %d in %q", got, text)
+	}
+	if !strings.Contains(text, `"slow complete"`) {
+		t.Fatalf("expected final CallToolResult in SSE stream, got %q", text)
+	}
+}
+
