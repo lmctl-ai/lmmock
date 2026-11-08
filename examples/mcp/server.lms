@@ -3,10 +3,33 @@
 p = _lmcode_ schema="../../examples/schema.json";
 fn field(j: Json, key: string, fallback: string) -> string {
   let v = fallback;
-  if (j.has(key)) {
-    v = j.get(key).as_string();
+  if (j.kind() == "object" && j.has(key)) {
+    let child = j.get(key);
+    if (child.kind() == "string") {
+      v = child.as_string();
+    }
   }
   return v;
+}
+fn is_num(j: Json, key: string) -> bool {
+  let ok = false;
+  if (j.kind() == "object" && j.has(key)) {
+    let k = j.get(key).kind();
+    ok = k == "int" || k == "float";
+  }
+  return ok;
+}
+fn result_prefix(version: string, cacheable: bool) -> string {
+  let prefix = "";
+  if (version == "2026-07-28") {
+    if (cacheable) {
+      prefix = "\"resultType\":\"complete\",\"cacheScope\":\"public\",\"ttlMs\":0,";
+    }
+    else {
+      prefix = "\"resultType\":\"complete\",";
+    }
+  }
+  return prefix;
 }
 fn envelope(id: string, result: string) -> string {
   return "{\"jsonrpc\":\"2.0\",\"id\":" + id + ",\"result\":" + result + "}";
@@ -35,40 +58,50 @@ fn mcp(x: Exchange, version: string) -> void {
   let raw = x.body();
   let j = json_parse(raw);
   let id = "null";
+  let hasId = false;
   let method = "";
   let params = json_parse("{}");
   if (j.has("id")) {
     id = j.get("id").to_json();
+    if (id != "null") {
+      hasId = true;
+    }
   }
-  if (j.has("method")) {
+  if (j.has("method") && j.get("method").kind() == "string") {
     method = j.get("method").as_string();
   }
-  if (j.has("params")) {
+  if (j.has("params") && j.get("params").kind() == "object") {
     params = j.get("params");
   }
   let callName = field(params, "name", field(params, "uri", ""));
   let callNumber = x.increment("mcp:call_count");
-  x.set("mcp:call_count", str(callNumber));
   x.set("mcp:call:" + str(callNumber), "{\"method\":" + json_quote(method) + ",\"id\":" + id + ",\"name\":" + json_quote(callName) + "}");
   let headerVersion = x.header("MCP-Protocol-Version");
   let headerMethod = x.header("Mcp-Method");
   let bodyVersion = "";
-  if (params.has("_meta") && params.get("_meta").has("io.modelcontextprotocol/protocolVersion")) {
-    bodyVersion = params.get("_meta").get("io.modelcontextprotocol/protocolVersion").as_string();
+  if (params.has("_meta") && params.get("_meta").kind() == "object") {
+    bodyVersion = field(params.get("_meta"), "io.modelcontextprotocol/protocolVersion", "");
   }
+  let isNotif = str_starts_with(method, "notifications/");
   if (method == "" && (j.has("result") || j.has("error"))) {
-    x.status(202);
-    x.send("");
-  }
-  else if (version == "2026-07-28" && headerVersion != "2026-07-28") {
-    x.status(400);
-    x.json(error_reply(id, -32022, "UnsupportedProtocolVersionError"));
+    if (version == "2026-07-28") {
+      x.status(400);
+      x.json(error_reply(id, -32600, "JSON-RPC responses are not accepted on stateless POST /mcp"));
+    }
+    else {
+      x.status(202);
+      x.send("");
+    }
   }
   else if (version == "2026-07-28" && (headerMethod == "" || bodyVersion != headerVersion || headerMethod != method)) {
     x.status(400);
     x.json(error_reply(id, -32020, "HeaderMismatch"));
   }
-  else if (version == "2026-07-28" && (method == "tools/call" || method == "resources/read" || method == "prompts/get") && x.header("Mcp-Name") != field(params, "name", field(params, "uri", ""))) {
+  else if (version == "2026-07-28" && headerVersion != "2026-07-28") {
+    x.status(400);
+    x.json(error_reply(id, -32022, "UnsupportedProtocolVersionError"));
+  }
+  else if (version == "2026-07-28" && (method == "tools/call" || method == "resources/read" || method == "prompts/get") && x.header("Mcp-Name-Decoded") != field(params, "name", field(params, "uri", ""))) {
     x.status(400);
     x.json(error_reply(id, -32020, "HeaderMismatch"));
   }
@@ -76,31 +109,36 @@ fn mcp(x: Exchange, version: string) -> void {
     x.status(406);
     x.json(error_reply(id, -32020, "Accept must include application/json and text/event-stream"));
   }
-  else if ((method == "notifications/initialized" || method == "notifications/cancelled") && version != "2026-07-28") {
+  else if (method == "notifications/initialized" || method == "notifications/cancelled") {
     if (method == "notifications/cancelled" && params.has("requestId")) {
       x.set("cancel:" + params.get("requestId").to_json(), "yes");
     }
     x.status(202);
     x.send("");
   }
+  else if (!isNotif && (method == "" || !hasId)) {
+    x.status(400);
+    x.json(error_reply("null", -32600, "Invalid Request"));
+  }
   else if (method == "initialize" && version == "2026-07-28") {
+    x.status(404);
     mcp_reply(x, error_reply(id, -32601, "method not found"));
   }
   else if (headerMethod != "" && headerMethod != method) {
     x.status(400);
     mcp_reply(x, error_reply(id, -32020, "HeaderMismatch"));
   }
-  else if (method == "ping") {
+  else if (method == "ping" && version != "2026-07-28") {
     mcp_reply(x, envelope(id, "{}"));
   }
-  else if (method == "server/discover") {
-    mcp_reply(x, envelope(id, "{\"resultType\":\"complete\",\"cacheScope\":\"public\",\"ttlMs\":0,\"supportedVersions\":[\"2026-07-28\",\"2025-11-25\",\"2024-11-05\"],\"capabilities\":{\"tools\":{\"listChanged\":true},\"resources\":{\"subscribe\":true,\"listChanged\":true},\"prompts\":{\"listChanged\":true},\"logging\":{}}}"));
+  else if (method == "server/discover" && version == "2026-07-28") {
+    mcp_reply(x, envelope(id, "{\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"lmmock-mcp\",\"version\":\"1.0.0\"}},\"resultType\":\"complete\",\"cacheScope\":\"public\",\"ttlMs\":0,\"supportedVersions\":[\"2026-07-28\",\"2025-11-25\",\"2024-11-05\"],\"capabilities\":{\"tools\":{\"listChanged\":true},\"resources\":{\"listChanged\":true},\"prompts\":{\"listChanged\":true}}}"));
   }
   else if (method == "initialize" && version != "2026-07-28") {
     let requested = field(params, "protocolVersion", "");
-    if (requested != version) {
+    if (requested == "") {
       x.status(400);
-      mcp_reply(x, error_reply(id, -32602, "unsupported protocol version"));
+      mcp_reply(x, error_reply(id, -32602, "missing protocol version"));
     }
     else {
       let sid = random_token();
@@ -112,24 +150,39 @@ fn mcp(x: Exchange, version: string) -> void {
     }
   }
   else if (method == "tools/list") {
-    let tool0 = "{\"name\":\"echo\",\"description\":\"Return text\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"]},\"outputSchema\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"]},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
-    let tool1 = "{\"name\":\"add\",\"description\":\"Add typed numbers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"left\":{\"type\":\"number\"},\"right\":{\"type\":\"number\"}},\"required\":[\"left\",\"right\"]},\"outputSchema\":{\"type\":\"object\",\"properties\":{\"sum\":{\"type\":\"number\"}},\"required\":[\"sum\"]},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
-    let tool2 = "{\"name\":\"slow\",\"description\":\"Cancellable progress fixture\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
-    let tool3 = "{\"name\":\"fail\",\"description\":\"Tool error result\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
-    let tool4 = "{\"name\":\"crash\",\"description\":\"JSON-RPC error\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
-    let tool5 = "{\"name\":\"delete_everything\",\"description\":\"Records invocation only\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":false,\"destructiveHint\":true,\"idempotentHint\":false,\"openWorldHint\":false}}";
-    let result = "{\"resultType\":\"complete\",\"cacheScope\":\"public\",\"ttlMs\":0,\"tools\":[" + tool0 + "," + tool1 + "," + tool2 + "," + tool3 + "," + tool4 + "," + tool5 + "]}";
+    let result = "";
+    if (version == "2024-11-05") {
+      let l0 = "{\"name\":\"echo\",\"description\":\"Return text\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"]}}";
+      let l1 = "{\"name\":\"add\",\"description\":\"Add typed numbers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"left\":{\"type\":\"number\"},\"right\":{\"type\":\"number\"}},\"required\":[\"left\",\"right\"]}}";
+      let l2 = "{\"name\":\"slow\",\"description\":\"Cancellable progress fixture\",\"inputSchema\":{\"type\":\"object\"}}";
+      let l3 = "{\"name\":\"fail\",\"description\":\"Tool error result\",\"inputSchema\":{\"type\":\"object\"}}";
+      let l4 = "{\"name\":\"crash\",\"description\":\"JSON-RPC error\",\"inputSchema\":{\"type\":\"object\"}}";
+      let l5 = "{\"name\":\"delete_everything\",\"description\":\"Records invocation only\",\"inputSchema\":{\"type\":\"object\"}}";
+      result = "{\"tools\":[" + l0 + "," + l1 + "," + l2 + "," + l3 + "," + l4 + "," + l5 + "]}";
+    }
+    else {
+      let tool0 = "{\"name\":\"echo\",\"description\":\"Return text\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"]},\"outputSchema\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"]},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
+      let tool1 = "{\"name\":\"add\",\"description\":\"Add typed numbers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"left\":{\"type\":\"number\"},\"right\":{\"type\":\"number\"}},\"required\":[\"left\",\"right\"]},\"outputSchema\":{\"type\":\"object\",\"properties\":{\"sum\":{\"type\":\"number\"}},\"required\":[\"sum\"]},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
+      let tool2 = "{\"name\":\"slow\",\"description\":\"Cancellable progress fixture\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
+      let tool3 = "{\"name\":\"fail\",\"description\":\"Tool error result\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
+      let tool4 = "{\"name\":\"crash\",\"description\":\"JSON-RPC error\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":true,\"destructiveHint\":false,\"idempotentHint\":true,\"openWorldHint\":false}}";
+      let tool5 = "{\"name\":\"delete_everything\",\"description\":\"Records invocation only\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":false,\"destructiveHint\":true,\"idempotentHint\":false,\"openWorldHint\":false}}";
+      result = "{" + result_prefix(version, true) + "\"tools\":[" + tool0 + "," + tool1 + "," + tool2 + "," + tool3 + "," + tool4 + "," + tool5 + "]}";
+    }
     mcp_reply(x, envelope(id, result));
   }
   else if (method == "tools/call") {
     let name = field(params, "name", "");
-    let args = params.get("arguments");
+    let args = json_parse("{}");
+    if (params.has("arguments") && params.get("arguments").kind() == "object") {
+      args = params.get("arguments");
+    }
     if (name == "crash") {
       mcp_reply(x, error_reply(id, -32603, "synthetic crash"));
     }
     else {
       let content = "";
-      let structured = "{}";
+      let structured = "";
       let isError = "false";
       if (name == "echo") {
         let value = field(args, "text", "");
@@ -137,40 +190,62 @@ fn mcp(x: Exchange, version: string) -> void {
         structured = "{\"text\":" + json_quote(value) + "}";
       }
       else if (name == "add") {
-        let a = args.get("left").as_float();
-        let b = args.get("right").as_float();
-        let total = a + b;
-        content = "[{\"type\":\"text\",\"text\":" + json_quote(str(total)) + "}]";
-        structured = "{\"sum\":" + str(total) + "}";
+        if (!is_num(args, "left") || !is_num(args, "right")) {
+          mcp_reply(x, error_reply(id, -32602, "add requires numeric left and right arguments"));
+        }
+        else {
+          let a = args.get("left").as_float();
+          let b = args.get("right").as_float();
+          let total = a + b;
+          content = "[{\"type\":\"text\",\"text\":" + json_quote(str(total)) + "}]";
+          structured = "{\"sum\":" + str(total) + "}";
+        }
       }
       else if (name == "slow") {
         let step = 0;
         let stopped = false;
-        let requestKey = j.get("id").to_json();
+        let cancelledByNotif = false;
+        let disconnected = false;
+        let requestKey = id;
         let progress = "";
-        if (params.has("_meta") && params.get("_meta").has("progressToken")) {
+        if (params.has("_meta") && params.get("_meta").kind() == "object" && params.get("_meta").has("progressToken")) {
           progress = params.get("_meta").get("progressToken").to_json();
         }
         while (step < 20 && !stopped) {
-          stopped = !x.pause(25) || x.get("cancel:" + requestKey) == "yes";
+          let alive = x.pause(25);
+          if (x.get("cancel:" + requestKey) == "yes") {
+            cancelledByNotif = true;
+            stopped = true;
+          }
+          else if (!alive) {
+            disconnected = true;
+            stopped = true;
+          }
           if (!stopped) {
             step = step + 1;
-            if (progress != "" && (x.header("X-Mock-Reply-Mode") == "sse" || x.get("mcp:mode") == "sse")) {
+            if (progress != "" && (version == "2024-11-05" || x.header("X-Mock-Reply-Mode") == "sse" || x.get("mcp:mode") == "sse")) {
               event(x, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progressToken\":" + progress + ",\"progress\":" + str(step) + "}}");
             }
           }
         }
-        if (stopped) {
-          x.set("mcp:cancelled_slow", str(x.increment("mcp:cancelled_slow")));
+        let wasCancelled = cancelledByNotif || (version == "2026-07-28" && disconnected);
+        if (wasCancelled) {
+          x.increment("mcp:cancelled_slow");
+          if (version == "2025-11-25" && x.header("X-Mock-Reply-Mode") != "sse" && x.get("mcp:mode") != "sse") {
+            x.status(204);
+            x.send("");
+          }
         }
-        content = "[{\"type\":\"text\",\"text\":\"slow complete\"}]";
+        else if (!disconnected) {
+          content = "[{\"type\":\"text\",\"text\":\"slow complete\"}]";
+        }
       }
       else if (name == "fail") {
         isError = "true";
         content = "[{\"type\":\"text\",\"text\":\"synthetic tool failure\"}]";
       }
       else if (name == "delete_everything") {
-        x.set("recorded:delete_everything", str(x.increment("recorded:delete_everything")));
+        x.increment("recorded:delete_everything");
         content = "[{\"type\":\"text\",\"text\":\"recorded; no deletion performed\"}]";
       }
       else {
@@ -178,55 +253,90 @@ fn mcp(x: Exchange, version: string) -> void {
         content = "";
       }
       if (content != "") {
-        mcp_reply(x, envelope(id, "{\"resultType\":\"complete\",\"content\":" + content + ",\"structuredContent\":" + structured + ",\"isError\":" + isError + "}"));
+        let scPart = "";
+        if (version != "2024-11-05" && structured != "") {
+          scPart = ",\"structuredContent\":" + structured;
+        }
+        mcp_reply(x, envelope(id, "{" + result_prefix(version, false) + "\"content\":" + content + scPart + ",\"isError\":" + isError + "}"));
       }
     }
   }
   else if (method == "resources/list") {
-    mcp_reply(x, envelope(id, "{\"resultType\":\"complete\",\"cacheScope\":\"public\",\"ttlMs\":0,\"resources\":[{\"uri\":\"mock://text\",\"name\":\"text\",\"mimeType\":\"text/plain\"},{\"uri\":\"mock://blob\",\"name\":\"blob\",\"mimeType\":\"application/octet-stream\"}]}"));
+    mcp_reply(x, envelope(id, "{" + result_prefix(version, true) + "\"resources\":[{\"uri\":\"mock://text\",\"name\":\"text\",\"mimeType\":\"text/plain\"},{\"uri\":\"mock://blob\",\"name\":\"blob\",\"mimeType\":\"application/octet-stream\"}]}"));
   }
   else if (method == "resources/read") {
     let uri = field(params, "uri", "");
     if (uri == "mock://text") {
-      mcp_reply(x, envelope(id, "{\"resultType\":\"complete\",\"contents\":[{\"uri\":\"mock://text\",\"mimeType\":\"text/plain\",\"text\":\"fixture text\"}]}"));
+      mcp_reply(x, envelope(id, "{" + result_prefix(version, true) + "\"contents\":[{\"uri\":\"mock://text\",\"mimeType\":\"text/plain\",\"text\":\"fixture text\"}]}"));
+    }
+    else if (uri == "mock://blob") {
+      mcp_reply(x, envelope(id, "{" + result_prefix(version, true) + "\"contents\":[{\"uri\":\"mock://blob\",\"mimeType\":\"application/octet-stream\",\"blob\":\"AAEC\"}]}"));
+    }
+    else if (str_starts_with(uri, "mock://item/") && str_len(uri) > 12) {
+      let itemId = str_substr(uri, 12, str_len(uri) - 12);
+      mcp_reply(x, envelope(id, "{" + result_prefix(version, true) + "\"contents\":[{\"uri\":" + json_quote(uri) + ",\"mimeType\":\"text/plain\",\"text\":" + json_quote("item " + itemId) + "}]}"));
     }
     else {
-      mcp_reply(x, envelope(id, "{\"resultType\":\"complete\",\"contents\":[{\"uri\":\"mock://blob\",\"mimeType\":\"application/octet-stream\",\"blob\":\"AAEC\"}]}"));
+      let errCode = -32002;
+      if (version == "2026-07-28") {
+        errCode = -32602;
+      }
+      mcp_reply(x, error_reply(id, errCode, "resource not found"));
     }
   }
   else if (method == "resources/templates/list") {
-    mcp_reply(x, envelope(id, "{\"resultType\":\"complete\",\"cacheScope\":\"public\",\"ttlMs\":0,\"resourceTemplates\":[{\"uriTemplate\":\"mock://item/{id}\",\"name\":\"item\"}]}"));
+    mcp_reply(x, envelope(id, "{" + result_prefix(version, true) + "\"resourceTemplates\":[{\"uriTemplate\":\"mock://item/{id}\",\"name\":\"item\"}]}"));
   }
   else if (method == "prompts/list") {
-    mcp_reply(x, envelope(id, "{\"resultType\":\"complete\",\"cacheScope\":\"public\",\"ttlMs\":0,\"prompts\":[{\"name\":\"greet\",\"arguments\":[{\"name\":\"name\",\"required\":true}]}]}"));
+    mcp_reply(x, envelope(id, "{" + result_prefix(version, true) + "\"prompts\":[{\"name\":\"greet\",\"arguments\":[{\"name\":\"name\",\"required\":true}]}]}"));
   }
   else if (method == "prompts/get") {
-    let name = "guest";
-    if (params.has("arguments") && params.get("arguments").has("name")) {
-      name = params.get("arguments").get("name").as_string();
+    let promptName = field(params, "name", "");
+    if (promptName != "greet") {
+      mcp_reply(x, error_reply(id, -32602, "unknown prompt"));
     }
-    mcp_reply(x, envelope(id, "{\"resultType\":\"complete\",\"messages\":[{\"role\":\"user\",\"content\":{\"type\":\"text\",\"text\":" + json_quote("Hello " + name) + "}}]}"));
+    else {
+      let name = "guest";
+      if (params.has("arguments") && params.get("arguments").kind() == "object") {
+        name = field(params.get("arguments"), "name", "guest");
+      }
+      mcp_reply(x, envelope(id, "{" + result_prefix(version, false) + "\"messages\":[{\"role\":\"user\",\"content\":{\"type\":\"text\",\"text\":" + json_quote("Hello " + name) + "}}]}"));
+    }
   }
-  else if (method == "subscriptions/listen") {
+  else if (method == "subscriptions/listen" && version == "2026-07-28") {
     x.set_header("Content-Type", "text/event-stream");
     x.set_header("Cache-Control", "no-cache");
     let wantsTools = false;
-    if (params.has("notifications") && params.get("notifications").has("toolsListChanged")) {
+    let wantsToolsJson = "false";
+    if (params.has("notifications") && params.get("notifications").kind() == "object" && params.get("notifications").has("toolsListChanged") && params.get("notifications").get("toolsListChanged").kind() == "bool") {
       wantsTools = params.get("notifications").get("toolsListChanged").as_bool();
+      if (wantsTools) {
+        wantsToolsJson = "true";
+      }
     }
+    let subMeta = "{\"io.modelcontextprotocol/subscriptionId\":" + id + "}";
+    x.stream_event("data: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/subscriptions/acknowledged\",\"params\":{\"_meta\":" + subMeta + ",\"notifications\":{\"toolsListChanged\":" + wantsToolsJson + "}}}\n\n");
+    let seen = x.get("mcp:last_event_id");
     let open = true;
     while (open) {
-      let changed = x.take("mcp:list_changed");
-      if (changed != "" && wantsTools) {
-        x.stream_event("id: " + changed + "\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}\n\n");
-        open = false;
+      let changed = x.get("mcp:last_event_id");
+      if (changed != "" && changed != seen) {
+        seen = changed;
+        if (wantsTools) {
+          x.stream_event("id: " + changed + "\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\",\"params\":{\"_meta\":" + subMeta + "}}\n\n");
+          x.stream_event("data: " + envelope(id, "{\"_meta\":" + subMeta + ",\"resultType\":\"complete\"}") + "\n\n");
+          open = false;
+        }
       }
-      else {
+      if (open) {
         open = x.pause(25);
       }
     }
   }
   else {
+    if (version == "2026-07-28") {
+      x.status(404);
+    }
     mcp_reply(x, error_reply(id, -32601, "method not found"));
   }
 }
@@ -259,13 +369,17 @@ fn loopback_host(host: string) -> bool {
 fn guard(x: Exchange, c: Json) -> bool {
   let host = x.header("Host");
   let origin = x.header("Origin");
+  let scheme = x.header(":scheme");
+  if (scheme == "") {
+    scheme = "http";
+  }
   let allowed = true;
   if (!loopback_host(host)) {
     x.status(403);
     x.json("{\"error\":\"non_loopback_host\"}");
     allowed = false;
   }
-  else if (origin != "" && origin != "http://" + host) {
+  else if (origin != "" && origin != scheme + "://" + host) {
     x.status(403);
     x.json("{\"error\":\"origin_rejected\"}");
     allowed = false;
@@ -279,20 +393,48 @@ fn guard(x: Exchange, c: Json) -> bool {
   }
   return allowed;
 }
+fn control_guard(x: Exchange, c: Json) -> bool {
+  let allowed = false;
+  if (x.header("Origin") != "") {
+    x.status(403);
+    x.json("{\"error\":\"origin_rejected\"}");
+  }
+  else {
+    allowed = guard(x, c);
+  }
+  return allowed;
+}
 @streamable
 fn streamable(x: Exchange) -> void implements Handler {
   let c = json_parse(config());
   if (guard(x, c)) {
     let v = field(c, "protocolVersion", "2026-07-28");
-    if (v == "2025-11-25" && x.method() == "POST") {
+    let kind = x.header(":body_json_kind");
+    if (kind == "invalid") {
+      x.status(400);
+      x.json(error_reply("null", -32700, "Parse error"));
+    }
+    else if (kind != "object") {
+      x.status(400);
+      x.json(error_reply("null", -32600, "Invalid Request"));
+    }
+    else if (v == "2025-11-25" && x.method() == "POST") {
       let body = json_parse(x.body());
       let method = field(body, "method", "");
       let sid = x.header("Mcp-Session-Id");
-      if (method != "initialize" && x.header("MCP-Protocol-Version") != v) {
+      if (!str_contains(x.header("Accept"), "application/json") || !str_contains(x.header("Accept"), "text/event-stream")) {
+        x.status(406);
+        x.json(error_reply("null", -32020, "Accept must include application/json and text/event-stream"));
+      }
+      else if (method != "initialize" && x.header("MCP-Protocol-Version") != v) {
         x.status(400);
         x.json("{\"error\":\"protocol_version_mismatch\"}");
       }
-      else if (method != "initialize" && (sid == "" || x.get("session:" + sid) != "active")) {
+      else if (method != "initialize" && sid == "") {
+        x.status(400);
+        x.json("{\"error\":\"missing_session_id\"}");
+      }
+      else if (method != "initialize" && x.get("session:" + sid) != "active") {
         x.status(404);
         x.json("{\"error\":\"unknown_or_expired_session\"}");
       }
@@ -308,42 +450,57 @@ fn streamable(x: Exchange) -> void implements Handler {
 @session_get
 fn session_get(x: Exchange) -> void implements Handler {
   let c = json_parse(config());
-  if (field(c, "protocolVersion", "2026-07-28") != "2025-11-25") {
-    x.status(405);
-    x.send("method not allowed");
-  }
-  else {
-    let sid = x.header("Mcp-Session-Id");
-    if (x.header("MCP-Protocol-Version") != "2025-11-25") {
-      x.status(400);
-      x.json("{\"error\":\"protocol_version_mismatch\"}");
-    }
-    else if (sid == "" || x.get("session:" + sid) != "active") {
-      x.status(404);
-      x.json("{\"error\":\"unknown_or_expired_session\"}");
+  if (guard(x, c)) {
+    if (field(c, "protocolVersion", "2026-07-28") != "2025-11-25") {
+      x.status(405);
+      x.send("method not allowed");
     }
     else {
-      x.set_header("Content-Type", "text/event-stream");
-      x.set_header("Cache-Control", "no-cache");
-      let open = true;
-      let last = x.header("Last-Event-ID");
-      let newest = x.get("mcp:last_event_id");
-      if (last != "" && newest != "" && last != newest) {
-        let payload = x.get("mcp:event_payload:" + newest);
-        if (payload != "") {
-          x.stream_event("id: " + newest + "\ndata: " + payload + "\n\n");
-        }
-        let pending = x.take("mcp:list_changed");
+      let sid = x.header("Mcp-Session-Id");
+      if (x.header("MCP-Protocol-Version") != "2025-11-25") {
+        x.status(400);
+        x.json("{\"error\":\"protocol_version_mismatch\"}");
       }
-      else if (last != "" && last == newest) {
-        let pending = x.take("mcp:list_changed");
+      else if (!str_contains(x.header("Accept"), "text/event-stream")) {
+        x.status(406);
+        x.json("{\"error\":\"accept_must_include_event_stream\"}");
       }
-      while (open) {
-        let changed = x.take("mcp:list_changed");
-        if (changed != "") {
-          x.stream_event("id: " + changed + "\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}\n\n");
+      else if (sid == "") {
+        x.status(400);
+        x.json("{\"error\":\"missing_session_id\"}");
+      }
+      else if (x.get("session:" + sid) != "active") {
+        x.status(404);
+        x.json("{\"error\":\"unknown_or_expired_session\"}");
+      }
+      else {
+        x.set_header("Content-Type", "text/event-stream");
+        x.set_header("Cache-Control", "no-cache");
+        x.stream_event("");
+        let open = true;
+        let last = x.header("Last-Event-ID");
+        let seen = x.get("mcp:last_event_id");
+        if (last != "" && seen != "" && last != seen) {
+          let payload = x.get("mcp:event_payload:" + seen);
+          if (payload != "") {
+            x.stream_event("id: " + seen + "\ndata: " + payload + "\n\n");
+          }
         }
-        open = x.pause(25);
+        while (open) {
+          let changed = x.get("mcp:last_event_id");
+          if (changed != "" && changed != seen) {
+            seen = changed;
+            let payload = x.get("mcp:event_payload:" + changed);
+            if (payload == "") {
+              payload = "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}";
+            }
+            x.stream_event("id: " + changed + "\ndata: " + payload + "\n\n");
+          }
+          open = x.pause(25);
+          if (x.get("session:" + sid) != "active") {
+            open = false;
+          }
+        }
       }
     }
   }
@@ -351,23 +508,29 @@ fn session_get(x: Exchange) -> void implements Handler {
 @session_delete
 fn session_delete(x: Exchange) -> void implements Handler {
   let c = json_parse(config());
-  if (field(c, "protocolVersion", "2026-07-28") != "2025-11-25") {
-    x.status(405);
-    x.send("method not allowed");
-  }
-  else {
-    let sid = x.header("Mcp-Session-Id");
-    if (x.header("MCP-Protocol-Version") != "2025-11-25") {
-      x.status(400);
-      x.json("{\"error\":\"protocol_version_mismatch\"}");
-    }
-    else if (sid == "" || x.take("session:" + sid) == "") {
-      x.status(404);
-      x.json("{\"error\":\"unknown_or_expired_session\"}");
+  if (guard(x, c)) {
+    if (field(c, "protocolVersion", "2026-07-28") != "2025-11-25") {
+      x.status(405);
+      x.send("method not allowed");
     }
     else {
-      x.status(200);
-      x.send("");
+      let sid = x.header("Mcp-Session-Id");
+      if (x.header("MCP-Protocol-Version") != "2025-11-25") {
+        x.status(400);
+        x.json("{\"error\":\"protocol_version_mismatch\"}");
+      }
+      else if (sid == "") {
+        x.status(400);
+        x.json("{\"error\":\"missing_session_id\"}");
+      }
+      else if (x.take("session:" + sid) == "") {
+        x.status(404);
+        x.json("{\"error\":\"unknown_or_expired_session\"}");
+      }
+      else {
+        x.status(200);
+        x.send("");
+      }
     }
   }
 }
@@ -377,14 +540,14 @@ fn legacy_sse(x: Exchange) -> void implements Handler {
   if (guard(x, c)) {
     let sid = random_token();
     x.set("sse:" + sid, "active");
-    x.set("latest_sse_sid", sid);
     x.set_header("Content-Type", "text/event-stream");
     x.set_header("Cache-Control", "no-cache");
     x.stream_event("event: endpoint\ndata: /messages?session_id=" + sid + "\n\n");
+    let seen = x.get("mcp:last_event_id");
     let open = true;
     while (open) {
       let reply = x.next_queued_response(sid);
-      let changed = x.take("sse:changed:" + sid);
+      let changed = x.get("mcp:last_event_id");
       if (reply != "") {
         if (str_starts_with(reply, "E")) {
           x.stream_event("event: message\n" + str_substr(reply, 1, str_len(reply)));
@@ -393,7 +556,8 @@ fn legacy_sse(x: Exchange) -> void implements Handler {
           x.stream_event("event: message\ndata: " + str_substr(reply, 1, str_len(reply)) + "\n\n");
         }
       }
-      else if (changed != "") {
+      else if (changed != "" && changed != seen) {
+        seen = changed;
         x.stream_event("id: " + changed + "\nevent: message\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}\n\n");
       }
       open = x.pause(25);
@@ -413,87 +577,127 @@ fn messages(x: Exchange) -> void implements Handler {
   else {
     let c = json_parse(config());
     if (guard(x, c)) {
-      let j = json_parse(x.body());
-      let id = "null";
-      if (j.has("id")) {
-        id = j.get("id").to_json();
+      let kind = x.header(":body_json_kind");
+      if (kind == "invalid") {
+        x.status(400);
+        x.json(error_reply("null", -32700, "Parse error"));
       }
-      let method = field(j, "method", "");
-      if (method == "notifications/initialized" || method == "notifications/cancelled") {
-        x.status(202);
-        x.send("");
+      else if (kind != "object") {
+        x.status(400);
+        x.json(error_reply("null", -32600, "Invalid Request"));
       }
       else {
-        x.queue_response(sid);
-        mcp(x, "2024-11-05");
-        x.status(202);
+        let j = json_parse(x.body());
+        let id = "null";
+        let hasId = false;
+        if (j.has("id")) {
+          id = j.get("id").to_json();
+          if (id != "null") {
+            hasId = true;
+          }
+        }
+        let method = field(j, "method", "");
+        if (method == "notifications/initialized" || method == "notifications/cancelled") {
+          if (method == "notifications/cancelled" && j.has("params") && j.get("params").kind() == "object" && j.get("params").has("requestId")) {
+            x.set("cancel:" + j.get("params").get("requestId").to_json(), "yes");
+          }
+          x.status(202);
+          x.send("");
+        }
+        else if (method == "" && (j.has("result") || j.has("error"))) {
+          x.status(202);
+          x.send("");
+        }
+        else if (!str_starts_with(method, "notifications/") && (method == "" || !hasId)) {
+          x.status(400);
+          x.json(error_reply("null", -32600, "Invalid Request"));
+        }
+        else {
+          x.queue_response(sid);
+          mcp(x, "2024-11-05");
+          x.status(202);
+        }
       }
     }
   }
 }
 @control
 fn control(x: Exchange) -> void implements Handler {
-  let path = x.path();
-  if (path == "/__mock/state") {
-    let mode = x.get("mcp:mode");
-    if (mode == "") {
-      mode = "json";
-    }
-    let deletes = x.get("recorded:delete_everything");
-    if (deletes == "") {
-      deletes = "0";
-    }
-    let cancelled = x.get("mcp:cancelled_slow");
-    if (cancelled == "") {
-      cancelled = "0";
-    }
-    let countText = x.get("mcp:call_count");
-    if (countText == "") {
-      countText = "0";
-    }
-    let count = json_parse(countText).as_int();
-    let calls = "[";
-    for (i in range(1, count + 1)) {
-      if (i > 1) {
-        calls = calls + ",";
+  let c = json_parse(config());
+  if (control_guard(x, c)) {
+    let path = x.path();
+    if (path == "/__mock/state") {
+      let mode = x.get("mcp:mode");
+      if (mode == "") {
+        mode = "json";
       }
-      calls = calls + x.get("mcp:call:" + str(i));
+      let deletes = x.get("recorded:delete_everything");
+      if (deletes == "") {
+        deletes = "0";
+      }
+      let cancelled = x.get("mcp:cancelled_slow");
+      if (cancelled == "") {
+        cancelled = "0";
+      }
+      let countText = x.get("mcp:call_count");
+      if (countText == "") {
+        countText = "0";
+      }
+      let count = json_parse(countText).as_int();
+      let calls = "[";
+      for (i in range(1, count + 1)) {
+        if (i > 1) {
+          calls = calls + ",";
+        }
+        calls = calls + x.get("mcp:call:" + str(i));
+      }
+      calls = calls + "]";
+      x.json("{\"replyMode\":\"" + mode + "\",\"deleteCalls\":" + deletes + ",\"cancelledSlow\":" + cancelled + ",\"calls\":" + calls + "}");
     }
-    calls = calls + "]";
-    x.json("{\"replyMode\":\"" + mode + "\",\"deleteCalls\":" + deletes + ",\"cancelledSlow\":" + cancelled + ",\"calls\":" + calls + "}");
-  }
-  else if (path == "/__mock/reset") {
-    x.reset();
-    x.json("{\"ok\":true}");
-  }
-  else if (path == "/__mock/reply-mode") {
-    let j = json_parse(x.body());
-    let mode = field(j, "mode", "json");
-    if (mode != "json" && mode != "sse") {
-      x.status(400);
-      x.json("{\"error\":\"mode must be json or sse\"}");
-    }
-    else {
-      x.set("mcp:mode", mode);
+    else if (path == "/__mock/reset") {
+      x.reset();
       x.json("{\"ok\":true}");
     }
-  }
-  else if (path == "/__mock/list-changed") {
-    let id = str(x.increment("mcp:event_id"));
-    x.set("mcp:list_changed", id);
-    x.set("mcp:last_event_id", id);
-    x.set("mcp:event_payload:" + id, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}");
-    x.set("sse:changed:" + x.get("latest_sse_sid"), id);
-    x.json("{\"ok\":true,\"eventId\":" + id + "}");
-  }
-  else if (path == "/__mock/expire-session") {
-    let sid = field(json_parse(x.body()), "sessionId", "");
-    x.take("session:" + sid);
-    x.json("{\"ok\":true}");
-  }
-  else {
-    x.status(404);
-    x.json("{\"error\":\"not_found\"}");
+    else if (path == "/__mock/reply-mode") {
+      if (x.header(":body_json_kind") != "object") {
+        x.status(400);
+        x.json("{\"error\":\"expected JSON object\"}");
+      }
+      else {
+        let j = json_parse(x.body());
+        let mode = field(j, "mode", "json");
+        if (mode != "json" && mode != "sse") {
+          x.status(400);
+          x.json("{\"error\":\"mode must be json or sse\"}");
+        }
+        else {
+          x.set("mcp:mode", mode);
+          x.json("{\"ok\":true}");
+        }
+      }
+    }
+    else if (path == "/__mock/list-changed") {
+      let id = str(x.increment("mcp:event_id"));
+      x.set("mcp:list_changed", id);
+      x.set("mcp:last_event_id", id);
+      x.set("mcp:event_payload:" + id, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}");
+      x.json("{\"ok\":true,\"eventId\":" + id + "}");
+    }
+    else if (path == "/__mock/expire-session") {
+      if (x.header(":body_json_kind") != "object") {
+        x.status(400);
+        x.json("{\"error\":\"expected JSON object\"}");
+      }
+      else {
+        let sid = field(json_parse(x.body()), "sessionId", "");
+        x.take("session:" + sid);
+        x.json("{\"ok\":true}");
+      }
+    }
+    else {
+      x.status(404);
+      x.json("{\"error\":\"not_found\"}");
+    }
   }
 }
 route("POST", "/mcp", "streamable");
