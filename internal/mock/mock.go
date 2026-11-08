@@ -4,12 +4,14 @@ package mock
 import (
 	"context"
 	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -39,8 +41,41 @@ type store struct {
 	sync.Mutex
 	values  map[string]string
 	counts  map[string]int64
+	queues  map[string][]string
 	history *requestHistory
 }
+
+func (s *store) get(key string) string {
+	s.Lock()
+	defer s.Unlock()
+	if s.values != nil {
+		if v, ok := s.values[key]; ok {
+			return v
+		}
+	}
+	if s.counts != nil {
+		if n, ok := s.counts[key]; ok && n != 0 {
+			return strconv.FormatInt(n, 10)
+		}
+	}
+	return ""
+}
+
+func (s *store) increment(key string) int64 {
+	s.Lock()
+	defer s.Unlock()
+	if s.counts == nil {
+		s.counts = map[string]int64{}
+	}
+	if s.values == nil {
+		s.values = map[string]string{}
+	}
+	s.counts[key]++
+	n := s.counts[key]
+	s.values[key] = strconv.FormatInt(n, 10)
+	return n
+}
+
 type Engine struct {
 	result    *lmcode.ResultSink
 	options   Options
@@ -65,26 +100,81 @@ type exchange struct {
 	state         *store
 }
 
+func (x *exchange) lookupHeader(name string) string {
+	if name == ":scheme" {
+		if x.request != nil && x.request.TLS != nil {
+			return "https"
+		}
+		return "http"
+	}
+	if name == ":body_json_kind" {
+		trimmed := strings.TrimSpace(x.body)
+		if trimmed == "" || !json.Valid([]byte(trimmed)) {
+			return "invalid"
+		}
+		switch trimmed[0] {
+		case '{':
+			return "object"
+		case '[':
+			return "array"
+		default:
+			return "primitive"
+		}
+	}
+	if strings.EqualFold(name, "Mcp-Name-Decoded") {
+		if x.request == nil {
+			return "\x00missing"
+		}
+		vals := x.request.Header.Values("Mcp-Name")
+		if len(vals) == 0 {
+			return "\x00missing"
+		}
+		if len(vals) > 1 {
+			return "\x00invalid"
+		}
+		raw := vals[0]
+		if encoded, ok := strings.CutPrefix(raw, "=?base64?"); ok {
+			if encoded, ok = strings.CutSuffix(encoded, "?="); ok {
+				decoded, err := base64.StdEncoding.DecodeString(encoded)
+				if err != nil {
+					return "\x00invalid"
+				}
+				return string(decoded)
+			}
+		}
+		return raw
+	}
+	if x.request == nil {
+		return ""
+	}
+	// net/http promotes Host out of Header when parsing an incoming request.
+	if strings.EqualFold(name, "Host") {
+		return x.request.Host
+	}
+	return x.request.Header.Get(name)
+}
+
 func enqueueResponse(x *exchange, payload string) {
-	key := "mcp:sse_queue:" + x.responseQueue
 	x.state.Lock()
 	defer x.state.Unlock()
-	if x.state.values[key] != "" {
-		x.state.values[key] += "\x1e"
+	if x.state.queues == nil {
+		x.state.queues = map[string][]string{}
 	}
-	x.state.values[key] += payload
+	x.state.queues[x.responseQueue] = append(x.state.queues[x.responseQueue], payload)
 }
 
 func dequeueResponse(state *store, session string) string {
-	key := "mcp:sse_queue:" + session
 	state.Lock()
 	defer state.Unlock()
-	value := state.values[key]
-	if cut := strings.IndexByte(value, '\x1e'); cut >= 0 {
-		state.values[key] = value[cut+1:]
-		value = value[:cut]
+	q := state.queues[session]
+	if len(q) == 0 {
+		return ""
+	}
+	value := q[0]
+	if len(q) == 1 {
+		delete(state.queues, session)
 	} else {
-		delete(state.values, key)
+		state.queues[session] = q[1:]
 	}
 	return value
 }
@@ -337,11 +427,7 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 	text("query", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.URL.Query().Get(a[0].Str) })
 	text("param", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.PathValue(a[0].Str) })
 	text("header", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
-		// net/http promotes Host out of Header when parsing an incoming request.
-		if strings.EqualFold(a[0].Str, "Host") {
-			return x.request.Host
-		}
-		return x.request.Header.Get(a[0].Str)
+		return x.lookupHeader(a[0].Str)
 	})
 	text("body", nil, func(x *exchange, _ []lmcode.Value) string { return x.body })
 	method("status", []string{"int"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
@@ -422,9 +508,7 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		return v
 	})
 	text("get", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
-		x.state.Lock()
-		defer x.state.Unlock()
-		return x.state.values[a[0].Str]
+		return x.state.get(a[0].Str)
 	})
 	method("set", []string{"string", "string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
 		x.state.Lock()
@@ -433,10 +517,7 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		return lmcode.None(), nil
 	})
 	method("increment", []string{"string"}, "int", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
-		x.state.Lock()
-		defer x.state.Unlock()
-		x.state.counts[a[0].Str]++
-		return lmcode.Int(x.state.counts[a[0].Str]), nil
+		return lmcode.Int(x.state.increment(a[0].Str)), nil
 	})
 	return reg
 }

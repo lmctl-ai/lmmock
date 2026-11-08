@@ -188,6 +188,7 @@ func observabilityMethods(method exchangeMethod) {
 		x.state.Lock()
 		x.state.values = map[string]string{}
 		x.state.counts = map[string]int64{}
+		x.state.queues = map[string][]string{}
 		x.state.history.reset()
 		x.state.Unlock()
 		return lmcode.None(), nil
