@@ -112,3 +112,15 @@ jobs:
           else
             gh release create "$tag" dist/* --target "$GITHUB_SHA" --latest --title "$tag" --notes 'Automatically built and tested on Linux x64/arm64, macOS x64/arm64 and Windows x64. Scriptable loopback HTTP mocks. Includes real-process integration tests, lifecycle checks, concurrent state tests and example servers.'
           fi
+  # The release above is tested; hand it to npm. A release made with the workflow token starts no other workflow, so dispatch
+  # npm-publish.yml (the trusted publisher on npm) directly.
+  npm:
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+    steps:
+      - name: Publish the release to npm
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run npm-publish.yml --repo "$GITHUB_REPOSITORY" --ref main -f tag="v$SAMPLE_VERSION"
