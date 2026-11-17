@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -34,8 +36,8 @@ var schemaV3 []byte
 var schemaV4 []byte
 
 type route struct {
-	method, path, annotation string
-	entry                    int
+	method, path, annotation, objType string
+	entry                             int
 }
 type store struct {
 	sync.Mutex
@@ -77,15 +79,81 @@ func (s *store) increment(key string) int64 {
 }
 
 type Engine struct {
-	result    *lmcode.ResultSink
-	options   Options
-	code      []byte
-	schema    []byte
-	routes    []route
-	state     *store
-	mux       *http.ServeMux
-	forwarder *forwarder
-	auditMu   sync.Mutex
+	result         *lmcode.ResultSink
+	options        Options
+	code           []byte
+	schema         []byte
+	routes         []route
+	registered     map[string]bool
+	cliOptions     map[string]int
+	prefix         string
+	stopped        bool
+	state          *store
+	mux            *http.ServeMux
+	forwarder      *forwarder
+	auditMu        sync.Mutex
+}
+
+func stdRestMethod(iface string) string {
+	switch iface {
+	case "interface RestGet(RestExchange) -> void":
+		return "GET"
+	case "interface RestPost(RestExchange) -> void":
+		return "POST"
+	case "interface RestPut(RestExchange) -> void":
+		return "PUT"
+	case "interface RestDelete(RestExchange) -> void":
+		return "DELETE"
+	case "interface RestPatch(RestExchange) -> void":
+		return "PATCH"
+	case "interface RestHead(RestExchange) -> void":
+		return "HEAD"
+	case "interface RestOptions(RestExchange) -> void":
+		return "OPTIONS"
+	default:
+		return ""
+	}
+}
+
+func isStdRestOrCliIface(iface string) bool {
+	return iface == "interface RestHandler(RestExchange) -> void" ||
+		iface == "interface CliCommand(RestExchange) -> void" ||
+		iface == "interface CliOption(RestExchange) -> void" ||
+		stdRestMethod(iface) != ""
+}
+
+func normalizeMuxPath(prefix, path string) string {
+	if prefix != "" {
+		p := prefix
+		if !strings.HasPrefix(p, "/") {
+			p = "/" + p
+		}
+		for len(p) > 1 && strings.HasSuffix(p, "/") {
+			p = p[:len(p)-1]
+		}
+		if p != "/" && !strings.HasPrefix(path, p) {
+			if path == "/" {
+				path = p
+			} else if strings.HasPrefix(path, "/") {
+				path = p + path
+			} else {
+				path = p + "/" + path
+			}
+		}
+	}
+	if !strings.HasPrefix(path, "/") {
+		return path
+	}
+	segs := strings.Split(path, "/")
+	for i := 1; i < len(segs); i++ {
+		s := segs[i]
+		if len(s) > 1 && s[0] == ':' {
+			segs[i] = "{" + s[1:] + "}"
+		} else if len(s) > 1 && s[0] == '*' {
+			segs[i] = "{" + s[1:] + "...}"
+		}
+	}
+	return strings.Join(segs, "/")
 }
 type exchange struct {
 	request       *http.Request
@@ -205,7 +273,14 @@ func NewWithOptions(code []byte, options Options) (*Engine, error) {
 
 // NewWithInvocation verifies and registers the program in its run-owned result collector.
 func NewWithInvocation(code []byte, options Options, results *lmcode.InvocationResults) (*Engine, error) {
-	e := &Engine{options: options, code: append([]byte(nil), code...), state: &store{values: map[string]string{}, counts: map[string]int64{}}, mux: http.NewServeMux()}
+	e := &Engine{
+		options:    options,
+		code:       append([]byte(nil), code...),
+		registered: map[string]bool{},
+		cliOptions: map[string]int{},
+		state:      &store{values: map[string]string{}, counts: map[string]int64{}},
+		mux:        http.NewServeMux(),
+	}
 	if options.RequestLog || options.RequestLogBodies {
 		e.state.history = &requestHistory{bodies: options.RequestLogBodies}
 	}
@@ -216,7 +291,8 @@ func NewWithInvocation(code []byte, options Options, results *lmcode.InvocationR
 			return nil, err
 		}
 	}
-	reg := registry(e.options, e.state, func(method, path, annotation string) error {
+	addRoute := func(method, path, annotation string) error {
+		path = normalizeMuxPath(e.prefix, path)
 		if !strings.Contains(" GET POST PUT PATCH DELETE HEAD OPTIONS ", " "+method+" ") || !strings.HasPrefix(path, "/") || strings.ContainsAny(path, " \t\r\n?#") {
 			return fmt.Errorf("invalid route %q %q", method, path)
 		}
@@ -227,7 +303,8 @@ func NewWithInvocation(code []byte, options Options, results *lmcode.InvocationR
 		}
 		e.routes = append(e.routes, route{method: method, path: path, annotation: annotation})
 		return nil
-	})
+	}
+	reg := e.newRegistry(addRoute)
 	e.schema = Schema
 	p, err := lmcode.Load(e.code, e.schema, reg)
 	if err != nil {
@@ -251,14 +328,24 @@ func NewWithInvocation(code []byte, options Options, results *lmcode.InvocationR
 		}
 	}
 	entries := map[string]int{}
+	seenKey := map[string]bool{}
 	for i, v := range p.Entries() {
-		if v.Annotation == "" || v.Iface != "interface Handler(Exchange) -> void" || len(v.Params) != 1 || v.Params[0] != "Exchange" || v.Returns != "void" {
+		isHandler := v.Iface == "interface Handler(Exchange) -> void" && len(v.Params) == 1 && v.Params[0] == "Exchange" && v.Returns == "void"
+		isStd := isStdRestOrCliIface(v.Iface) && len(v.Params) == 1 && v.Params[0] == "RestExchange" && v.Returns == "void"
+		if v.Annotation == "" || (!isHandler && !isStd) {
 			return nil, fmt.Errorf("entry %s must have an annotation and implement Handler(Exchange) -> void", v.Name)
 		}
-		if _, ok := entries[v.Annotation]; ok {
+		dedupKey := v.Annotation
+		if m := stdRestMethod(v.Iface); m != "" && strings.HasPrefix(v.Annotation, "/") {
+			dedupKey = m + " " + v.Annotation
+		}
+		if seenKey[dedupKey] {
 			return nil, fmt.Errorf("duplicate annotation @%s", v.Annotation)
 		}
-		entries[v.Annotation] = i
+		seenKey[dedupKey] = true
+		if _, ok := entries[v.Annotation]; !ok {
+			entries[v.Annotation] = i
+		}
 	}
 	// Dry mode validates handlers but never runs initialization closures.
 	if results != nil && results.Dry() {
@@ -267,21 +354,245 @@ func NewWithInvocation(code []byte, options Options, results *lmcode.InvocationR
 	if err = p.Run(lmcode.NewContext(), reg); err != nil {
 		return nil, err
 	}
-	if len(e.routes) == 0 {
+	if err = e.finalizeRoutes(p, entries); err != nil {
+		return nil, err
+	}
+	if len(e.routes) == 0 && len(e.cliOptions) == 0 {
 		return nil, errors.New("script must register at least one route")
 	}
+	return e, nil
+}
+
+func (e *Engine) finalizeRoutes(p *lmcode.Program, entries map[string]int) error {
+	for i, v := range p.Entries() {
+		if !isStdRestOrCliIface(v.Iface) {
+			continue
+		}
+		ann := v.Annotation
+		if v.Iface == "interface CliOption(RestExchange) -> void" {
+			e.cliOptions[ann] = i
+			if stripped := strings.TrimLeft(ann, "-"); stripped != "" {
+				e.cliOptions[stripped] = i
+			}
+			continue
+		}
+		var method, path string
+		if m := stdRestMethod(v.Iface); m != "" {
+			if sp := strings.IndexByte(ann, ' '); sp >= 0 {
+				method, path = ann[:sp], ann[sp+1:]
+			} else if strings.HasPrefix(ann, "/") {
+				method, path = m, ann
+			} else {
+				continue
+			}
+		} else if v.Iface == "interface RestHandler(RestExchange) -> void" {
+			if sp := strings.IndexByte(ann, ' '); sp >= 0 {
+				method, path = ann[:sp], ann[sp+1:]
+			} else if strings.HasPrefix(ann, "/") {
+				method, path = "GET", ann
+			} else {
+				continue
+			}
+		} else if v.Iface == "interface CliCommand(RestExchange) -> void" {
+			if sp := strings.IndexByte(ann, ' '); sp >= 0 {
+				method, path = ann[:sp], ann[sp+1:]
+			} else {
+				method, path = "GET", ann
+			}
+			if !strings.HasPrefix(path, "/") {
+				path = "/" + path
+			}
+		}
+		path = normalizeMuxPath(e.prefix, path)
+		already := false
+		for _, r := range e.routes {
+			if r.method == method && r.path == path && r.entry == i {
+				already = true
+				break
+			}
+		}
+		if already {
+			continue
+		}
+		for _, r := range e.routes {
+			if r.method == method && r.path == path {
+				return fmt.Errorf("duplicate route %s %s", method, path)
+			}
+		}
+		e.routes = append(e.routes, route{
+			method:     method,
+			path:       path,
+			annotation: fmt.Sprintf("__auto_%d", i),
+			objType:    "RestExchange",
+			entry:      i,
+		})
+	}
+	allEntries := p.Entries()
 	for i := range e.routes {
 		r := &e.routes[i]
-		idx, ok := entries[r.annotation]
-		if !ok {
-			return nil, fmt.Errorf("route references missing annotation @%s", r.annotation)
+		if r.objType == "" {
+			idx, ok := entries[r.annotation]
+			if !ok {
+				return fmt.Errorf("route references missing annotation @%s", r.annotation)
+			}
+			r.entry = idx
+			if isStdRestOrCliIface(allEntries[idx].Iface) {
+				r.objType = "RestExchange"
+			} else {
+				r.objType = "Exchange"
+			}
 		}
-		r.entry = idx
-		if err = e.register(*r); err != nil {
-			return nil, err
+		r.path = normalizeMuxPath(e.prefix, r.path)
+		key := r.method + " " + r.path
+		if !e.registered[key] {
+			if err := e.register(*r); err != nil {
+				return err
+			}
+			e.registered[key] = true
 		}
 	}
-	return e, nil
+	return nil
+}
+
+// CLI dispatches stateless CLI arguments against the engine's routes and CliOption/CliCommand entries.
+func (e *Engine) CLI(argv []string) (string, error) {
+	if e.schema == nil {
+		e.schema = Schema
+	}
+	if len(e.registered) == 0 {
+		reg := e.newRegistry(func(string, string, string) error { return nil })
+		if p, err := lmcode.Load(e.code, e.schema, reg); err == nil {
+			entries := map[string]int{}
+			for i, v := range p.Entries() {
+				if _, ok := entries[v.Annotation]; !ok {
+					entries[v.Annotation] = i
+				}
+			}
+			if err := e.finalizeRoutes(p, entries); err != nil {
+				return "", err
+			}
+		}
+	}
+	method, body, methodExplicit := "GET", "", false
+	var positionals []string
+	type optVal struct{ flag, key, val string }
+	var parsedOpts []optVal
+	for i := 0; i < len(argv); i++ {
+		arg := argv[i]
+		if arg == "--" {
+			if body == "" && i+1 < len(argv) {
+				body = strings.Join(argv[i+1:], " ")
+			}
+			break
+		}
+		if len(arg) > 1 && arg[0] == '-' {
+			flagName, key, val := arg, "", "true"
+			if eq := strings.IndexByte(arg, '='); eq >= 0 {
+				flagName, val = arg[:eq], arg[eq+1:]
+				key = strings.TrimLeft(flagName, "-")
+			} else {
+				key = strings.TrimLeft(flagName, "-")
+				if i+1 < len(argv) && (argv[i+1] == "" || argv[i+1][0] != '-') {
+					next := argv[i+1]
+					isSpecial := key == "method" || key == "X" || key == "body" || key == "d"
+					probePath := next
+					if !strings.HasPrefix(probePath, "/") {
+						probePath = "/" + probePath
+					}
+					probePath = normalizeMuxPath(e.prefix, probePath)
+					_, pat := e.mux.Handler(httptest.NewRequest("GET", probePath, nil))
+					if !(len(positionals) == 0 && !isSpecial && pat != "") {
+						i++
+						val = argv[i]
+					}
+				}
+			}
+			if key == "method" || key == "X" {
+				method, methodExplicit = strings.ToUpper(val), true
+			} else if key == "body" || key == "d" {
+				body = val
+			}
+			parsedOpts = append(parsedOpts, optVal{flagName, key, val})
+		} else {
+			positionals = append(positionals, arg)
+		}
+	}
+	path := "/"
+	if len(positionals) > 0 {
+		var joined string
+		for i, seg := range positionals {
+			if i == 0 && strings.HasPrefix(seg, "/") {
+				joined = seg
+			} else {
+				joined += "/" + seg
+			}
+		}
+		if joined != "" {
+			path = joined
+		}
+	}
+	path = normalizeMuxPath(e.prefix, path)
+	q := url.Values{}
+	e.state.Lock()
+	for _, opt := range parsedOpts {
+		q.Set(opt.key, opt.val)
+		q.Set(opt.flag, opt.val)
+		e.state.values[opt.key] = opt.val
+	}
+	e.state.Unlock()
+	target := path
+	if enc := q.Encode(); enc != "" {
+		target += "?" + enc
+	}
+	var optOutput string
+	for _, opt := range parsedOpts {
+		idx, ok := e.cliOptions[opt.flag]
+		if !ok {
+			idx, ok = e.cliOptions[opt.key]
+		}
+		if ok {
+			req := httptest.NewRequest(method, target, strings.NewReader(body))
+			rec := httptest.NewRecorder()
+			x := &exchange{request: req, body: body, status: 200, headers: make(http.Header), state: e.state, stream: &responseStream{writer: rec}}
+			reg := e.newRegistry(func(string, string, string) error { return errors.New("route() is only available during startup") })
+			p, err := lmcode.Load(e.code, e.schema, reg)
+			if err != nil {
+				return "", err
+			}
+			if _, err := p.Call(idx, lmcode.NewContext(), reg, []lmcode.Value{lmcode.Object("RestExchange", x)}); err != nil {
+				return "", err
+			}
+			if x.output != "" {
+				optOutput = x.output
+			}
+		}
+	}
+	if e.stopped {
+		return optOutput, nil
+	}
+	req := httptest.NewRequest(method, target, strings.NewReader(body))
+	if _, pat := e.mux.Handler(req); pat == "" && !methodExplicit {
+		candidates := []string{"POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"}
+		for _, cand := range candidates {
+			probe := httptest.NewRequest(cand, target, strings.NewReader(body))
+			if _, p := e.mux.Handler(probe); p != "" {
+				req = probe
+				break
+			}
+		}
+	}
+	if _, pat := e.mux.Handler(req); pat == "" {
+		if len(positionals) == 0 && optOutput != "" {
+			return optOutput, nil
+		}
+		return "Not Found", nil
+	}
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code == 204 || rec.Code == 304 {
+		return "", nil
+	}
+	return rec.Body.String(), nil
 }
 func (e *Engine) register(r route) (err error) {
 	defer func() {
@@ -344,10 +655,14 @@ func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 	}
 	x := &exchange{request: r, body: string(body), status: 200, headers: make(http.Header), state: e.state, stream: &responseStream{writer: w}}
 	// A fresh registry isolates VM arenas and execution locks between concurrent requests.
-	reg := registry(e.options, e.state, func(string, string, string) error { return errors.New("route() is only available during startup") })
+	reg := e.newRegistry(func(string, string, string) error { return errors.New("route() is only available during startup") })
 	p, err := lmcode.Load(e.code, e.schema, reg)
 	if err == nil {
-		_, err = p.Call(route.entry, lmcode.NewContext(), reg, []lmcode.Value{lmcode.Object("Exchange", x)})
+		objType := route.objType
+		if objType == "" {
+			objType = "Exchange"
+		}
+		_, err = p.Call(route.entry, lmcode.NewContext(), reg, []lmcode.Value{lmcode.Object(objType, x)})
 	}
 	if err != nil {
 		if x.stream.committed {
@@ -391,6 +706,52 @@ func (e *Engine) handle(route route, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(x.status)
 	_, _ = io.WriteString(w, x.output)
 }
+
+// Signatures returns the canonical list of standard and host signatures.
+func Signatures() []string {
+	e := &Engine{state: &store{values: map[string]string{}, counts: map[string]int64{}}}
+	return e.newRegistry(func(string, string, string) error { return errors.New("introspection") }).Signatures()
+}
+
+func (e *Engine) newRegistry(add func(string, string, string) error) *lmcode.Registry {
+	reg := registry(e.options, e.state, add)
+	must := func(err error) {
+		if err != nil {
+			panic(err)
+		}
+	}
+	none := lmcode.None()
+	dryNone := lmcode.Function(func([]lmcode.Value) (lmcode.Value, error) { return none, nil })
+	must(reg.OverrideStdFunction("rest_config", []string{"string", "string"}, "void", func(a []lmcode.Value) (lmcode.Value, error) {
+		e.state.Lock()
+		e.state.values[a[0].Str] = a[1].Str
+		e.state.Unlock()
+		if a[0].Str == "prefix" || a[0].Str == "base_path" {
+			e.prefix = a[1].Str
+		}
+		return none, nil
+	}, lmcode.Dry(dryNone)))
+	must(reg.OverrideStdFunction("rest_route", []string{"string", "string", "string"}, "void", func(a []lmcode.Value) (lmcode.Value, error) {
+		return none, add(a[0].Str, a[1].Str, a[2].Str)
+	}, lmcode.Dry(dryNone)))
+	must(reg.OverrideStdFunction("rest_serve", nil, "void", func([]lmcode.Value) (lmcode.Value, error) {
+		return none, nil
+	}, lmcode.Dry(dryNone)))
+	must(reg.OverrideStdFunction("rest_stop", nil, "void", func([]lmcode.Value) (lmcode.Value, error) {
+		e.stopped = true
+		return none, nil
+	}, lmcode.Dry(dryNone)))
+	must(reg.OverrideStdFunction("rest_cli", []string{"StrList"}, "string", func(a []lmcode.Value) (lmcode.Value, error) {
+		list, ok := a[0].Obj.(*lmcode.StrList)
+		if !ok || list == nil {
+			return lmcode.String(""), lmcode.NewHostError("rest_cli: invalid StrList")
+		}
+		out, err := e.CLI(list.Values())
+		return lmcode.String(out), err
+	}, lmcode.Dry(lmcode.Function(func([]lmcode.Value) (lmcode.Value, error) { return lmcode.String(""), nil }))))
+	return reg
+}
+
 func registry(options Options, _ *store, add func(string, string, string) error) *lmcode.Registry {
 	reg := lmcode.NewRegistry()
 	helpers(reg, options)
@@ -409,8 +770,25 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 			return f(x, a)
 		}))
 	}
+	stdMethod := func(name string, params []string, ret string, f func(*exchange, []lmcode.Value) (lmcode.Value, error)) {
+		cb := lmcode.Method(func(self any, a []lmcode.Value) (lmcode.Value, error) {
+			x, ok := self.(*exchange)
+			if !ok || x == nil {
+				return lmcode.None(), errors.New("invalid exchange")
+			}
+			return f(x, a)
+		})
+		must(reg.OverrideStdMethod("RestExchange", name, params, ret, cb, lmcode.Dry(cb)))
+	}
+	bothMethod := func(name string, params []string, ret string, f func(*exchange, []lmcode.Value) (lmcode.Value, error)) {
+		method(name, params, ret, f)
+		stdMethod(name, params, ret, f)
+	}
 	text := func(name string, params []string, f func(*exchange, []lmcode.Value) string) {
 		method(name, params, "string", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) { return lmcode.String(f(x, a)), nil })
+	}
+	bothText := func(name string, params []string, f func(*exchange, []lmcode.Value) string) {
+		bothMethod(name, params, "string", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) { return lmcode.String(f(x, a)), nil })
 	}
 	text("request_json", nil, func(x *exchange, _ []lmcode.Value) string {
 		h := map[string]string{}
@@ -422,15 +800,25 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		b, _ := json.Marshal(map[string]any{"method": x.request.Method, "url": x.request.URL.RequestURI(), "headers": h, "body": x.body})
 		return string(b)
 	})
-	text("method", nil, func(x *exchange, _ []lmcode.Value) string { return x.request.Method })
-	text("path", nil, func(x *exchange, _ []lmcode.Value) string { return x.request.URL.Path })
-	text("query", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.URL.Query().Get(a[0].Str) })
-	text("param", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.PathValue(a[0].Str) })
-	text("header", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
+	bothText("method", nil, func(x *exchange, _ []lmcode.Value) string { return x.request.Method })
+	bothText("path", nil, func(x *exchange, _ []lmcode.Value) string { return x.request.URL.Path })
+	bothText("query", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.URL.Query().Get(a[0].Str) })
+	stdMethod("has_query", []string{"string"}, "bool", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		_, ok := x.request.URL.Query()[a[0].Str]
+		return lmcode.Bool(ok), nil
+	})
+	bothText("param", []string{"string"}, func(x *exchange, a []lmcode.Value) string { return x.request.PathValue(a[0].Str) })
+	bothText("header", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
 		return x.lookupHeader(a[0].Str)
 	})
-	text("body", nil, func(x *exchange, _ []lmcode.Value) string { return x.body })
-	method("status", []string{"int"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+	stdMethod("has_header", []string{"string"}, "bool", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		if strings.EqualFold(a[0].Str, "Host") {
+			return lmcode.Bool(x.request.Host != ""), nil
+		}
+		return lmcode.Bool(len(x.request.Header.Values(a[0].Str)) > 0), nil
+	})
+	bothText("body", nil, func(x *exchange, _ []lmcode.Value) string { return x.body })
+	bothMethod("status", []string{"int"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
 		if x.stream != nil && x.stream.committed {
 			return lmcode.None(), errors.New("response already streaming")
 		}
@@ -440,7 +828,7 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		x.status = int(a[0].Int)
 		return lmcode.None(), nil
 	})
-	method("set_header", []string{"string", "string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+	bothMethod("set_header", []string{"string", "string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
 		if a[0].Str == "" || strings.ContainsAny(a[0].Str, "\r\n :\t") || strings.ContainsAny(a[1].Str, "\r\n") {
 			return lmcode.None(), errors.New("invalid response header")
 		}
@@ -456,7 +844,8 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 	streamMethods(method)
 	observabilityMethods(method)
 	for _, name := range []string{"send", "json"} {
-		method(name, []string{"string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+		name := name
+		bothMethod(name, []string{"string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
 			if x.stream != nil && x.stream.committed {
 				return lmcode.None(), errors.New("response already streaming")
 			}
@@ -510,16 +899,16 @@ func registry(options Options, _ *store, add func(string, string, string) error)
 		delete(x.state.values, a[0].Str)
 		return v
 	})
-	text("get", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
+	bothText("get", []string{"string"}, func(x *exchange, a []lmcode.Value) string {
 		return x.state.get(a[0].Str)
 	})
-	method("set", []string{"string", "string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+	bothMethod("set", []string{"string", "string"}, "void", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
 		x.state.Lock()
 		defer x.state.Unlock()
 		x.state.values[a[0].Str] = a[1].Str
 		return lmcode.None(), nil
 	})
-	method("increment", []string{"string"}, "int", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
+	bothMethod("increment", []string{"string"}, "int", func(x *exchange, a []lmcode.Value) (lmcode.Value, error) {
 		return lmcode.Int(x.state.increment(a[0].Str)), nil
 	})
 	return reg

@@ -64,6 +64,11 @@ func run(args []string) (exitCode int) {
 		case "schema":
 			_, _ = os.Stdout.Write(mock.Schema)
 			return 0
+		case "--lmcode-signatures":
+			for _, line := range mock.Signatures() {
+				fmt.Println(line)
+			}
+			return 0
 		case "--help", "-h":
 			usage()
 			return 0
@@ -71,6 +76,26 @@ func run(args []string) (exitCode int) {
 	}
 	if len(args) == 2 && args[0] == "--lmcode-schema" && args[1] == "--json" {
 		_, _ = os.Stdout.Write(mock.Schema)
+		return 0
+	}
+	if len(args) >= 2 && args[0] == "--lmcode" {
+		code, err := os.ReadFile(args[1])
+		if err != nil {
+			return fail(err)
+		}
+		engine, err := mock.New(code)
+		if err != nil {
+			return fail(err)
+		}
+		if len(args) > 2 {
+			out, err := engine.CLI(args[2:])
+			if err != nil {
+				return fail(err)
+			}
+			if out != "" {
+				fmt.Println(out)
+			}
+		}
 		return 0
 	}
 	if len(args) == 0 || (args[0] != "serve" && args[0] != "exec") {

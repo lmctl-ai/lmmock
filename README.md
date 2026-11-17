@@ -94,10 +94,34 @@ Route registration during a request is an error. Missing or duplicate annotation
 bindings, conflicting routes, incorrect interfaces, and invalid bytecode fail
 before the server opens a port.
 
-Paths use Go `net/http` ServeMux patterns, including `/users/{id}` and
-`/files/{rest...}`. A trailing slash matches a subtree; `GET` also handles `HEAD`.
+Paths use Go `net/http` ServeMux patterns, including `/users/{id}`, `/users/:id`, and
+`/files/{rest...}` (`:rest...` / `*rest`). A trailing slash matches a subtree; `GET` also handles `HEAD`.
 Go's path cleaning, redirects, 404 and 405 handling apply. Methods supported by
-`route` are GET, POST, PUT, PATCH, DELETE, HEAD, and OPTIONS.
+`route` (and `rest_route`) are GET, POST, PUT, PATCH, DELETE, HEAD, and OPTIONS.
+
+In addition to `Handler(Exchange) -> void`, `lmmock` supports the standard `lmcode_std_v3`
+REST and CLI interfaces (`RestGet`, `RestPost`, `RestPut`, `RestDelete`, `RestPatch`,
+`RestHead`, `RestOptions`, `RestHandler`, `CliCommand`, `CliOption`) taking `RestExchange`,
+along with `rest_config(key, value)`, `rest_route(method, path, annotation)`, `rest_serve()`,
+`rest_stop()`, and `rest_cli(args)`:
+
+```text
+program = _lmcode_ schema="schema.json";
+@"--env"
+fn opt_env(x: RestExchange) -> void implements CliOption {
+  x.set("env", x.query("env"));
+}
+@"/users/:id"
+fn get_user(x: RestExchange) -> void implements RestGet {
+  x.json("{\"id\":\"" + x.param("id") + "\",\"env\":\"" + x.get("env") + "\"}");
+}
+@ping
+fn cmd_ping(x: RestExchange) -> void implements CliCommand {
+  x.send("pong:" + x.get("env"));
+}
+rest_config("prefix", "/api");
+end _lmcode_
+```
 
 | Exchange method | Behavior |
 | --- | --- |

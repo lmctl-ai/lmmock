@@ -40,3 +40,4 @@ Go HTTP mock host backed by lmcode-go 06cd9ae991d9. Public repo lmctl-ai/lmmock,
 - [WebSocket, HTTP/2 and descriptor-driven gRPC](wire-protocols.md): protocol-only Go adapters, SAM application dispatch, pinned descriptors, real clients, controls and the runnable LF extension.
 
 - [Invocation protocol](invocation-protocol.md): SDK collector, dry passivity, source execution and fixture capture.
+- [Standard REST and CLI interfaces](std-rest-and-cli-interfaces.md): `lmcode_std_v3` (226 signatures), `RestGet`..`RestOptions`, `RestHandler`, `CliCommand`, `CliOption`, `:param` route normalization, `rest_config`, `rest_cli`, and direct `lmmock --lmcode FILE [CLI args...]` execution.

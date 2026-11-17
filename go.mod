@@ -3,7 +3,7 @@ module github.com/lmctl-ai/lmmock
 go 1.26.0
 
 require (
-	github.com/lmctl-ai/lmcode-go v0.6.39-0.20261102140952-06cd9ae991d9
+	github.com/lmctl-ai/lmcode-go v0.6.39-0.20261117023936-2027887521b3
 	github.com/mochi-mqtt/server/v2 v2.7.9
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/tidwall/redcon v1.6.4
@@ -35,7 +35,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgproto3/v2 v2.3.3
 	github.com/jackc/pgx/v5 v5.7.6
-	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/klauspost/compress v1.20.3
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/tidwall/btree v1.1.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

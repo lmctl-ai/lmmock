@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -107,5 +108,70 @@ func TestLimitsAndHandlerFailure(t *testing.T) {
 	e.ServeHTTP(w, httptest.NewRequest("POST", "/echo", strings.NewReader(strings.Repeat("x", (1<<20)+1))))
 	if w.Code != 413 {
 		t.Fatalf("want 413, got %d", w.Code)
+	}
+}
+
+func TestStandardRestAndCliInterfaces(t *testing.T) {
+	dir := t.TempDir()
+	schemaFile := filepath.Join(dir, "schema.json")
+	if err := os.WriteFile(schemaFile, Schema, 0600); err != nil {
+		t.Fatal(err)
+	}
+	src := fmt.Sprintf(`program = _lmcode_ schema=%q;
+@"--env"
+fn opt_env(x: RestExchange) -> void implements CliOption {
+  x.set("env", x.query("env"));
+}
+
+@"/users/:id"
+fn get_user(x: RestExchange) -> void implements RestGet {
+  x.json("{\"id\":\"" + x.param("id") + "\",\"env\":\"" + x.get("env") + "\",\"tier\":\"" + x.get("tier") + "\"}");
+}
+
+@"/users/:id"
+fn post_user(x: RestExchange) -> void implements RestPost {
+  x.status(201);
+  x.send("created:" + x.param("id") + ":" + x.body());
+}
+
+@ping
+fn cmd_ping(x: RestExchange) -> void implements CliCommand {
+  x.send("pong:" + x.get("env"));
+}
+
+rest_config("prefix", "/api");
+rest_config("tier", "gold");
+end _lmcode_
+`, filepath.ToSlash(schemaFile))
+	input := filepath.Join(dir, "std_rest.lms")
+	output := filepath.Join(dir, "std_rest.lmcode")
+	if err := os.WriteFile(input, []byte(src), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("node", "../../scripts/capture-fixture.mjs", input, output)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("compile std_rest fixture: %v\n%s", err, out)
+	}
+	code, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := New(code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := e.CLI([]string{"--env=staging", "ping"})
+	if err != nil || out != "pong:staging" {
+		t.Fatalf("CLI ping: got %q, err=%v", out, err)
+	}
+	w := httptest.NewRecorder()
+	e.ServeHTTP(w, httptest.NewRequest("GET", "/api/users/42", nil))
+	if w.Code != 200 || w.Body.String() != `{"id":"42","env":"staging","tier":"gold"}` {
+		t.Fatalf("GET /api/users/42: status=%d body=%q", w.Code, w.Body.String())
+	}
+	w = httptest.NewRecorder()
+	e.ServeHTTP(w, httptest.NewRequest("POST", "/api/users/42", strings.NewReader("alice")))
+	if w.Code != 201 || w.Body.String() != "created:42:alice" {
+		t.Fatalf("POST /api/users/42: status=%d body=%q", w.Code, w.Body.String())
 	}
 }
