@@ -5,6 +5,8 @@ Scriptable HTTP mock servers for integration tests. Go owns the loopback listene
 Use scripts to model your API, retries, malformed responses, latency, dropped
 connections, and stateful workflows.
 
+**Documentation:** [Quick reference](https://www.lmctl.com/tools/lmmock/) · [LLM skill](https://www.lmctl.com/tools/lmmock/skill.html) · [Guide](https://www.lmctl.com/tools/lmmock/guide.html) · [Reference](https://www.lmctl.com/tools/lmmock/reference.html)
+
 ## Run a mock around your tests
 
 Download the executable for your platform from
