@@ -4,6 +4,6 @@
 # Needs lmscript (npm @lmctl-ai/lmctl, pinned in release.yml) on PATH or LMSCRIPT_BIN.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-for name in llm-api oauth-codex-device; do
+for name in llm-api oauth-codex-device google-apis; do
   node scripts/capture-fixture.mjs "examples/$name.lms" "cmd/lmmock/builtin/$name.lmcode"
 done

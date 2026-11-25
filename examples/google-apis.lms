@@ -1,0 +1,1768 @@
+# Google Analytics (GA4 Admin + Data v1beta) and YouTube (Data v3 + Analytics v2) mock.
+# Synthetic fixture data only, shaped from lminspect reverse-proxy captures.
+# Config: {"token":"fixture-token","requireAuth":true}. X-Lmmock-Fault: 429 or 500.
+seed = {
+  "accounts": {
+    "accounts/1001": {
+      "name": "accounts/1001",
+      "displayName": "Acme Digital Media",
+      "regionCode": "US",
+      "createTime": "2024-01-15T10:00:00Z",
+      "updateTime": "2026-09-01T12:00:00Z"
+    },
+    "accounts/1002": {
+      "name": "accounts/1002",
+      "displayName": "Sandbox Labs",
+      "regionCode": "CA",
+      "createTime": "2025-03-10T08:30:00Z",
+      "updateTime": "2026-10-01T09:00:00Z"
+    }
+  },
+  "accountOrder": ["accounts/1001", "accounts/1002"],
+  "properties": {
+    "properties/3001001": {
+      "name": "properties/3001001",
+      "parent": "accounts/1001",
+      "account": "accounts/1001",
+      "displayName": "Acme Web Storefront",
+      "propertyType": "PROPERTY_TYPE_ORDINARY",
+      "timeZone": "America/New_York",
+      "currencyCode": "USD",
+      "industryCategory": "SHOPPING",
+      "serviceLevel": "GOOGLE_ANALYTICS_STANDARD",
+      "createTime": "2024-01-15T10:05:00Z"
+    },
+    "properties/3001002": {
+      "name": "properties/3001002",
+      "parent": "accounts/1001",
+      "account": "accounts/1001",
+      "displayName": "Acme Developer Docs",
+      "propertyType": "PROPERTY_TYPE_ORDINARY",
+      "timeZone": "America/Chicago",
+      "currencyCode": "USD",
+      "industryCategory": "TECHNOLOGY",
+      "serviceLevel": "GOOGLE_ANALYTICS_STANDARD",
+      "createTime": "2024-06-01T11:00:00Z"
+    },
+    "properties/3002001": {
+      "name": "properties/3002001",
+      "parent": "accounts/1002",
+      "account": "accounts/1002",
+      "displayName": "Sandbox Mobile Telemetry",
+      "propertyType": "PROPERTY_TYPE_ORDINARY",
+      "timeZone": "America/Toronto",
+      "currencyCode": "CAD",
+      "industryCategory": "TECHNOLOGY",
+      "serviceLevel": "GOOGLE_ANALYTICS_STANDARD",
+      "createTime": "2025-03-10T09:00:00Z"
+    }
+  },
+  "propertyOrder": ["properties/3001001", "properties/3001002", "properties/3002001"],
+  "dataStreams": {
+    "properties/3001001/dataStreams/5001": {
+      "name": "properties/3001001/dataStreams/5001",
+      "type": "WEB_DATA_STREAM",
+      "displayName": "Acme Main Web",
+      "webStreamData": {"measurementId": "G-ACME1001WEB", "defaultUri": "https://shop.acme.example"}
+    },
+    "properties/3001001/dataStreams/5002": {
+      "name": "properties/3001001/dataStreams/5002",
+      "type": "IOS_APP_STREAM",
+      "displayName": "Acme iOS App",
+      "iosAppStreamData": {"firebaseAppId": "1:3001001:ios:acme01", "bundleId": "com.acme.shop.ios"}
+    },
+    "properties/3001002/dataStreams/5003": {
+      "name": "properties/3001002/dataStreams/5003",
+      "type": "WEB_DATA_STREAM",
+      "displayName": "Docs Web Stream",
+      "webStreamData": {"measurementId": "G-ACME1002DOC", "defaultUri": "https://docs.acme.example"}
+    },
+    "properties/3002001/dataStreams/5004": {
+      "name": "properties/3002001/dataStreams/5004",
+      "type": "ANDROID_APP_STREAM",
+      "displayName": "Sandbox Android App",
+      "androidAppStreamData": {"firebaseAppId": "1:3002001:android:sb01", "packageName": "com.sandbox.app"}
+    }
+  },
+  "streamOrder": [
+    "properties/3001001/dataStreams/5001",
+    "properties/3001001/dataStreams/5002",
+    "properties/3001002/dataStreams/5003",
+    "properties/3002001/dataStreams/5004"
+  ],
+  "customDimensions": {
+    "properties/3001001/customDimensions/cd1": {
+      "name": "properties/3001001/customDimensions/cd1",
+      "parameterName": "plan_tier",
+      "displayName": "Plan Tier",
+      "scope": "USER",
+      "description": "Customer subscription tier"
+    },
+    "properties/3001001/customDimensions/cd2": {
+      "name": "properties/3001001/customDimensions/cd2",
+      "parameterName": "campaign_source",
+      "displayName": "Campaign Source",
+      "scope": "EVENT",
+      "description": "Attribution source parameter"
+    }
+  },
+  "customDimOrder": [
+    "properties/3001001/customDimensions/cd1",
+    "properties/3001001/customDimensions/cd2"
+  ],
+  "keyEvents": {
+    "properties/3001001/keyEvents/purchase": {
+      "name": "properties/3001001/keyEvents/purchase",
+      "eventName": "purchase",
+      "countingMethod": "ONCE_PER_EVENT"
+    },
+    "properties/3001001/keyEvents/sign_up": {
+      "name": "properties/3001001/keyEvents/sign_up",
+      "eventName": "sign_up",
+      "countingMethod": "ONCE_PER_SESSION"
+    }
+  },
+  "keyEventOrder": [
+    "properties/3001001/keyEvents/purchase",
+    "properties/3001001/keyEvents/sign_up"
+  ],
+  "gaRows": [
+    {"country": "United States", "deviceCategory": "desktop", "sessionDefaultChannelGroup": "Organic Search", "date": "20261114", "activeUsers": 4200, "sessions": 5890, "screenPageViews": 16400, "conversions": 310, "totalRevenue": 14820.5},
+    {"country": "United States", "deviceCategory": "mobile", "sessionDefaultChannelGroup": "Organic Video", "date": "20261114", "activeUsers": 980, "sessions": 1240, "screenPageViews": 3180, "conversions": 92, "totalRevenue": 2940.0},
+    {"country": "United Kingdom", "deviceCategory": "desktop", "sessionDefaultChannelGroup": "Paid Search", "date": "20261114", "activeUsers": 1850, "sessions": 2410, "screenPageViews": 6920, "conversions": 128, "totalRevenue": 5410.0},
+    {"country": "Germany", "deviceCategory": "mobile", "sessionDefaultChannelGroup": "Direct", "date": "20261113", "activeUsers": 1320, "sessions": 1760, "screenPageViews": 4510, "conversions": 74, "totalRevenue": 2190.25},
+    {"country": "Japan", "deviceCategory": "desktop", "sessionDefaultChannelGroup": "Referral", "date": "20261113", "activeUsers": 1140, "sessions": 1490, "screenPageViews": 4020, "conversions": 61, "totalRevenue": 1875.75},
+    {"country": "Canada", "deviceCategory": "tablet", "sessionDefaultChannelGroup": "Email", "date": "20261112", "activeUsers": 1520, "sessions": 1910, "screenPageViews": 5100, "conversions": 54, "totalRevenue": 1305.0}
+  ],
+  "gaRealtimeRows": [
+    {"country": "United States", "deviceCategory": "desktop", "activeUsers": 184, "screenPageViews": 620},
+    {"country": "United States", "deviceCategory": "mobile", "activeUsers": 142, "screenPageViews": 410},
+    {"country": "United Kingdom", "deviceCategory": "desktop", "activeUsers": 67, "screenPageViews": 205},
+    {"country": "Germany", "deviceCategory": "mobile", "activeUsers": 49, "screenPageViews": 138},
+    {"country": "Japan", "deviceCategory": "desktop", "activeUsers": 36, "screenPageViews": 112}
+  ],
+  "channels": {
+    "UC_ACME_DEV": {
+      "kind": "youtube#channel",
+      "id": "UC_ACME_DEV",
+      "snippet": {
+        "title": "Acme Engineering",
+        "description": "Systems engineering, developer tooling, and product walkthroughs.",
+        "customUrl": "@acmeengineering",
+        "publishedAt": "2021-04-12T15:00:00Z",
+        "country": "US"
+      },
+      "statistics": {
+        "viewCount": "3840500",
+        "subscriberCount": "48200",
+        "videoCount": "142"
+      },
+      "contentDetails": {"relatedPlaylists": {"uploads": "UU_ACME_DEV"}}
+    },
+    "UC_ACME_SANDBOX": {
+      "kind": "youtube#channel",
+      "id": "UC_ACME_SANDBOX",
+      "snippet": {
+        "title": "Acme Sandbox Labs",
+        "description": "Experimental demos and QA automation recordings.",
+        "customUrl": "@acmesandbox",
+        "publishedAt": "2023-08-01T10:00:00Z",
+        "country": "CA"
+      },
+      "statistics": {
+        "viewCount": "124000",
+        "subscriberCount": "3200",
+        "videoCount": "19"
+      },
+      "contentDetails": {"relatedPlaylists": {"uploads": "UU_ACME_SANDBOX"}}
+    }
+  },
+  "videos": {
+    "vid_go_cli_01": {
+      "kind": "youtube#video",
+      "id": "vid_go_cli_01",
+      "snippet": {
+        "title": "Building Scriptable Go CLIs with lmcode",
+        "description": "How to compile static Go CLI hosts and bind typed scripting schemas.",
+        "channelId": "UC_ACME_DEV",
+        "channelTitle": "Acme Engineering",
+        "publishedAt": "2026-10-15T17:00:00Z",
+        "categoryId": "28",
+        "tags": ["golang", "cli", "lmcode"]
+      },
+      "status": {"privacyStatus": "public"},
+      "contentDetails": {"duration": "PT14M32S"},
+      "statistics": {"viewCount": "128400", "likeCount": "6420", "commentCount": "312"}
+    },
+    "vid_ga4_api_02": {
+      "kind": "youtube#video",
+      "id": "vid_ga4_api_02",
+      "snippet": {
+        "title": "GA4 Data API Automation in Go",
+        "description": "End-to-end walkthrough of Google Analytics Admin and Data APIs.",
+        "channelId": "UC_ACME_DEV",
+        "channelTitle": "Acme Engineering",
+        "publishedAt": "2026-10-28T16:30:00Z",
+        "categoryId": "28",
+        "tags": ["analytics", "ga4", "go"]
+      },
+      "status": {"privacyStatus": "public"},
+      "contentDetails": {"duration": "PT18M05S"},
+      "statistics": {"viewCount": "94200", "likeCount": "4110", "commentCount": "189"}
+    },
+    "vid_yt_upload_03": {
+      "kind": "youtube#video",
+      "id": "vid_yt_upload_03",
+      "snippet": {
+        "title": "YouTube Data API v3 Upload Pipelines",
+        "description": "Resumable and multipart uploads with official Go client libraries.",
+        "channelId": "UC_ACME_DEV",
+        "channelTitle": "Acme Engineering",
+        "publishedAt": "2026-11-04T18:00:00Z",
+        "categoryId": "28",
+        "tags": ["youtube", "upload", "oauth2"]
+      },
+      "status": {"privacyStatus": "unlisted"},
+      "contentDetails": {"duration": "PT11M47S"},
+      "statistics": {"viewCount": "31500", "likeCount": "1590", "commentCount": "74"}
+    },
+    "vid_launch_04": {
+      "kind": "youtube#video",
+      "id": "vid_launch_04",
+      "snippet": {
+        "title": "lmgoogle 0.1 Release Keynote",
+        "description": "Unified OAuth2 loopback authentication for Analytics and YouTube.",
+        "channelId": "UC_ACME_DEV",
+        "channelTitle": "Acme Engineering",
+        "publishedAt": "2026-11-12T15:00:00Z",
+        "categoryId": "28",
+        "tags": ["release", "lmgoogle", "oauth2"]
+      },
+      "status": {"privacyStatus": "public"},
+      "contentDetails": {"duration": "PT22M10S"},
+      "statistics": {"viewCount": "214800", "likeCount": "11800", "commentCount": "540"}
+    }
+  },
+  "videoOrder": ["vid_go_cli_01", "vid_ga4_api_02", "vid_yt_upload_03", "vid_launch_04"],
+  "playlists": {
+    "PL_ACME_TUTORIALS": {
+      "kind": "youtube#playlist",
+      "id": "PL_ACME_TUTORIALS",
+      "snippet": {
+        "title": "Go Automation Tutorials",
+        "description": "Go SDK and automation tutorials",
+        "channelId": "UC_ACME_DEV",
+        "channelTitle": "Acme Engineering",
+        "publishedAt": "2026-09-01T10:00:00Z"
+      },
+      "status": {"privacyStatus": "public"},
+      "contentDetails": {"itemCount": 3}
+    },
+    "PL_ACME_RELEASES": {
+      "kind": "youtube#playlist",
+      "id": "PL_ACME_RELEASES",
+      "snippet": {
+        "title": "Product Keynotes",
+        "description": "Quarterly release launches and demos",
+        "channelId": "UC_ACME_DEV",
+        "channelTitle": "Acme Engineering",
+        "publishedAt": "2026-10-01T10:00:00Z"
+      },
+      "status": {"privacyStatus": "public"},
+      "contentDetails": {"itemCount": 1}
+    }
+  },
+  "playlistOrder": ["PL_ACME_TUTORIALS", "PL_ACME_RELEASES"],
+  "playlistItems": {
+    "PL_ACME_TUTORIALS": [
+      {
+        "kind": "youtube#playlistItem",
+        "id": "pli_PL_ACME_TUTORIALS_0",
+        "snippet": {
+          "playlistId": "PL_ACME_TUTORIALS",
+          "title": "Building Scriptable Go CLIs with lmcode",
+          "resourceId": {"kind": "youtube#video", "videoId": "vid_go_cli_01"}
+        },
+        "contentDetails": {"videoId": "vid_go_cli_01"}
+      },
+      {
+        "kind": "youtube#playlistItem",
+        "id": "pli_PL_ACME_TUTORIALS_1",
+        "snippet": {
+          "playlistId": "PL_ACME_TUTORIALS",
+          "title": "GA4 Data API Automation in Go",
+          "resourceId": {"kind": "youtube#video", "videoId": "vid_ga4_api_02"}
+        },
+        "contentDetails": {"videoId": "vid_ga4_api_02"}
+      },
+      {
+        "kind": "youtube#playlistItem",
+        "id": "pli_PL_ACME_TUTORIALS_2",
+        "snippet": {
+          "playlistId": "PL_ACME_TUTORIALS",
+          "title": "YouTube Data API v3 Upload Pipelines",
+          "resourceId": {"kind": "youtube#video", "videoId": "vid_yt_upload_03"}
+        },
+        "contentDetails": {"videoId": "vid_yt_upload_03"}
+      }
+    ],
+    "PL_ACME_RELEASES": [
+      {
+        "kind": "youtube#playlistItem",
+        "id": "pli_PL_ACME_RELEASES_0",
+        "snippet": {
+          "playlistId": "PL_ACME_RELEASES",
+          "title": "lmgoogle 0.1 Release Keynote",
+          "resourceId": {"kind": "youtube#video", "videoId": "vid_launch_04"}
+        },
+        "contentDetails": {"videoId": "vid_launch_04"}
+      }
+    ]
+  },
+  "comments": {
+    "vid_go_cli_01": [
+      {
+        "kind": "youtube#commentThread",
+        "id": "ct_001",
+        "snippet": {
+          "videoId": "vid_go_cli_01",
+          "topLevelComment": {
+            "id": "c_001",
+            "snippet": {
+              "authorDisplayName": "dev_alex",
+              "textDisplay": "Super clean schema design, compiles fast!",
+              "publishedAt": "2026-10-16T09:15:00Z"
+            }
+          }
+        }
+      },
+      {
+        "kind": "youtube#commentThread",
+        "id": "ct_002",
+        "snippet": {
+          "videoId": "vid_go_cli_01",
+          "topLevelComment": {
+            "id": "c_002",
+            "snippet": {
+              "authorDisplayName": "sre_maya",
+              "textDisplay": "Zero CGO binary size is awesome for containers.",
+              "publishedAt": "2026-10-17T14:22:00Z"
+            }
+          }
+        }
+      }
+    ],
+    "vid_launch_04": [
+      {
+        "kind": "youtube#commentThread",
+        "id": "ct_003",
+        "snippet": {
+          "videoId": "vid_launch_04",
+          "topLevelComment": {
+            "id": "c_003",
+            "snippet": {
+              "authorDisplayName": "growth_sam",
+              "textDisplay": "Finally one OAuth token works for both Analytics and YouTube.",
+              "publishedAt": "2026-11-12T18:45:00Z"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "ytAnalyticsRows": [
+    {"day": "2026-11-10", "video": "vid_go_cli_01", "country": "US", "views": 3420, "estimatedMinutesWatched": 29800, "averageViewDuration": 523, "likes": 195, "comments": 14, "subscribersGained": 62},
+    {"day": "2026-11-11", "video": "vid_ga4_api_02", "country": "US", "views": 2890, "estimatedMinutesWatched": 27450, "averageViewDuration": 570, "likes": 148, "comments": 11, "subscribersGained": 51},
+    {"day": "2026-11-12", "video": "vid_launch_04", "country": "US", "views": 6420, "estimatedMinutesWatched": 68900, "averageViewDuration": 644, "likes": 412, "comments": 38, "subscribersGained": 184},
+    {"day": "2026-11-13", "video": "vid_launch_04", "country": "GB", "views": 5110, "estimatedMinutesWatched": 52400, "averageViewDuration": 615, "likes": 318, "comments": 24, "subscribersGained": 129},
+    {"day": "2026-11-14", "video": "vid_go_cli_01", "country": "DE", "views": 3440, "estimatedMinutesWatched": 28500, "averageViewDuration": 497, "likes": 176, "comments": 9, "subscribersGained": 48}
+  ],
+  "gmailEmail": "engineering@acme.example",
+  "gmailLabels": [
+    {"id": "IMPORTANT", "name": "IMPORTANT", "type": "system", "messagesTotal": 2, "messagesUnread": 1},
+    {"id": "INBOX", "name": "INBOX", "type": "system", "messagesTotal": 3, "messagesUnread": 2},
+    {"id": "Label_alerts", "name": "alerts", "type": "user", "messagesTotal": 2, "messagesUnread": 1},
+    {"id": "SENT", "name": "SENT", "type": "system", "messagesTotal": 1, "messagesUnread": 0},
+    {"id": "STARRED", "name": "STARRED", "type": "system", "messagesTotal": 1, "messagesUnread": 1},
+    {"id": "TRASH", "name": "TRASH", "type": "system", "messagesTotal": 0, "messagesUnread": 0},
+    {"id": "UNREAD", "name": "UNREAD", "type": "system", "messagesTotal": 2, "messagesUnread": 2}
+  ],
+  "gmailMessages": {
+    "msg_1001": {
+      "id": "msg_1001",
+      "threadId": "thr_1001",
+      "labelIds": ["INBOX", "UNREAD", "IMPORTANT", "Label_alerts"],
+      "snippet": "GA4 weekly revenue anomaly: Organic Video conversions rose 34% to $2,940.00.",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {"name": "From", "value": "alerts@acme.example"},
+          {"name": "To", "value": "engineering@acme.example"},
+          {"name": "Subject", "value": "[GA4 Alert] Organic Video revenue spike on 3001001"},
+          {"name": "Date", "value": "Mon, 23 Nov 2026 09:15:00 -0600"}
+        ],
+        "body": {"data": "R0E0IHByb3BlcnR5IDMwMDEwMDEgcmVwb3J0OgpPcmdhbmljIFZpZGVvIGFjdGl2ZVVzZXJzPTk4MCwgY29udmVyc2lvbnM9OTIsIHRvdGFsUmV2ZW51ZT0kMjk0MC4wMC4KVG9wIHZpZGVvIGRyaXZpbmcgcmVmZXJyYWwgY2xpY2tzOiB2aWRfbGF1bmNoXzA0Lg"}
+      }
+    },
+    "msg_1002": {
+      "id": "msg_1002",
+      "threadId": "thr_1002",
+      "labelIds": ["INBOX", "UNREAD", "STARRED"],
+      "snippet": "Release checklist: lmgoogle 0.1.0 keynote crossed 214,800 views.",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {"name": "From", "value": "alex@acme.example"},
+          {"name": "To", "value": "engineering@acme.example"},
+          {"name": "Subject", "value": "Re: lmgoogle 0.1.0 keynote metrics"},
+          {"name": "Date", "value": "Sun, 22 Nov 2026 16:40:00 -0600"}
+        ],
+        "body": {"data": "SGkgdGVhbSwKCnZpZF9sYXVuY2hfMDQgbm93IGhhcyAyMTQsODAwIHZpZXdzIGFuZCAxMSw4MDAgbGlrZXMgb24gWW91VHViZS4KQ2FuIHNvbWVvbmUgZXhwb3J0IHRoZSB3ZWVrbHkgR0E0IGJyZWFrZG93bj8"}
+      }
+    },
+    "msg_1003": {
+      "id": "msg_1003",
+      "threadId": "thr_1001",
+      "labelIds": ["INBOX", "IMPORTANT", "Label_alerts"],
+      "snippet": "Automated quota check: Analytics & YouTube usage well within daily limits.",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {"name": "From", "value": "ops-bot@acme.example"},
+          {"name": "To", "value": "engineering@acme.example"},
+          {"name": "Subject", "value": "Re: [GA4 Alert] Daily quota health check OK"},
+          {"name": "Date", "value": "Mon, 23 Nov 2026 10:02:00 -0600"}
+        ],
+        "body": {"data": "RGFpbHkgQVBJIHF1b3RhIHVzYWdlIGlzIGJlbG93IDUlIGFjcm9zcyBHQTQgYW5kIFlvdVR1YmUgRGF0YSB2My4"}
+      }
+    },
+    "msg_1004": {
+      "id": "msg_1004",
+      "threadId": "thr_1004",
+      "labelIds": ["SENT"],
+      "snippet": "Uploaded demo keynote draft vid_yt_upload_03 for review.",
+      "payload": {
+        "mimeType": "text/plain",
+        "headers": [
+          {"name": "From", "value": "engineering@acme.example"},
+          {"name": "To", "value": "alex@acme.example"},
+          {"name": "Subject", "value": "Upload draft ready for review"},
+          {"name": "Date", "value": "Sat, 21 Nov 2026 14:20:00 -0600"}
+        ],
+        "body": {"data": "RHJhZnQgdmlkZW8gdmlkX3l0X3VwbG9hZF8wMyBpcyB1bmxpc3RlZCBhbmQgcmVhZHkgZm9yIHJldmlldy4"}
+      }
+    },
+    "msg_1005": {
+      "id": "msg_1005",
+      "threadId": "thr_1005",
+      "labelIds": ["INBOX", "IMPORTANT"],
+      "snippet": "Order confirmation #ORDER-1005 and attached receipt.",
+      "payload": {
+        "mimeType": "multipart/mixed",
+        "headers": [
+          {"name": "From", "value": "billing@acme.example"},
+          {"name": "To", "value": "engineering@acme.example"},
+          {"name": "Subject", "value": "Receipt for order #ORDER-1005"},
+          {"name": "Date", "value": "Mon, 23 Nov 2026 11:30:00 -0600"}
+        ],
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {"data": "SGVsbG8sCgpUaGFuayB5b3UgZm9yIG9yZGVyICNPUkRFUi0xMDA1LgpUb3RhbDogJDE0OS4wMCBVU0QuClNlZSBhdHRhY2hlZCByZWNlaXB0X09SREVSLTEwMDUudHh0Lg"}
+          },
+          {
+            "filename": "receipt_ORDER-1005.txt",
+            "mimeType": "text/plain",
+            "body": {"attachmentId": "att_ORDER-1005", "size": 51}
+          }
+        ]
+      }
+    }
+  },
+  "gmailAttachments": {
+    "msg_1005/att_ORDER-1005": "T3JkZXI6IE9SREVSLTEwMDUKQW1vdW50OiAkMTQ5LjAwIFVTRApTdGF0dXM6IFBBSUQK"
+  },
+  "gmailOrder": ["msg_1001", "msg_1002", "msg_1003", "msg_1004", "msg_1005"]
+};
+
+p = _lmcode_ schema="schema.json";
+
+fn text(j: Json, k: string, fallback: string) -> string {
+ let v = fallback;
+ if (j.kind() == "object" && j.has(k) && j.get(k).kind() == "string") { v = j.get(k).as_string(); }
+ return v;
+}
+fn num(j: Json, k: string, fallback: int) -> int {
+ let v = fallback;
+ if (j.kind() == "object" && j.has(k)) {
+  let fk = j.get(k);
+  if (fk.kind() == "int") { v = fk.as_int(); }
+  else if (fk.kind() == "string" && str_is_int(fk.as_string())) { v = str_to_int(fk.as_string()); }
+ }
+ return v;
+}
+fn member(j: Json, k: string) -> Json {
+ let v = json_parse("{}");
+ if (j.kind() == "object" && j.has(k) && j.get(k).kind() != "null") { v = j.get(k); }
+ return v;
+}
+fn pointer(s: string) -> string { return str_replace(str_replace(s, "~", "~0"), "/", "~1"); }
+fn put(j: Json, k: string, value: Json) -> Json { return json_with(j, "/" + pointer(k), value); }
+fn append(j: Json, value: Json) -> Json { return json_with(j, "/-", value); }
+fn is_deleted(obj: Json) -> bool {
+ let d = false;
+ if (obj.kind() == "object" && obj.has("_deleted") && obj.get("_deleted").kind() == "bool") { d = obj.get("_deleted").as_bool(); }
+ return d;
+}
+fn database(x: Exchange) -> Json {
+ let raw = x.get("database");
+ if (raw == "") {
+  raw = ${json_stringify(seed)};
+  x.set("database", raw);
+ }
+ return json_parse(raw);
+}
+fn save(x: Exchange, db: Json) -> void { x.set("database", db.to_json()); }
+
+fn api_error(x: Exchange, status: int, reason: string, msg: string) -> void {
+ x.status(status);
+ x.json("{\"error\":{\"code\":" + str(status) + ",\"message\":" + json_quote(msg) + ",\"errors\":[{\"reason\":" + json_quote(reason) + ",\"message\":" + json_quote(msg) + "}]}}");
+}
+
+fn allowed(x: Exchange) -> bool {
+ let cfgRaw = config();
+ let requireAuth = true;
+ let token = "fixture-token";
+ if (str_starts_with(str_trim(cfgRaw), "{")) {
+  let c = json_parse(cfgRaw);
+  if (c.has("token") && c.get("token").kind() == "string") { token = c.get("token").as_string(); }
+  if (c.has("requireAuth") && c.get("requireAuth").kind() == "bool") { requireAuth = c.get("requireAuth").as_bool(); }
+ }
+ let ok = true;
+ if (requireAuth) {
+  ok = secure_equal(x.header("Authorization"), "Bearer " + token);
+ }
+ if (!ok) {
+  api_error(x, 401, "authError", "Invalid Credentials");
+ } else if (x.header("X-Lmmock-Fault") == "429") {
+  ok = false;
+  x.set_header("Retry-After", "1");
+  api_error(x, 429, "rateLimitExceeded", "Quota exceeded for fixture project");
+ } else if (x.header("X-Lmmock-Fault") == "500") {
+  ok = false;
+  api_error(x, 500, "backendError", "Fixture internal server error");
+ }
+ return ok;
+}
+
+fn norm_prop(id: string) -> string {
+ let s = id;
+ if (!str_starts_with(s, "properties/")) { s = "properties/" + s; }
+ return s;
+}
+fn norm_acc(id: string) -> string {
+ let s = id;
+ if (!str_starts_with(s, "accounts/")) { s = "accounts/" + s; }
+ return s;
+}
+fn parse_multipart_json(body: string) -> string {
+ let trimmed = str_trim(body);
+ let out = "{}";
+ if (str_starts_with(trimmed, "{")) {
+  out = trimmed;
+ } else if (str_contains(body, "{")) {
+  let start = 0;
+  let n = str_len(body);
+  let found = false;
+  for (i in range(0, n)) {
+   if (!found && str_substr(body, i, 1) == "{") {
+    start = i;
+    found = true;
+   }
+  }
+  let rest = str_substr(body, start, n - start);
+  if (str_contains(rest, "\r\n--")) {
+   rest = str_split(rest, "\r\n--").at(0);
+  } else if (str_contains(rest, "\n--")) {
+   rest = str_split(rest, "\n--").at(0);
+  }
+  out = str_trim(rest);
+ }
+ return out;
+}
+fn has_csv_part(csv: string, target: string) -> bool {
+ let parts = str_split(csv, ",");
+ let hit = false;
+ for (i in range(0, parts.len())) {
+  if (str_trim(parts.at(i)) == target) { hit = true; }
+ }
+ return hit;
+}
+
+# --- GA4 Admin Handlers ---
+
+@ga_account_summaries
+fn ga_account_summaries(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let accs = db.get("accounts");
+  let props = db.get("properties");
+  let accOrder = db.get("accountOrder");
+  let propOrder = db.get("propertyOrder");
+  let summaries = json_parse("[]");
+  for (ai in range(0, accOrder.len())) {
+   let ak = accOrder.at(ai).as_string();
+   let acc = accs.get(ak);
+   let psums = json_parse("[]");
+   for (pi in range(0, propOrder.len())) {
+    let pk = propOrder.at(pi).as_string();
+    if (props.has(pk)) {
+     let pr = props.get(pk);
+     if (!is_deleted(pr) && (text(pr, "parent", "") == ak || text(pr, "account", "") == ak)) {
+      psums = append(psums, json_parse("{\"property\":" + json_quote(text(pr, "name", pk)) + ",\"displayName\":" + json_quote(text(pr, "displayName", "")) + ",\"propertyType\":" + json_quote(text(pr, "propertyType", "PROPERTY_TYPE_ORDINARY")) + ",\"parent\":" + json_quote(text(pr, "parent", ak)) + "}"));
+     }
+    }
+   }
+   let sumName = str_replace(ak, "accounts/", "accountSummaries/");
+   summaries = append(summaries, json_parse("{\"name\":" + json_quote(sumName) + ",\"account\":" + json_quote(ak) + ",\"displayName\":" + json_quote(text(acc, "displayName", "")) + ",\"propertySummaries\":" + psums.to_json() + "}"));
+  }
+  x.json("{\"accountSummaries\":" + summaries.to_json() + "}");
+ }
+}
+
+@ga_list_accounts
+fn ga_list_accounts(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let accs = db.get("accounts");
+  let accOrder = db.get("accountOrder");
+  let out = json_parse("[]");
+  for (i in range(0, accOrder.len())) {
+   out = append(out, accs.get(accOrder.at(i).as_string()));
+  }
+  x.json("{\"accounts\":" + out.to_json() + "}");
+ }
+}
+
+@ga_get_account
+fn ga_get_account(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let ak = norm_acc(x.param("id"));
+  let accs = db.get("accounts");
+  if (!accs.has(ak)) { api_error(x, 404, "notFound", "account not found: " + ak); }
+  else { x.json(accs.get(ak).to_json()); }
+ }
+}
+
+@ga_list_properties
+fn ga_list_properties(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let filterParent = "";
+  let f = str_trim(x.query("filter"));
+  if (str_starts_with(f, "parent:")) { filterParent = str_trim(str_substr(f, 7, str_len(f) - 7)); }
+  let props = db.get("properties");
+  let order = db.get("propertyOrder");
+  let out = json_parse("[]");
+  for (i in range(0, order.len())) {
+   let pk = order.at(i).as_string();
+   if (props.has(pk)) {
+    let pr = props.get(pk);
+    if (!is_deleted(pr) && (filterParent == "" || text(pr, "parent", "") == filterParent || text(pr, "account", "") == filterParent)) {
+     out = append(out, pr);
+    }
+   }
+  }
+  x.json("{\"properties\":" + out.to_json() + "}");
+ }
+}
+
+@ga_create_property
+fn ga_create_property(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let req = json_parse(x.body());
+  let disp = text(req, "displayName", "");
+  if (disp == "") {
+   api_error(x, 400, "invalidArgument", "displayName is required");
+  } else {
+   let parent = text(req, "parent", "accounts/1001");
+   let tz = text(req, "timeZone", "UTC");
+   let curr = text(req, "currencyCode", "USD");
+   let ind = text(req, "industryCategory", "TECHNOLOGY");
+   let idNum = 399000 + x.increment("ga_prop_seq");
+   let name = "properties/" + str(idNum);
+   let prop = json_parse("{\"name\":" + json_quote(name) + ",\"parent\":" + json_quote(parent) + ",\"account\":" + json_quote(parent) + ",\"displayName\":" + json_quote(disp) + ",\"propertyType\":\"PROPERTY_TYPE_ORDINARY\",\"timeZone\":" + json_quote(tz) + ",\"currencyCode\":" + json_quote(curr) + ",\"industryCategory\":" + json_quote(ind) + ",\"serviceLevel\":\"GOOGLE_ANALYTICS_STANDARD\",\"createTime\":\"2026-11-14T22:00:00Z\"}");
+   let db = database(x);
+   db = put(db, "properties", put(db.get("properties"), name, prop));
+   db = put(db, "propertyOrder", append(db.get("propertyOrder"), json_parse(json_quote(name))));
+   save(x, db);
+   x.json(prop.to_json());
+  }
+ }
+}
+
+@ga_get_property
+fn ga_get_property(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pk = norm_prop(x.param("id"));
+  let db = database(x);
+  let props = db.get("properties");
+  if (!props.has(pk) || is_deleted(props.get(pk))) { api_error(x, 404, "notFound", "property not found: " + pk); }
+  else { x.json(props.get(pk).to_json()); }
+ }
+}
+
+@ga_update_property
+fn ga_update_property(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pk = norm_prop(x.param("id"));
+  let db = database(x);
+  let props = db.get("properties");
+  if (!props.has(pk) || is_deleted(props.get(pk))) {
+   api_error(x, 404, "notFound", "property not found: " + pk);
+  } else {
+   let prop = props.get(pk);
+   let req = json_parse(x.body());
+   let mask = x.query("updateMask");
+   if ((mask == "" || has_csv_part(mask, "displayName") || has_csv_part(mask, "display_name")) && text(req, "displayName", "") != "") {
+    prop = put(prop, "displayName", req.get("displayName"));
+   }
+   if ((mask == "" || has_csv_part(mask, "timeZone") || has_csv_part(mask, "time_zone")) && text(req, "timeZone", "") != "") {
+    prop = put(prop, "timeZone", req.get("timeZone"));
+   }
+   if ((mask == "" || has_csv_part(mask, "currencyCode") || has_csv_part(mask, "currency_code")) && text(req, "currencyCode", "") != "") {
+    prop = put(prop, "currencyCode", req.get("currencyCode"));
+   }
+   db = put(db, "properties", put(props, pk, prop));
+   save(x, db);
+   x.json(prop.to_json());
+  }
+ }
+}
+
+@ga_delete_property
+fn ga_delete_property(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pk = norm_prop(x.param("id"));
+  let db = database(x);
+  let props = db.get("properties");
+  if (!props.has(pk) || is_deleted(props.get(pk))) {
+   api_error(x, 404, "notFound", "property not found: " + pk);
+  } else {
+   let prop = props.get(pk);
+   db = put(db, "properties", put(props, pk, put(prop, "_deleted", json_parse("true"))));
+   save(x, db);
+   x.json(prop.to_json());
+  }
+ }
+}
+
+@ga_list_streams
+fn ga_list_streams(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pk = norm_prop(x.param("id"));
+  let db = database(x);
+  let streams = db.get("dataStreams");
+  let order = db.get("streamOrder");
+  let prefix = pk + "/dataStreams/";
+  let out = json_parse("[]");
+  for (i in range(0, order.len())) {
+   let sk = order.at(i).as_string();
+   if (str_starts_with(sk, prefix) && streams.has(sk)) {
+    let st = streams.get(sk);
+    if (!is_deleted(st)) { out = append(out, st); }
+   }
+  }
+  x.json("{\"dataStreams\":" + out.to_json() + "}");
+ }
+}
+
+@ga_create_stream
+fn ga_create_stream(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pk = norm_prop(x.param("id"));
+  let db = database(x);
+  let props = db.get("properties");
+  if (!props.has(pk) || is_deleted(props.get(pk))) {
+   api_error(x, 404, "notFound", "property not found: " + pk);
+  } else {
+   let req = json_parse(x.body());
+   let numId = 79000 + x.increment("ga_stream_seq");
+   let name = pk + "/dataStreams/" + str(numId);
+   let stType = text(req, "type", "WEB_DATA_STREAM");
+   let disp = text(req, "displayName", "Web Stream");
+   let defaultUri = "https://example.test";
+   if (req.has("webStreamData")) { defaultUri = text(req.get("webStreamData"), "defaultUri", defaultUri); }
+   let measId = "G-LM" + str(numId);
+   let st = json_parse("{\"name\":" + json_quote(name) + ",\"type\":" + json_quote(stType) + ",\"displayName\":" + json_quote(disp) + ",\"webStreamData\":{\"measurementId\":" + json_quote(measId) + ",\"defaultUri\":" + json_quote(defaultUri) + "}}");
+   db = put(db, "dataStreams", put(db.get("dataStreams"), name, st));
+   db = put(db, "streamOrder", append(db.get("streamOrder"), json_parse(json_quote(name))));
+   save(x, db);
+   x.json(st.to_json());
+  }
+ }
+}
+
+@ga_get_stream
+fn ga_get_stream(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let sk = norm_prop(x.param("id")) + "/dataStreams/" + x.param("sid");
+  let db = database(x);
+  let streams = db.get("dataStreams");
+  if (!streams.has(sk) || is_deleted(streams.get(sk))) { api_error(x, 404, "notFound", "dataStream not found: " + sk); }
+  else { x.json(streams.get(sk).to_json()); }
+ }
+}
+
+@ga_delete_stream
+fn ga_delete_stream(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let sk = norm_prop(x.param("id")) + "/dataStreams/" + x.param("sid");
+  let db = database(x);
+  let streams = db.get("dataStreams");
+  if (!streams.has(sk) || is_deleted(streams.get(sk))) {
+   api_error(x, 404, "notFound", "dataStream not found: " + sk);
+  } else {
+   db = put(db, "dataStreams", put(streams, sk, put(streams.get(sk), "_deleted", json_parse("true"))));
+   save(x, db);
+   x.json("{}");
+  }
+ }
+}
+
+@ga_list_custom_dims
+fn ga_list_custom_dims(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pk = norm_prop(x.param("id"));
+  let db = database(x);
+  let dims = db.get("customDimensions");
+  let order = db.get("customDimOrder");
+  let prefix = pk + "/customDimensions/";
+  let out = json_parse("[]");
+  for (i in range(0, order.len())) {
+   let dk = order.at(i).as_string();
+   if (str_starts_with(dk, prefix) && dims.has(dk)) { out = append(out, dims.get(dk)); }
+  }
+  x.json("{\"customDimensions\":" + out.to_json() + "}");
+ }
+}
+
+@ga_create_custom_dim
+fn ga_create_custom_dim(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pk = norm_prop(x.param("id"));
+  let req = json_parse(x.body());
+  let idNum = 9000 + x.increment("ga_cd_seq");
+  let name = pk + "/customDimensions/cd" + str(idNum);
+  let scope = text(req, "scope", "EVENT");
+  let paramName = text(req, "parameterName", "custom_param");
+  let disp = text(req, "displayName", paramName);
+  let cd = json_parse("{\"name\":" + json_quote(name) + ",\"parameterName\":" + json_quote(paramName) + ",\"displayName\":" + json_quote(disp) + ",\"scope\":" + json_quote(scope) + "}");
+  let db = database(x);
+  db = put(db, "customDimensions", put(db.get("customDimensions"), name, cd));
+  db = put(db, "customDimOrder", append(db.get("customDimOrder"), json_parse(json_quote(name))));
+  save(x, db);
+  x.json(cd.to_json());
+ }
+}
+
+@ga_list_key_events
+fn ga_list_key_events(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pk = norm_prop(x.param("id"));
+  let db = database(x);
+  let kes = db.get("keyEvents");
+  let order = db.get("keyEventOrder");
+  let prefix = pk + "/keyEvents/";
+  let out = json_parse("[]");
+  for (i in range(0, order.len())) {
+   let kk = order.at(i).as_string();
+   if (str_starts_with(kk, prefix) && kes.has(kk)) { out = append(out, kes.get(kk)); }
+  }
+  x.json("{\"keyEvents\":" + out.to_json() + "}");
+ }
+}
+
+@ga_create_key_event
+fn ga_create_key_event(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pk = norm_prop(x.param("id"));
+  let req = json_parse(x.body());
+  let eventName = text(req, "eventName", "");
+  if (eventName == "") {
+   api_error(x, 400, "invalidArgument", "eventName required");
+  } else {
+   let method = text(req, "countingMethod", "ONCE_PER_EVENT");
+   let name = pk + "/keyEvents/" + eventName;
+   let ke = json_parse("{\"name\":" + json_quote(name) + ",\"eventName\":" + json_quote(eventName) + ",\"countingMethod\":" + json_quote(method) + "}");
+   let db = database(x);
+   db = put(db, "keyEvents", put(db.get("keyEvents"), name, ke));
+   db = put(db, "keyEventOrder", append(db.get("keyEventOrder"), json_parse(json_quote(name))));
+   save(x, db);
+   x.json(ke.to_json());
+  }
+ }
+}
+
+@ga_metadata
+fn ga_metadata(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  x.json("{\"dimensions\":[{\"apiName\":\"country\",\"uiName\":\"Country\",\"description\":\"User country\"},{\"apiName\":\"deviceCategory\",\"uiName\":\"Device category\",\"description\":\"desktop, mobile, tablet\"},{\"apiName\":\"sessionDefaultChannelGroup\",\"uiName\":\"Channel group\",\"description\":\"Acquisition channel\"},{\"apiName\":\"date\",\"uiName\":\"Date\",\"description\":\"YYYYMMDD date\"}],\"metrics\":[{\"apiName\":\"activeUsers\",\"uiName\":\"Active users\",\"type\":\"TYPE_INTEGER\"},{\"apiName\":\"sessions\",\"uiName\":\"Sessions\",\"type\":\"TYPE_INTEGER\"},{\"apiName\":\"screenPageViews\",\"uiName\":\"Views\",\"type\":\"TYPE_INTEGER\"},{\"apiName\":\"conversions\",\"uiName\":\"Conversions\",\"type\":\"TYPE_INTEGER\"},{\"apiName\":\"totalRevenue\",\"uiName\":\"Total revenue\",\"type\":\"TYPE_CURRENCY\"}]}");
+ }
+}
+
+# --- GA4 Data API Reports ---
+
+fn row_dim_val(r: Json, dim: string) -> string {
+ let v = "(not set)";
+ if (dim == "country" || dim == "deviceCategory" || dim == "sessionDefaultChannelGroup" || dim == "date") {
+  v = text(r, dim, "(not set)");
+ }
+ return v;
+}
+
+fn ga_metric_val_str(r: Json, m: string) -> string {
+ let v = "0";
+ if (m == "activeUsers" || m == "sessions" || m == "screenPageViews" || m == "conversions") {
+  v = str(num(r, m, 0));
+ } else if (m == "totalRevenue" && r.has("totalRevenue")) {
+  v = str(r.get("totalRevenue").as_float());
+ }
+ return v;
+}
+
+@ga_property_action
+fn ga_property_action(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let seg = x.param("id");
+  let db = database(x);
+  if (str_ends_with(seg, ":runReport")) {
+   let req = json_parse(x.body());
+   let reqDims = member(req, "dimensions");
+   let reqMets = member(req, "metrics");
+   let dimHeaders = json_parse("[]");
+   let dimNames = json_parse("[]");
+   if (reqDims.kind() == "array") {
+    for (i in range(0, reqDims.len())) {
+     let dn = text(reqDims.at(i), "name", "");
+     dimNames = append(dimNames, json_parse(json_quote(dn)));
+     dimHeaders = append(dimHeaders, json_parse("{\"name\":" + json_quote(dn) + "}"));
+    }
+   }
+   let metHeaders = json_parse("[]");
+   let metNames = json_parse("[]");
+   if (reqMets.kind() == "array") {
+    for (i in range(0, reqMets.len())) {
+     let mn = text(reqMets.at(i), "name", "");
+     metNames = append(metNames, json_parse(json_quote(mn)));
+     let mt = "TYPE_INTEGER";
+     if (mn == "totalRevenue") { mt = "TYPE_CURRENCY"; }
+     metHeaders = append(metHeaders, json_parse("{\"name\":" + json_quote(mn) + ",\"type\":" + json_quote(mt) + "}"));
+    }
+   }
+   let fField = "";
+   let fVal = "";
+   if (req.has("dimensionFilter") && req.get("dimensionFilter").has("filter")) {
+    let f = req.get("dimensionFilter").get("filter");
+    fField = text(f, "fieldName", "");
+    if (f.has("stringFilter")) { fVal = text(f.get("stringFilter"), "value", ""); }
+   }
+   let limit = num(req, "limit", 100);
+   if (limit <= 0) { limit = 100; }
+   let rawRows = db.get("gaRows");
+   let rowsOut = json_parse("[]");
+   for (i in range(0, rawRows.len())) {
+    if (rowsOut.len() < limit) {
+     let r = rawRows.at(i);
+     let keep = true;
+     if (fField != "" && row_dim_val(r, fField) != fVal) { keep = false; }
+     if (keep) {
+      let dvals = json_parse("[]");
+      for (di in range(0, dimNames.len())) {
+       dvals = append(dvals, json_parse("{\"value\":" + json_quote(row_dim_val(r, dimNames.at(di).as_string())) + "}"));
+      }
+      let mvals = json_parse("[]");
+      for (mi in range(0, metNames.len())) {
+       mvals = append(mvals, json_parse("{\"value\":" + json_quote(ga_metric_val_str(r, metNames.at(mi).as_string())) + "}"));
+      }
+      rowsOut = append(rowsOut, json_parse("{\"dimensionValues\":" + dvals.to_json() + ",\"metricValues\":" + mvals.to_json() + "}"));
+     }
+    }
+   }
+   x.json("{\"dimensionHeaders\":" + dimHeaders.to_json() + ",\"metricHeaders\":" + metHeaders.to_json() + ",\"rows\":" + rowsOut.to_json() + ",\"rowCount\":" + str(rowsOut.len()) + "}");
+  } else if (str_ends_with(seg, ":runRealtimeReport")) {
+   let req = json_parse(x.body());
+   let reqDims = member(req, "dimensions");
+   let reqMets = member(req, "metrics");
+   let dimHeaders = json_parse("[]");
+   let dimNames = json_parse("[]");
+   if (reqDims.kind() == "array") {
+    for (i in range(0, reqDims.len())) {
+     let dn = text(reqDims.at(i), "name", "");
+     dimNames = append(dimNames, json_parse(json_quote(dn)));
+     dimHeaders = append(dimHeaders, json_parse("{\"name\":" + json_quote(dn) + "}"));
+    }
+   }
+   let metHeaders = json_parse("[]");
+   let metNames = json_parse("[]");
+   if (reqMets.kind() == "array") {
+    for (i in range(0, reqMets.len())) {
+     let mn = text(reqMets.at(i), "name", "");
+     metNames = append(metNames, json_parse(json_quote(mn)));
+     metHeaders = append(metHeaders, json_parse("{\"name\":" + json_quote(mn) + ",\"type\":\"TYPE_INTEGER\"}"));
+    }
+   }
+   let limit = num(req, "limit", 100);
+   if (limit <= 0) { limit = 100; }
+   let rtRows = db.get("gaRealtimeRows");
+   let rowsOut = json_parse("[]");
+   for (i in range(0, rtRows.len())) {
+    if (rowsOut.len() < limit) {
+     let r = rtRows.at(i);
+     let dvals = json_parse("[]");
+     for (di in range(0, dimNames.len())) {
+      dvals = append(dvals, json_parse("{\"value\":" + json_quote(row_dim_val(r, dimNames.at(di).as_string())) + "}"));
+     }
+     let mvals = json_parse("[]");
+     for (mi in range(0, metNames.len())) {
+      mvals = append(mvals, json_parse("{\"value\":" + json_quote(ga_metric_val_str(r, metNames.at(mi).as_string())) + "}"));
+     }
+     rowsOut = append(rowsOut, json_parse("{\"dimensionValues\":" + dvals.to_json() + ",\"metricValues\":" + mvals.to_json() + "}"));
+    }
+   }
+   x.json("{\"dimensionHeaders\":" + dimHeaders.to_json() + ",\"metricHeaders\":" + metHeaders.to_json() + ",\"rows\":" + rowsOut.to_json() + ",\"rowCount\":" + str(rowsOut.len()) + "}");
+  } else {
+   api_error(x, 404, "notFound", "unknown property action: " + seg);
+  }
+ }
+}
+
+# --- YouTube Data API v3 Handlers ---
+
+@yt_channels
+fn yt_channels(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let channels = db.get("channels");
+  let items = json_parse("[]");
+  let cid = x.query("id");
+  if (x.query("mine") == "true") {
+   items = append(items, channels.get("UC_ACME_DEV"));
+  } else if (cid != "") {
+   let parts = str_split(cid, ",");
+   for (i in range(0, parts.len())) {
+    let one = str_trim(parts.at(i));
+    if (channels.has(one)) { items = append(items, channels.get(one)); }
+   }
+  } else {
+   items = append(items, channels.get("UC_ACME_DEV"));
+  }
+  x.json("{\"kind\":\"youtube#channelListResponse\",\"items\":" + items.to_json() + "}");
+ }
+}
+
+@yt_search
+fn yt_search(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let videos = db.get("videos");
+  let order = db.get("videoOrder");
+  let q = str_lower(str_trim(x.query("q")));
+  let channelFilter = x.query("channelId");
+  let maxRes = 25;
+  if (str_is_int(x.query("maxResults"))) { maxRes = str_to_int(x.query("maxResults")); }
+  if (maxRes <= 0) { maxRes = 25; }
+  let items = json_parse("[]");
+  for (i in range(0, order.len())) {
+   if (items.len() < maxRes) {
+    let vk = order.at(i).as_string();
+    if (videos.has(vk)) {
+     let v = videos.get(vk);
+     if (!is_deleted(v)) {
+      let snip = v.get("snippet");
+      let chOk = channelFilter == "" || text(snip, "channelId", "") == channelFilter;
+      let qOk = q == "" || str_contains(str_lower(text(snip, "title", "")), q) || str_contains(str_lower(text(snip, "description", "")), q);
+      if (chOk && qOk) {
+       items = append(items, json_parse("{\"kind\":\"youtube#searchResult\",\"id\":{\"kind\":\"youtube#video\",\"videoId\":" + json_quote(text(v, "id", vk)) + "},\"snippet\":" + snip.to_json() + "}"));
+      }
+     }
+    }
+   }
+  }
+  x.json("{\"kind\":\"youtube#searchListResponse\",\"items\":" + items.to_json() + "}");
+ }
+}
+
+@yt_get_videos
+fn yt_get_videos(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let videos = db.get("videos");
+  let order = db.get("videoOrder");
+  let idParam = x.query("id");
+  let items = json_parse("[]");
+  if (idParam != "") {
+   let ids = str_split(idParam, ",");
+   for (i in range(0, ids.len())) {
+    let vid = str_trim(ids.at(i));
+    if (videos.has(vid) && !is_deleted(videos.get(vid))) { items = append(items, videos.get(vid)); }
+   }
+  } else {
+   for (i in range(0, order.len())) {
+    let vk = order.at(i).as_string();
+    if (videos.has(vk) && !is_deleted(videos.get(vk))) { items = append(items, videos.get(vk)); }
+   }
+  }
+  x.json("{\"kind\":\"youtube#videoListResponse\",\"items\":" + items.to_json() + "}");
+ }
+}
+
+@yt_upload_video
+fn yt_upload_video(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let metaJson = parse_multipart_json(x.body());
+  let meta = json_parse(metaJson);
+  let snipIn = member(meta, "snippet");
+  let statIn = member(meta, "status");
+  let title = text(snipIn, "title", "Untitled Video");
+  let desc = text(snipIn, "description", "");
+  let catId = text(snipIn, "categoryId", "28");
+  let tags = json_parse("[]");
+  if (snipIn.has("tags") && snipIn.get("tags").kind() == "array") { tags = snipIn.get("tags"); }
+  let privacy = text(statIn, "privacyStatus", "private");
+  let idNum = 9000 + x.increment("yt_seq");
+  let vid = "vid_" + str(idNum);
+  let video = json_parse("{\"kind\":\"youtube#video\",\"id\":" + json_quote(vid) + ",\"snippet\":{\"title\":" + json_quote(title) + ",\"description\":" + json_quote(desc) + ",\"channelId\":\"UC_ACME_DEV\",\"channelTitle\":\"Acme Engineering\",\"publishedAt\":\"2026-11-14T22:00:00Z\",\"categoryId\":" + json_quote(catId) + ",\"tags\":" + tags.to_json() + "},\"status\":{\"privacyStatus\":" + json_quote(privacy) + "},\"contentDetails\":{\"duration\":\"PT0M30S\"},\"statistics\":{\"viewCount\":\"0\",\"likeCount\":\"0\",\"commentCount\":\"0\"}}");
+  let db = database(x);
+  db = put(db, "videos", put(db.get("videos"), vid, video));
+  db = put(db, "videoOrder", append(db.get("videoOrder"), json_parse(json_quote(vid))));
+  save(x, db);
+  x.json(video.to_json());
+ }
+}
+
+@yt_update_video
+fn yt_update_video(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let req = json_parse(x.body());
+  let vid = text(req, "id", "");
+  let db = database(x);
+  let videos = db.get("videos");
+  if (vid == "" || !videos.has(vid) || is_deleted(videos.get(vid))) {
+   api_error(x, 404, "videoNotFound", "video not found: " + vid);
+  } else {
+   let cur = videos.get(vid);
+   if (req.has("snippet")) {
+    let rs = req.get("snippet");
+    let cs = cur.get("snippet");
+    if (text(rs, "title", "") != "") { cs = put(cs, "title", rs.get("title")); }
+    if (rs.has("description")) { cs = put(cs, "description", rs.get("description")); }
+    if (rs.has("tags") && rs.get("tags").kind() == "array") { cs = put(cs, "tags", rs.get("tags")); }
+    if (text(rs, "categoryId", "") != "") { cs = put(cs, "categoryId", rs.get("categoryId")); }
+    cur = put(cur, "snippet", cs);
+   }
+   if (req.has("status") && text(req.get("status"), "privacyStatus", "") != "") {
+    cur = put(cur, "status", put(cur.get("status"), "privacyStatus", req.get("status").get("privacyStatus")));
+   }
+   db = put(db, "videos", put(videos, vid, cur));
+   save(x, db);
+   x.json(cur.to_json());
+  }
+ }
+}
+
+@yt_delete_video
+fn yt_delete_video(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let vid = x.query("id");
+  let db = database(x);
+  let videos = db.get("videos");
+  if (vid == "" || !videos.has(vid) || is_deleted(videos.get(vid))) {
+   api_error(x, 404, "videoNotFound", "video not found: " + vid);
+  } else {
+   db = put(db, "videos", put(videos, vid, put(videos.get(vid), "_deleted", json_parse("true"))));
+   save(x, db);
+   x.status(204);
+  }
+ }
+}
+
+@yt_list_playlists
+fn yt_list_playlists(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let pls = db.get("playlists");
+  let order = db.get("playlistOrder");
+  let idParam = x.query("id");
+  let chFilter = x.query("channelId");
+  let items = json_parse("[]");
+  if (idParam != "") {
+   let ids = str_split(idParam, ",");
+   for (i in range(0, ids.len())) {
+    let pid = str_trim(ids.at(i));
+    if (pls.has(pid) && !is_deleted(pls.get(pid))) { items = append(items, pls.get(pid)); }
+   }
+  } else {
+   for (i in range(0, order.len())) {
+    let pk = order.at(i).as_string();
+    if (pls.has(pk) && !is_deleted(pls.get(pk))) {
+     let pl = pls.get(pk);
+     if (chFilter == "" || text(pl.get("snippet"), "channelId", "") == chFilter) { items = append(items, pl); }
+    }
+   }
+  }
+  x.json("{\"kind\":\"youtube#playlistListResponse\",\"items\":" + items.to_json() + "}");
+ }
+}
+
+@yt_create_playlist
+fn yt_create_playlist(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let req = json_parse(x.body());
+  let snip = member(req, "snippet");
+  let stat = member(req, "status");
+  let title = text(snip, "title", "");
+  if (title == "") {
+   api_error(x, 400, "invalidTitle", "playlist title required");
+  } else {
+   let pid = "PL_" + str(9000 + x.increment("yt_pl_seq"));
+   let pl = json_parse("{\"kind\":\"youtube#playlist\",\"id\":" + json_quote(pid) + ",\"snippet\":{\"title\":" + json_quote(title) + ",\"description\":" + json_quote(text(snip, "description", "")) + ",\"channelId\":\"UC_ACME_DEV\",\"channelTitle\":\"Acme Engineering\",\"publishedAt\":\"2026-11-14T22:00:00Z\"},\"status\":{\"privacyStatus\":" + json_quote(text(stat, "privacyStatus", "private")) + "},\"contentDetails\":{\"itemCount\":0}}");
+   let db = database(x);
+   db = put(db, "playlists", put(db.get("playlists"), pid, pl));
+   db = put(db, "playlistOrder", append(db.get("playlistOrder"), json_parse(json_quote(pid))));
+   db = put(db, "playlistItems", put(db.get("playlistItems"), pid, json_parse("[]")));
+   save(x, db);
+   x.json(pl.to_json());
+  }
+ }
+}
+
+@yt_delete_playlist
+fn yt_delete_playlist(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pid = x.query("id");
+  let db = database(x);
+  let pls = db.get("playlists");
+  if (pid == "" || !pls.has(pid) || is_deleted(pls.get(pid))) {
+   api_error(x, 404, "playlistNotFound", "playlist not found: " + pid);
+  } else {
+   db = put(db, "playlists", put(pls, pid, put(pls.get(pid), "_deleted", json_parse("true"))));
+   save(x, db);
+   x.status(204);
+  }
+ }
+}
+
+@yt_list_playlist_items
+fn yt_list_playlist_items(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let pid = x.query("playlistId");
+  let maxRes = 25;
+  if (str_is_int(x.query("maxResults"))) { maxRes = str_to_int(x.query("maxResults")); }
+  let db = database(x);
+  let pitems = db.get("playlistItems");
+  let items = json_parse("[]");
+  if (pitems.has(pid)) {
+   let src = pitems.get(pid);
+   for (i in range(0, src.len())) {
+    if (items.len() < maxRes) { items = append(items, src.at(i)); }
+   }
+  }
+  x.json("{\"kind\":\"youtube#playlistItemListResponse\",\"items\":" + items.to_json() + "}");
+ }
+}
+
+@yt_add_playlist_item
+fn yt_add_playlist_item(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let req = json_parse(x.body());
+  let snip = member(req, "snippet");
+  let pid = text(snip, "playlistId", "");
+  let resId = member(snip, "resourceId");
+  let vid = text(resId, "videoId", "");
+  let db = database(x);
+  let pls = db.get("playlists");
+  if (pid == "" || !pls.has(pid) || is_deleted(pls.get(pid))) {
+   api_error(x, 404, "playlistNotFound", "playlist not found: " + pid);
+  } else {
+   let title = vid;
+   if (db.get("videos").has(vid)) { title = text(db.get("videos").get(vid).get("snippet"), "title", vid); }
+   let itemId = "pli_" + str(9000 + x.increment("yt_pli_seq"));
+   let item = json_parse("{\"kind\":\"youtube#playlistItem\",\"id\":" + json_quote(itemId) + ",\"snippet\":{\"playlistId\":" + json_quote(pid) + ",\"title\":" + json_quote(title) + ",\"resourceId\":{\"kind\":\"youtube#video\",\"videoId\":" + json_quote(vid) + "}},\"contentDetails\":{\"videoId\":" + json_quote(vid) + "}}");
+   let pitems = db.get("playlistItems");
+   let list = json_parse("[]");
+   if (pitems.has(pid)) { list = pitems.get(pid); }
+   list = append(list, item);
+   db = put(db, "playlistItems", put(pitems, pid, list));
+   let pl = pls.get(pid);
+   let newCount = list.len();
+   pl = put(pl, "contentDetails", json_parse("{\"itemCount\":" + str(newCount) + "}"));
+   db = put(db, "playlists", put(pls, pid, pl));
+   save(x, db);
+   x.json(item.to_json());
+  }
+ }
+}
+
+@yt_list_comments
+fn yt_list_comments(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let vid = x.query("videoId");
+  let maxRes = 25;
+  if (str_is_int(x.query("maxResults"))) { maxRes = str_to_int(x.query("maxResults")); }
+  let db = database(x);
+  let comments = db.get("comments");
+  let items = json_parse("[]");
+  if (comments.has(vid)) {
+   let src = comments.get(vid);
+   for (i in range(0, src.len())) {
+    if (items.len() < maxRes) { items = append(items, src.at(i)); }
+   }
+  }
+  x.json("{\"kind\":\"youtube#commentThreadListResponse\",\"items\":" + items.to_json() + "}");
+ }
+}
+
+@yt_post_comment
+fn yt_post_comment(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let req = json_parse(x.body());
+  let snip = member(req, "snippet");
+  let vid = text(snip, "videoId", "");
+  let bodyText = text(member(member(snip, "topLevelComment"), "snippet"), "textOriginal", "");
+  let cid = "ct_" + str(9000 + x.increment("yt_ct_seq"));
+  let thread = json_parse("{\"kind\":\"youtube#commentThread\",\"id\":" + json_quote(cid) + ",\"snippet\":{\"videoId\":" + json_quote(vid) + ",\"topLevelComment\":{\"id\":" + json_quote("c_" + cid) + ",\"snippet\":{\"authorDisplayName\":\"Acme Engineering\",\"textDisplay\":" + json_quote(bodyText) + ",\"textOriginal\":" + json_quote(bodyText) + ",\"publishedAt\":\"2026-11-14T22:05:00Z\"}}}}");
+  let db = database(x);
+  let comments = db.get("comments");
+  let list = json_parse("[]");
+  if (comments.has(vid)) { list = comments.get(vid); }
+  list = append(list, thread);
+  db = put(db, "comments", put(comments, vid, list));
+  save(x, db);
+  x.json(thread.to_json());
+ }
+}
+
+# --- YouTube Analytics API v2 ---
+
+fn yt_col_val(r: Json, col: string) -> Json {
+ let out = json_parse(str(num(r, col, 0)));
+ if (col == "day" || col == "video" || col == "country") {
+  out = json_parse(json_quote(text(r, col, "")));
+ }
+ return out;
+}
+
+@yt_analytics_reports
+fn yt_analytics_reports(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let dimsCsv = x.query("dimensions");
+  let metsCsv = x.query("metrics");
+  if (metsCsv == "") { metsCsv = "views,estimatedMinutesWatched"; }
+  let filterParam = x.query("filters");
+  let filterVideo = "";
+  if (str_starts_with(filterParam, "video==")) {
+   filterVideo = str_trim(str_substr(filterParam, 7, str_len(filterParam) - 7));
+  }
+  let headers = json_parse("[]");
+  let colNames = json_parse("[]");
+  if (str_trim(dimsCsv) != "") {
+   let dp = str_split(dimsCsv, ",");
+   for (i in range(0, dp.len())) {
+    let d = str_trim(dp.at(i));
+    if (d != "") {
+     colNames = append(colNames, json_parse(json_quote(d)));
+     headers = append(headers, json_parse("{\"name\":" + json_quote(d) + ",\"columnType\":\"DIMENSION\",\"dataType\":\"STRING\"}"));
+    }
+   }
+  }
+  let mp = str_split(metsCsv, ",");
+  for (i in range(0, mp.len())) {
+   let m = str_trim(mp.at(i));
+   if (m != "") {
+    colNames = append(colNames, json_parse(json_quote(m)));
+    headers = append(headers, json_parse("{\"name\":" + json_quote(m) + ",\"columnType\":\"METRIC\",\"dataType\":\"INTEGER\"}"));
+   }
+  }
+  let db = database(x);
+  let raw = db.get("ytAnalyticsRows");
+  let rows = json_parse("[]");
+  for (i in range(0, raw.len())) {
+   let r = raw.at(i);
+   if (filterVideo == "" || text(r, "video", "") == filterVideo) {
+    let row = json_parse("[]");
+    for (ci in range(0, colNames.len())) {
+     row = append(row, yt_col_val(r, colNames.at(ci).as_string()));
+    }
+    rows = append(rows, row);
+   }
+  }
+  x.json("{\"kind\":\"youtubeAnalytics#resultTable\",\"columnHeaders\":" + headers.to_json() + ",\"rows\":" + rows.to_json() + "}");
+ }
+}
+
+# --- Gmail API v1 Handlers ---
+
+fn b64url_decode(s: string) -> string {
+ let std = str_replace(str_replace(s, "-", "+"), "_", "/");
+ let rem = str_len(std) % 4;
+ if (rem == 2) { std = std + "=="; }
+ else if (rem == 3) { std = std + "="; }
+ return str_base64_decode(std);
+}
+
+fn b64url_encode(s: string) -> string {
+ let b = str_base64_encode(s);
+ b = str_replace(str_replace(str_replace(b, "+", "-"), "/", "_"), "=", "");
+ return b;
+}
+
+fn gmail_has_label(msg: Json, target: string) -> bool {
+ let hit = false;
+ if (msg.has("labelIds") && msg.get("labelIds").kind() == "array") {
+  let ls = msg.get("labelIds");
+  let lt = str_lower(target);
+  for (i in range(0, ls.len())) {
+   if (str_lower(ls.at(i).as_string()) == lt) { hit = true; }
+  }
+ }
+ return hit;
+}
+
+fn gmail_hdr(msg: Json, name: string) -> string {
+ let val = "";
+ if (msg.has("payload") && msg.get("payload").has("headers")) {
+  let hs = msg.get("payload").get("headers");
+  let ln = str_lower(name);
+  for (i in range(0, hs.len())) {
+   let h = hs.at(i);
+   if (str_lower(text(h, "name", "")) == ln) { val = text(h, "value", ""); }
+  }
+ }
+ return val;
+}
+
+fn gmail_body_text(msg: Json) -> string {
+ let out = text(msg, "snippet", "");
+ if (msg.has("payload")) {
+  let pl = msg.get("payload");
+  if (pl.has("body") && text(pl.get("body"), "data", "") != "") {
+   out = b64url_decode(text(pl.get("body"), "data", ""));
+  } else if (pl.has("parts") && pl.get("parts").kind() == "array") {
+   let ps = pl.get("parts");
+   for (i in range(0, ps.len())) {
+    let p = ps.at(i);
+    if (text(p, "mimeType", "") == "text/plain" && p.has("body") && text(p.get("body"), "data", "") != "") {
+     out = b64url_decode(text(p.get("body"), "data", ""));
+    }
+   }
+  }
+ }
+ return out;
+}
+
+fn strip_quotes(s: string) -> string {
+ return str_replace(str_replace(s, "\"", ""), "'", "");
+}
+
+fn gmail_matches_query(msg: Json, q: string) -> bool {
+ let ok = true;
+ if (str_trim(q) != "") {
+  let subj = str_lower(gmail_hdr(msg, "Subject"));
+  let from = str_lower(gmail_hdr(msg, "From"));
+  let to = str_lower(gmail_hdr(msg, "To"));
+  let body = str_lower(gmail_body_text(msg));
+  let snip = str_lower(text(msg, "snippet", ""));
+  let toks = str_split(str_trim(q), " ");
+  for (i in range(0, toks.len())) {
+   let lt = str_lower(str_trim(toks.at(i)));
+   if (lt != "") {
+    if (lt == "is:unread") { if (!gmail_has_label(msg, "UNREAD")) { ok = false; } }
+    else if (lt == "is:read") { if (gmail_has_label(msg, "UNREAD")) { ok = false; } }
+    else if (lt == "is:starred") { if (!gmail_has_label(msg, "STARRED")) { ok = false; } }
+    else if (str_starts_with(lt, "from:")) {
+     if (!str_contains(from, strip_quotes(str_substr(lt, 5, str_len(lt) - 5)))) { ok = false; }
+    } else if (str_starts_with(lt, "to:")) {
+     if (!str_contains(to, strip_quotes(str_substr(lt, 3, str_len(lt) - 3)))) { ok = false; }
+    } else if (str_starts_with(lt, "subject:")) {
+     if (!str_contains(subj, strip_quotes(str_substr(lt, 8, str_len(lt) - 8)))) { ok = false; }
+    } else if (str_starts_with(lt, "label:")) {
+     if (!gmail_has_label(msg, str_substr(lt, 6, str_len(lt) - 6))) { ok = false; }
+    } else if (str_starts_with(lt, "in:")) {
+     if (!gmail_has_label(msg, str_substr(lt, 3, str_len(lt) - 3))) { ok = false; }
+    } else {
+     if (!str_contains(subj, lt) && !str_contains(from, lt) && !str_contains(body, lt) && !str_contains(snip, lt)) { ok = false; }
+    }
+   }
+  }
+ }
+ return ok;
+}
+
+@gmail_profile
+fn gmail_profile(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let msgs = db.get("gmailMessages");
+  let order = db.get("gmailOrder");
+  let count = 0;
+  for (i in range(0, order.len())) {
+   let id = order.at(i).as_string();
+   if (msgs.has(id) && !is_deleted(msgs.get(id))) { count = count + 1; }
+  }
+  x.json("{\"emailAddress\":" + json_quote(text(db, "gmailEmail", "engineering@acme.example")) + ",\"messagesTotal\":" + str(count) + ",\"threadsTotal\":" + str(count) + ",\"historyId\":\"900100\"}");
+ }
+}
+
+@gmail_list_labels
+fn gmail_list_labels(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  x.json("{\"labels\":" + db.get("gmailLabels").to_json() + "}");
+ }
+}
+
+@gmail_list_messages
+fn gmail_list_messages(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let db = database(x);
+  let msgs = db.get("gmailMessages");
+  let order = db.get("gmailOrder");
+  let q = x.query("q");
+  let maxRes = 25;
+  if (str_is_int(x.query("maxResults"))) { maxRes = str_to_int(x.query("maxResults")); }
+  if (maxRes <= 0) { maxRes = 25; }
+  let items = json_parse("[]");
+  for (i in range(0, order.len())) {
+   if (items.len() < maxRes) {
+    let id = order.at(i).as_string();
+    if (msgs.has(id)) {
+     let m = msgs.get(id);
+     if (!is_deleted(m) && gmail_matches_query(m, q)) {
+      items = append(items, json_parse("{\"id\":" + json_quote(text(m, "id", id)) + ",\"threadId\":" + json_quote(text(m, "threadId", "")) + "}"));
+     }
+    }
+   }
+  }
+  x.json("{\"messages\":" + items.to_json() + ",\"resultSizeEstimate\":" + str(items.len()) + "}");
+ }
+}
+
+@gmail_get_message
+fn gmail_get_message(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let id = x.param("id");
+  let db = database(x);
+  let msgs = db.get("gmailMessages");
+  if (!msgs.has(id) || is_deleted(msgs.get(id))) { api_error(x, 404, "notFound", "message not found: " + id); }
+  else { x.json(msgs.get(id).to_json()); }
+ }
+}
+
+@gmail_delete_message
+fn gmail_delete_message(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let id = x.param("id");
+  let db = database(x);
+  let msgs = db.get("gmailMessages");
+  if (!msgs.has(id) || is_deleted(msgs.get(id))) {
+   api_error(x, 404, "notFound", "message not found: " + id);
+  } else {
+   db = put(db, "gmailMessages", put(msgs, id, put(msgs.get(id), "_deleted", json_parse("true"))));
+   save(x, db);
+   x.status(204);
+  }
+ }
+}
+
+@gmail_send_message
+fn gmail_send_message(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let req = json_parse(x.body());
+  let rawB64 = text(req, "raw", "");
+  if (rawB64 == "") {
+   api_error(x, 400, "invalidArgument", "raw message required");
+  } else {
+   let mimeStr = str_replace(b64url_decode(rawB64), "\r\n", "\n");
+   let parts = str_split(mimeStr, "\n\n");
+   let hdrBlock = parts.at(0);
+   let bodyTxt = "";
+   if (parts.len() > 1) { bodyTxt = parts.at(1); }
+   let toAddr = "";
+   let subj = "";
+   let hLines = str_split(hdrBlock, "\n");
+   for (i in range(0, hLines.len())) {
+    let line = str_trim(hLines.at(i));
+    let ll = str_lower(line);
+    if (str_starts_with(ll, "to:")) { toAddr = str_trim(str_substr(line, 3, str_len(line) - 3)); }
+    else if (str_starts_with(ll, "subject:")) { subj = str_trim(str_substr(line, 8, str_len(line) - 8)); }
+   }
+   let db = database(x);
+   let id = "msg_" + str(9000 + x.increment("gmail_seq"));
+   let tid = text(req, "threadId", "thr_" + id);
+   if (tid == "") { tid = "thr_" + id; }
+   let snip = str_trim(bodyTxt);
+   if (str_len(snip) > 100) { snip = str_substr(snip, 0, 100); }
+   let fromAddr = text(db, "gmailEmail", "engineering@acme.example");
+   let msg = json_parse("{\"id\":" + json_quote(id) + ",\"threadId\":" + json_quote(tid) + ",\"labelIds\":[\"SENT\"],\"snippet\":" + json_quote(snip) + ",\"payload\":{\"mimeType\":\"text/plain\",\"headers\":[{\"name\":\"From\",\"value\":" + json_quote(fromAddr) + "},{\"name\":\"To\",\"value\":" + json_quote(toAddr) + "},{\"name\":\"Subject\",\"value\":" + json_quote(subj) + "},{\"name\":\"Date\",\"value\":\"Mon, 23 Nov 2026 15:00:00 -0600\"}],\"body\":{\"data\":" + json_quote(b64url_encode(str_trim(bodyTxt))) + "}}}");
+   db = put(db, "gmailMessages", put(db.get("gmailMessages"), id, msg));
+   db = put(db, "gmailOrder", append(db.get("gmailOrder"), json_parse(json_quote(id))));
+   save(x, db);
+   x.json(msg.to_json());
+  }
+ }
+}
+
+@gmail_modify_message
+fn gmail_modify_message(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let id = x.param("id");
+  let db = database(x);
+  let msgs = db.get("gmailMessages");
+  if (!msgs.has(id) || is_deleted(msgs.get(id))) {
+   api_error(x, 404, "notFound", "message not found: " + id);
+  } else {
+   let req = json_parse(x.body());
+   let msg = msgs.get(id);
+   let cur = json_parse("[]");
+   if (msg.has("labelIds")) { cur = msg.get("labelIds"); }
+   let rem = member(req, "removeLabelIds");
+   let add = member(req, "addLabelIds");
+   let next = json_parse("[]");
+   for (i in range(0, cur.len())) {
+    let lbl = cur.at(i).as_string();
+    let drop = false;
+    if (rem.kind() == "array") {
+     for (ri in range(0, rem.len())) { if (rem.at(ri).as_string() == lbl) { drop = true; } }
+    }
+    if (!drop) { next = append(next, json_parse(json_quote(lbl))); }
+   }
+   if (add.kind() == "array") {
+    for (ai in range(0, add.len())) {
+     let al = add.at(ai).as_string();
+     let exists = false;
+     for (ni in range(0, next.len())) { if (next.at(ni).as_string() == al) { exists = true; } }
+     if (!exists) { next = append(next, json_parse(json_quote(al))); }
+    }
+   }
+   msg = put(msg, "labelIds", next);
+   db = put(db, "gmailMessages", put(msgs, id, msg));
+   save(x, db);
+   x.json(msg.to_json());
+  }
+ }
+}
+
+@gmail_trash_message
+fn gmail_trash_message(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let id = x.param("id");
+  let db = database(x);
+  let msgs = db.get("gmailMessages");
+  if (!msgs.has(id) || is_deleted(msgs.get(id))) {
+   api_error(x, 404, "notFound", "message not found: " + id);
+  } else {
+   let msg = msgs.get(id);
+   let cur = json_parse("[]");
+   if (msg.has("labelIds")) { cur = msg.get("labelIds"); }
+   let next = json_parse("[]");
+   let hasTrash = false;
+   for (i in range(0, cur.len())) {
+    let lbl = cur.at(i).as_string();
+    if (lbl != "INBOX") {
+     if (lbl == "TRASH") { hasTrash = true; }
+     next = append(next, json_parse(json_quote(lbl)));
+    }
+   }
+   if (!hasTrash) { next = append(next, json_parse("\"TRASH\"")); }
+   msg = put(msg, "labelIds", next);
+   db = put(db, "gmailMessages", put(msgs, id, msg));
+   save(x, db);
+   x.json(msg.to_json());
+  }
+ }
+}
+
+@gmail_get_thread
+fn gmail_get_thread(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let tid = x.param("id");
+  let db = database(x);
+  let msgs = db.get("gmailMessages");
+  let order = db.get("gmailOrder");
+  let list = json_parse("[]");
+  for (i in range(0, order.len())) {
+   let id = order.at(i).as_string();
+   if (msgs.has(id)) {
+    let m = msgs.get(id);
+    if (!is_deleted(m) && text(m, "threadId", "") == tid) { list = append(list, m); }
+   }
+  }
+  if (list.len() == 0) { api_error(x, 404, "notFound", "thread not found: " + tid); }
+  else { x.json("{\"id\":" + json_quote(tid) + ",\"messages\":" + list.to_json() + "}"); }
+ }
+}
+
+@gmail_get_attachment
+fn gmail_get_attachment(x: Exchange) -> void implements Handler {
+ if (allowed(x)) {
+  let key = x.param("id") + "/" + x.param("attId");
+  let db = database(x);
+  let atts = db.get("gmailAttachments");
+  if (!atts.has(key)) { api_error(x, 404, "notFound", "attachment not found: " + key); }
+  else {
+   let data = atts.get(key).as_string();
+   x.json("{\"attachmentId\":" + json_quote(x.param("attId")) + ",\"size\":54,\"data\":" + json_quote(data) + "}");
+  }
+ }
+}
+
+# --- Routes ---
+route("GET", "/v1beta/accountSummaries", "ga_account_summaries");
+route("GET", "/v1beta/accounts", "ga_list_accounts");
+route("GET", "/v1beta/accounts/{id}", "ga_get_account");
+route("GET", "/v1beta/properties", "ga_list_properties");
+route("POST", "/v1beta/properties", "ga_create_property");
+route("GET", "/v1beta/properties/{id}", "ga_get_property");
+route("PATCH", "/v1beta/properties/{id}", "ga_update_property");
+route("DELETE", "/v1beta/properties/{id}", "ga_delete_property");
+route("POST", "/v1beta/properties/{id}", "ga_property_action");
+route("GET", "/v1beta/properties/{id}/dataStreams", "ga_list_streams");
+route("POST", "/v1beta/properties/{id}/dataStreams", "ga_create_stream");
+route("GET", "/v1beta/properties/{id}/dataStreams/{sid}", "ga_get_stream");
+route("DELETE", "/v1beta/properties/{id}/dataStreams/{sid}", "ga_delete_stream");
+route("GET", "/v1beta/properties/{id}/customDimensions", "ga_list_custom_dims");
+route("POST", "/v1beta/properties/{id}/customDimensions", "ga_create_custom_dim");
+route("GET", "/v1beta/properties/{id}/keyEvents", "ga_list_key_events");
+route("POST", "/v1beta/properties/{id}/keyEvents", "ga_create_key_event");
+route("GET", "/v1beta/properties/{id}/metadata", "ga_metadata");
+
+route("GET", "/youtube/v3/channels", "yt_channels");
+route("GET", "/youtube/v3/search", "yt_search");
+route("GET", "/youtube/v3/videos", "yt_get_videos");
+route("POST", "/upload/youtube/v3/videos", "yt_upload_video");
+route("PUT", "/youtube/v3/videos", "yt_update_video");
+route("DELETE", "/youtube/v3/videos", "yt_delete_video");
+route("GET", "/youtube/v3/playlists", "yt_list_playlists");
+route("POST", "/youtube/v3/playlists", "yt_create_playlist");
+route("DELETE", "/youtube/v3/playlists", "yt_delete_playlist");
+route("GET", "/youtube/v3/playlistItems", "yt_list_playlist_items");
+route("POST", "/youtube/v3/playlistItems", "yt_add_playlist_item");
+route("GET", "/youtube/v3/commentThreads", "yt_list_comments");
+route("POST", "/youtube/v3/commentThreads", "yt_post_comment");
+route("GET", "/v2/reports", "yt_analytics_reports");
+route("GET", "/gmail/v1/users/me/profile", "gmail_profile");
+route("GET", "/gmail/v1/users/me/labels", "gmail_list_labels");
+route("GET", "/gmail/v1/users/me/messages", "gmail_list_messages");
+route("POST", "/gmail/v1/users/me/messages/send", "gmail_send_message");
+route("GET", "/gmail/v1/users/me/messages/{id}", "gmail_get_message");
+route("DELETE", "/gmail/v1/users/me/messages/{id}", "gmail_delete_message");
+route("POST", "/gmail/v1/users/me/messages/{id}/modify", "gmail_modify_message");
+route("POST", "/gmail/v1/users/me/messages/{id}/trash", "gmail_trash_message");
+route("GET", "/gmail/v1/users/me/threads/{id}", "gmail_get_thread");
+route("GET", "/gmail/v1/users/me/messages/{id}/attachments/{attId}", "gmail_get_attachment");
+end _lmcode_
+r = run_lmcode(p, {command: concat(["lmmock", "exec", "--lmcode", "$DSLFILE", "--"], ARGV)});
+require(r.ok, "mock client failed");
+if (r.result != null) { print(r.result.stdout); }

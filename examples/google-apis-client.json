@@ -1,0 +1,347 @@
+{
+  "steps": [
+    {
+      "name": "ga4 list account summaries",
+      "path": "/v1beta/accountSummaries",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "json": {
+        "accountSummaries.0.account": "accounts/1001",
+        "accountSummaries.0.propertySummaries.0.property": "properties/3001001"
+      }
+    },
+    {
+      "name": "ga4 get property",
+      "path": "/v1beta/properties/3001001",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "json": {
+        "displayName": "Acme Web Storefront",
+        "currencyCode": "USD"
+      }
+    },
+    {
+      "name": "ga4 create property",
+      "method": "POST",
+      "path": "/v1beta/properties",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "body": {
+        "parent": "accounts/1002",
+        "displayName": "Suite Property",
+        "timeZone": "America/Chicago",
+        "currencyCode": "USD"
+      },
+      "json": {
+        "displayName": "Suite Property"
+      },
+      "capture": {
+        "propName": "name"
+      }
+    },
+    {
+      "name": "ga4 update property",
+      "method": "PATCH",
+      "path": "/v1beta/${propName}?updateMask=displayName",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "body": {
+        "displayName": "Suite Property v2"
+      },
+      "json": {
+        "displayName": "Suite Property v2"
+      }
+    },
+    {
+      "name": "ga4 run report with string filter",
+      "method": "POST",
+      "path": "/v1beta/properties/3001001:runReport",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "body": {
+        "dateRanges": [
+          {
+            "startDate": "7daysAgo",
+            "endDate": "today"
+          }
+        ],
+        "dimensions": [
+          {
+            "name": "country"
+          },
+          {
+            "name": "sessionDefaultChannelGroup"
+          }
+        ],
+        "metrics": [
+          {
+            "name": "activeUsers"
+          },
+          {
+            "name": "totalRevenue"
+          }
+        ],
+        "dimensionFilter": {
+          "filter": {
+            "fieldName": "country",
+            "stringFilter": {
+              "matchType": "EXACT",
+              "value": "United States"
+            }
+          }
+        },
+        "limit": "10"
+      },
+      "json": {
+        "rowCount": 2,
+        "rows.0.dimensionValues.0.value": "United States"
+      }
+    },
+    {
+      "name": "ga4 run realtime report",
+      "method": "POST",
+      "path": "/v1beta/properties/3001001:runRealtimeReport",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "body": {
+        "dimensions": [
+          {
+            "name": "country"
+          }
+        ],
+        "metrics": [
+          {
+            "name": "activeUsers"
+          }
+        ],
+        "limit": "5"
+      },
+      "json": {
+        "rowCount": 5
+      }
+    },
+    {
+      "name": "ga4 delete created property",
+      "method": "DELETE",
+      "path": "/v1beta/${propName}",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "json": {
+        "name": "${propName}"
+      }
+    },
+    {
+      "name": "youtube my channel",
+      "path": "/youtube/v3/channels?mine=true&part=snippet,statistics",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "json": {
+        "items.0.id": "UC_ACME_DEV",
+        "items.0.snippet.title": "Acme Engineering"
+      }
+    },
+    {
+      "name": "youtube multipart upload video",
+      "method": "POST",
+      "path": "/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status",
+      "headers": {
+        "Authorization": "Bearer fixture-token",
+        "Content-Type": "multipart/related; boundary=lmmock-boundary"
+      },
+      "body": "--lmmock-boundary\r\nContent-Type: application/json\r\n\r\n{\"snippet\":{\"title\":\"Suite Upload\",\"description\":\"From check suite\",\"categoryId\":\"28\",\"tags\":[\"lmmock\"]},\"status\":{\"privacyStatus\":\"private\"}}\r\n--lmmock-boundary\r\nContent-Type: application/octet-stream\r\n\r\nmedia-bytes\r\n--lmmock-boundary--",
+      "json": {
+        "snippet.title": "Suite Upload",
+        "status.privacyStatus": "private"
+      },
+      "capture": {
+        "videoId": "id"
+      }
+    },
+    {
+      "name": "youtube update uploaded video",
+      "method": "PUT",
+      "path": "/youtube/v3/videos?part=snippet,status",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "body": {
+        "id": "${videoId}",
+        "snippet": {
+          "title": "Suite Upload Ready"
+        },
+        "status": {
+          "privacyStatus": "unlisted"
+        }
+      },
+      "json": {
+        "snippet.title": "Suite Upload Ready",
+        "status.privacyStatus": "unlisted"
+      }
+    },
+    {
+      "name": "youtube create playlist",
+      "method": "POST",
+      "path": "/youtube/v3/playlists?part=snippet,status",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "body": {
+        "snippet": {
+          "title": "Suite Playlist",
+          "description": "Created in check suite"
+        },
+        "status": {
+          "privacyStatus": "private"
+        }
+      },
+      "json": {
+        "snippet.title": "Suite Playlist"
+      },
+      "capture": {
+        "playlistId": "id"
+      }
+    },
+    {
+      "name": "youtube add playlist item",
+      "method": "POST",
+      "path": "/youtube/v3/playlistItems?part=snippet",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "body": {
+        "snippet": {
+          "playlistId": "${playlistId}",
+          "resourceId": {
+            "kind": "youtube#video",
+            "videoId": "${videoId}"
+          }
+        }
+      },
+      "json": {
+        "snippet.resourceId.videoId": "${videoId}"
+      }
+    },
+    {
+      "name": "youtube delete playlist",
+      "method": "DELETE",
+      "path": "/youtube/v3/playlists?id=${playlistId}",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "status": 204
+    },
+    {
+      "name": "youtube delete uploaded video",
+      "method": "DELETE",
+      "path": "/youtube/v3/videos?id=${videoId}",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "status": 204
+    },
+    {
+      "name": "youtube analytics filtered video report",
+      "path": "/v2/reports?ids=channel%3D%3DMINE&startDate=2026-11-01&endDate=2026-11-15&dimensions=day%2Cvideo&metrics=views%2CestimatedMinutesWatched&filters=video%3D%3Dvid_launch_04",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "json": {
+        "rows.0.1": "vid_launch_04",
+        "rows.1.1": "vid_launch_04"
+      }
+    },
+    {
+      "name": "gmail search unread messages",
+      "path": "/gmail/v1/users/me/messages?q=is%3Aunread&maxResults=10",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "json": {
+        "messages.0.id": "msg_1001",
+        "resultSizeEstimate": 2
+      }
+    },
+    {
+      "name": "gmail get message details",
+      "path": "/gmail/v1/users/me/messages/msg_1001?format=full",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "json": {
+        "id": "msg_1001",
+        "threadId": "thr_1001"
+      }
+    },
+    {
+      "name": "gmail send message",
+      "method": "POST",
+      "path": "/gmail/v1/users/me/messages/send",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "body": {
+        "raw": "VG86IGFsaWNlQGV4YW1wbGUuY29tDQpTdWJqZWN0OiBTdWl0ZSBHbWFpbA0KDQpIZWxsbyBmcm9tIHN1aXRl"
+      },
+      "json": {
+        "labelIds.0": "SENT"
+      },
+      "capture": {
+        "gmailMsgId": "id"
+      }
+    },
+    {
+      "name": "gmail delete sent message",
+      "method": "DELETE",
+      "path": "/gmail/v1/users/me/messages/${gmailMsgId}",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "status": 204
+    },
+    {
+      "name": "unauthorized returns 401 Google API error",
+      "path": "/v1beta/accounts",
+      "headers": {
+        "Authorization": "Bearer wrong-token"
+      },
+      "status": 401,
+      "json": {
+        "error.code": 401,
+        "error.errors.0.reason": "authError"
+      }
+    },
+    {
+      "name": "missing property returns 404 Google API error",
+      "path": "/v1beta/properties/missing-999",
+      "headers": {
+        "Authorization": "Bearer fixture-token"
+      },
+      "status": 404,
+      "json": {
+        "error.code": 404,
+        "error.errors.0.reason": "notFound"
+      }
+    },
+    {
+      "name": "rate limit fault returns 429",
+      "path": "/youtube/v3/channels?mine=true",
+      "headers": {
+        "Authorization": "Bearer fixture-token",
+        "X-Lmmock-Fault": "429"
+      },
+      "status": 429,
+      "json": {
+        "error.code": 429,
+        "error.errors.0.reason": "rateLimitExceeded"
+      }
+    }
+  ]
+}

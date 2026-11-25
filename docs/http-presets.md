@@ -311,3 +311,19 @@ verify credential overrides. Create supports title (Shopify/WordPress) or name
 Other write fields, content rendering, validation, update/delete and triggers are
 not modeled. List snapshots do not incorporate writes. Read-by-ID covers created
 objects only. Shopify's route captures the full ID filename including `.json`.
+
+## Google Analytics & YouTube (`google-apis.lms` / `--builtin google-apis`)
+
+`examples/google-apis.lms` (and the embedded `--builtin google-apis` program) models the
+four Google REST services exercised by `lmgoogle` (`google.golang.org/api` `v0.293.0`),
+informed by `lminspect` reverse-proxy captures (`captures/google/flows.jsonl`):
+
+- **Google Analytics Admin API v1beta**: `/v1beta/accountSummaries`, `/v1beta/accounts`, `/v1beta/accounts/{id}`, `/v1beta/properties` (list, filter, POST create, GET, PATCH with `updateMask`, DELETE), `/v1beta/properties/{id}/dataStreams`, `customDimensions`, and `keyEvents`.
+- **Google Analytics Data API v1beta**: `/v1beta/properties/{id}:runReport` (with `dimensionFilter` and string/int `limit`), `/v1beta/properties/{id}:runRealtimeReport`, and `/v1beta/properties/{id}/metadata`.
+- **YouTube Data API v3**: `/youtube/v3/channels`, `/youtube/v3/search`, `/youtube/v3/videos`, `POST /upload/youtube/v3/videos` (`multipart/related`), `PUT /youtube/v3/videos`, `DELETE /youtube/v3/videos`, playlists, playlist items, and comment threads.
+- **YouTube Analytics API v2**: `/v2/reports` (dimensions, metrics, `filters=video==...`).
+- **Gmail API v1**: `/gmail/v1/users/me/profile`, `/gmail/v1/users/me/labels`, `/gmail/v1/users/me/messages` (`q` search, `format=full` get, `/send`, `/modify`, `/trash`, `DELETE`), and `/gmail/v1/users/me/threads/{id}`.
+
+Default auth requires `Authorization: Bearer fixture-token` (`config`: `{"token":"...","requireAuth":false}`), and supports `X-Lmmock-Fault: 429` / `500`. Verify with:
+
+    lmmock exec --builtin google-apis -- lmmock check --suite examples/google-apis-client.json

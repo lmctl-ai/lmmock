@@ -1,0 +1,8 @@
+{
+  "source": "Local stand-in capture of google.golang.org/api SDK clients (analyticsadmin/v1beta, analyticsdata/v1beta, youtube/v3, youtubeanalytics/v2, gmail/v1) driven by lmgoogle against fakegoogle through lminspect reverse proxy",
+  "capture_tool": "lminspect run --mode reverse:<fakegoogle> --record flows.jsonl",
+  "client": "lmgoogle (google.golang.org/api v0.293.0, gl-go/1.26.11)",
+  "credentials": "Synthetic fixture-token sanitized to <redacted:credential> by lminspect",
+  "flows": 50,
+  "flows_sha256": "8068e8dbddafad6059a04eaa99d8bec2759086635ce0a39d5ef64679f5b51b49"
+}

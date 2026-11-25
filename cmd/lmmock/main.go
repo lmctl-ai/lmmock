@@ -105,7 +105,7 @@ func run(args []string) (exitCode int) {
 	mode := args[0]
 	f := flag.NewFlagSet(mode, flag.ContinueOnError)
 	dsl := f.String("lmcode", "", "private program file supplied by run_lmcode")
-	builtin := f.String("builtin", "", "embedded mock program: llm-api, oauth-codex-device (no lmscript needed)")
+	builtin := f.String("builtin", "", "embedded mock program: llm-api, oauth-codex-device, google-apis (no lmscript needed)")
 	listen := f.String("listen", "127.0.0.1:0", "loopback IP:port; 0 chooses a free port")
 	config := f.String("config", "", "trusted JSON configuration file, read by config()")
 	ready := f.String("ready-file", "", "write readiness JSON and remove it on exit")
@@ -279,8 +279,8 @@ func usage() {
   lmmock schema > schema.json
   lmmock serve --lmcode FILE [--listen 127.0.0.1:0] [--ready-file ready.json]
   lmmock exec --lmcode FILE -- COMMAND [ARG...]
-  lmmock serve --builtin llm-api [--listen 127.0.0.1:0]
-  lmmock exec --builtin llm-api [--config cfg.json] -- COMMAND [ARG...]
+  lmmock serve --builtin llm-api|oauth-codex-device|google-apis [--listen 127.0.0.1:0]
+  lmmock exec --builtin llm-api|oauth-codex-device|google-apis [--config cfg.json] -- COMMAND [ARG...]
   serve/exec: [--tls] [--tls-host DNS_NAME] [--upstream http(s)://host/base/] [--upstream-timeout 2m]
               [--upstream-read-only] [--audit-log requests.jsonl]
   lmmock check --suite assertions.json [--url URL]
